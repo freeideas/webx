@@ -136,15 +136,41 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
 
     @SuppressWarnings("unused")
-    private static boolean _TEST_basicReplacement_TEST_( boolean findLineNumber ) throws Exception {
+    private static boolean actualProxyWithReplacements_TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
         Map<String,Object> replacements = new LinkedHashMap<>();
-        replacements.put( "{{test}}", "replaced-value" );
-        replacements.put( "{{num}}", 42 );
+        replacements.put( "<%=user%>", "john-doe" );
+        replacements.put( "<%=action%>", "update" );
+        replacements.put( "<%=value%>", 123 );
         HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler( replacements );
-        HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/echo?param={{test}}", new LinkedHashMap<>() );
-        headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://httpbun.com/get?query={{test}}&num={{num}}" );
-        headerBlock = headerBlock.withAddHeader( "X-Custom-Header", "Value is {{test}}" );
+        HttpHeaderBlock headerBlock = new HttpHeaderBlock( "POST", "/test", new LinkedHashMap<>() );
+        headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://httpbun.com/post" );
+        headerBlock = headerBlock.withAddHeader( "Content-Type", "application/json" );
+        headerBlock = headerBlock.withAddHeader( "X-User", "<%=user%>" );
+        String jsonBody = "{\"user\":\"<%=user%>\",\"action\":\"<%=action%>\",\"value\":\"<%=value%>\"}";
+        HttpRequest req = new HttpRequest( headerBlock, jsonBody.getBytes() );
+        HttpResponse resp = handler.handle( req );
+        Lib.asrt( resp.headerBlock.firstLine.contains( "200" ), "Expected 200 response but got: " + resp.headerBlock.firstLine );
+        String responseBody = new String( resp.body );
+        Lib.asrt( responseBody.contains( "\"X-User\": \"john-doe\"" ) || responseBody.contains( "\\\"X-User\\\": \\\"john-doe\\\"" ) );
+        Lib.asrt( responseBody.contains( "\"user\":\"john-doe\"" ) || responseBody.contains( "\\\"user\\\":\\\"john-doe\\\"" ) );
+        Lib.asrt( responseBody.contains( "\"action\":\"update\"" ) || responseBody.contains( "\\\"action\\\":\\\"update\\\"" ) );
+        Lib.asrt( responseBody.contains( "\"value\":\"123\"" ) || responseBody.contains( "\\\"value\\\":\\\"123\\\"" ) );
+        return true;
+    }
+
+
+
+    @SuppressWarnings("unused")
+    private static boolean basicReplacement_TEST_( boolean findLineNumber ) throws Exception {
+        if (findLineNumber) throw new RuntimeException();
+        Map<String,Object> replacements = new LinkedHashMap<>();
+        replacements.put( "<%=test%>", "replaced-value" );
+        replacements.put( "<%=num%>", 42 );
+        HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler( replacements );
+        HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/echo?param=<%=test%>", new LinkedHashMap<>() );
+        headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://httpbun.com/get?query=<%=test%>&num=<%=num%>" );
+        headerBlock = headerBlock.withAddHeader( "X-Custom-Header", "Value is <%=test%>" );
         HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
         HttpResponse resp = handler.handle( req );
         if (resp.headerBlock.firstLine.contains( "200" )) {
@@ -158,7 +184,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
 
     @SuppressWarnings("unused")
-    private static boolean _TEST_bodyReplacement_TEST_( boolean findLineNumber ) throws Exception {
+    private static boolean bodyReplacement_TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
         Map<String,Object> replacements = new LinkedHashMap<>();
         replacements.put( "SHORT", "LONGER_STRING" );
@@ -182,7 +208,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
 
     @SuppressWarnings("unused")
-    private static boolean _TEST_regexEscaping_TEST_( boolean findLineNumber ) throws Exception {
+    private static boolean regexEscaping_TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
         Map<String,Object> replacements = new LinkedHashMap<>();
         replacements.put( "$price", "99.99" );
@@ -198,7 +224,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
 
     @SuppressWarnings("unused")
-    private static boolean _TEST_contentLengthUpdate_TEST_( boolean findLineNumber ) throws Exception {
+    private static boolean contentLengthUpdate_TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
         Map<String,Object> replacements = new LinkedHashMap<>();
         replacements.put( "SHORT", "VERY_LONG_REPLACEMENT_STRING" );
@@ -211,33 +237,6 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         byte[] modifiedBody = handler.applyReplacements( body ).getBytes();
         modified = handler.updateContentLength( modified, modifiedBody.length );
         Lib.asrtEQ( modified.getHeaderValue( "Content-Length" ), "28" );
-        return true;
-    }
-
-
-
-    @SuppressWarnings("unused")
-    private static boolean _TEST_actualProxyWithReplacements_TEST_( boolean findLineNumber ) throws Exception {
-        if (findLineNumber) throw new RuntimeException();
-        Map<String,Object> replacements = new LinkedHashMap<>();
-        replacements.put( "{{user}}", "john-doe" );
-        replacements.put( "{{action}}", "update" );
-        replacements.put( "{{value}}", 123 );
-        HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler( replacements );
-        HttpHeaderBlock headerBlock = new HttpHeaderBlock( "POST", "/test", new LinkedHashMap<>() );
-        headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://httpbun.com/post" );
-        headerBlock = headerBlock.withAddHeader( "Content-Type", "application/json" );
-        headerBlock = headerBlock.withAddHeader( "X-User", "{{user}}" );
-        String jsonBody = "{\"user\":\"{{user}}\",\"action\":\"{{action}}\",\"value\":{{value}}}";
-        HttpRequest req = new HttpRequest( headerBlock, jsonBody.getBytes() );
-        HttpResponse resp = handler.handle( req );
-        if (resp.headerBlock.firstLine.contains( "200" )) {
-            String responseBody = new String( resp.body );
-            Lib.asrt( responseBody.contains( "\"X-User\": \"john-doe\"" ) || responseBody.contains( "\\\"X-User\\\": \\\"john-doe\\\"" ) );
-            Lib.asrt( responseBody.contains( "\"user\":\"john-doe\"" ) || responseBody.contains( "\\\"user\\\":\\\"john-doe\\\"" ) );
-            Lib.asrt( responseBody.contains( "\"action\":\"update\"" ) || responseBody.contains( "\\\"action\\\":\\\"update\\\"" ) );
-            Lib.asrt( responseBody.contains( "\"value\":123" ) || responseBody.contains( "\\\"value\\\":123" ) );
-        }
         return true;
     }
 
