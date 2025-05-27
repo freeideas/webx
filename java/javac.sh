@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.."
 if [ $# -eq 0 ]; then
     # No arguments - compile all Java files
     echo "Compiling all Java sources..."
-    javac.exe -cp "./java/tmp;./java/lib/*" -d ./java/tmp java/src/**/*.java
+    javac -cp "./java/tmp:./java/lib/*" -d ./java/tmp java/src/**/*.java
 else
     ARG="$1"
     
@@ -23,11 +23,11 @@ else
     # Check if argument is a file
     if [ -f "$ARG" ]; then
         echo "Compiling file: $ARG"
-        javac.exe -cp "./java/tmp;./java/lib/*" -d ./java/tmp "$ARG"
+        javac -cp "./java/tmp:./java/lib/*" -d ./java/tmp "$ARG"
     elif [ -d "$ARG" ]; then
         echo "Compiling directory: $ARG"
         # Find all .java files in the directory and compile them
-        find "$ARG" -name "*.java" -print0 | xargs -0 javac.exe -cp "./java/tmp;./java/lib/*" -d ./java/tmp
+        find "$ARG" -name "*.java" -print0 | xargs -0 javac -cp "./java/tmp:./java/lib/*" -d ./java/tmp
     else
         echo "Error: '$ARG' is not a valid file or directory"
         exit 1

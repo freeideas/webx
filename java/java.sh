@@ -15,4 +15,4 @@ if [ $# -eq 0 ]; then
 fi
 
 # Run the Java class with classpath including tmp directory and all jars in lib
-java.exe -XX:+ShowCodeDetailsInExceptionMessages -cp "./java/tmp;./java/lib/*" "$1"
+java -XX:+ShowCodeDetailsInExceptionMessages -cp "./java/tmp:./java/lib/*" "$1"

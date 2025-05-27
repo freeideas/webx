@@ -3234,12 +3234,13 @@ public class Lib {
         }
         return userResponse;
     }
-    @SuppressWarnings("unused")
-    private static boolean dialog_TEST_() {
-        String userResponse = dialog( "Test", "Enter something:", "ok", null, 1 );
-        System.out.println( "userResponse: " + userResponse );
-        return true;
-    }
+    // Commented out for headless environments
+    // @SuppressWarnings("unused")
+    // private static boolean dialog_TEST_() {
+    //     String userResponse = dialog( "Test", "Enter something:", "ok", null, 1 );
+    //     System.out.println( "userResponse: " + userResponse );
+    //     return true;
+    // }
 
 
 

@@ -111,4 +111,5 @@ Thumbs.db
 *~
 
 # Build artifacts
-/java/src/build/
+# Allow the build package in java/src
+!/java/src/build/
