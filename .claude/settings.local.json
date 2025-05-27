@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(javac:*)",
+      "Bash(/mnt/c/acex/appz/jdk/bin/javac -d tmp src/appz/sside/**/*.java)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(java.exe:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(chmod:*)",
+      "Bash(./java.sh:*)",
+      "Bash(./java/javac.sh)",
+      "Bash(./java/javac.sh:*)"
+    ],
+    "deny": []
+  }
+}
