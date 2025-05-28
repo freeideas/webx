@@ -14,5 +14,6 @@
       "Bash(./java/javac.sh:*)"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": false
 }

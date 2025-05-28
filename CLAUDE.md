@@ -1,6 +1,6 @@
-All scripts mentioned below can be run from any directory - they automatically change to the project root.
-
 ## Build Commands
+
+All scripts mentioned below can be run from any directory - they automatically change to the project root.
 
 ### Java
 
