@@ -21,13 +21,13 @@ With these three services, you can build fully-functional web applications witho
 ./java/javac.sh
 
 # Start the server (default port: 13102)
-./java/java.sh http.HttpServer
+./java/java.sh appz.webx.Main
 ```
 
 For Windows PowerShell:
 ```powershell
 powershell.exe -File ./java/javac.ps1
-powershell.exe -File ./java/java.ps1 http.HttpServer
+powershell.exe -File ./java/java.ps1 appz.webx.Main
 ```
 
 The server will start on `http://localhost:13102` and serve files from `./datafiles/www` by default.
@@ -36,13 +36,13 @@ The server will start on `http://localhost:13102` and serve files from `./datafi
 
 ```bash
 # Run on a different port
-./java/java.sh http.HttpServer --port 8080
+./java/java.sh appz.webx.Main --port 8080
 
 # Serve files from a different directory
-./java/java.sh http.HttpServer --dir /:/path/to/your/files
+./java/java.sh appz.webx.Main --dir /:/path/to/your/files
 
 # Serve multiple directories
-./java/java.sh http.HttpServer --dir /app:/path/to/app --dir /assets:/path/to/assets
+./java/java.sh appz.webx.Main --dir /app:/path/to/app --dir /assets:/path/to/assets
 ```
 
 ## Core Features
@@ -58,7 +58,7 @@ By default, files are served from `./datafiles/www` at the root path `/`.
 Example:
 ```bash
 # Serve your web app from a custom directory
-./java/java.sh http.HttpServer --dir /:/home/user/mywebapp
+./java/java.sh appz.webx.Main --dir /:/home/user/mywebapp
 ```
 
 ### 2. API Proxy (`/proxy`)
@@ -81,6 +81,8 @@ Features:
 - Forwards headers and request bodies
 - Automatically adds CORS headers
 - Perfect for accessing third-party APIs from browser-based applications
+- Optional API key replacement from `../api-keys.json` or `./datafiles/proxy-replacements.json`
+- Hierarchical URL-based configuration for secure API key management
 
 ### 3. JSON Database (`/db`)
 
@@ -131,13 +133,6 @@ Features:
 - Simple POST/PUT interface
 
 ## Additional Features
-
-### Authentication
-
-The server includes a built-in login handler at `/login` that provides:
-- Email-based authentication
-- Secure token generation
-- Session management
 
 ### Request Logging
 

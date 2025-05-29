@@ -65,15 +65,8 @@ public class Main {
             PersistentMap dbStorage = pd.getRootMap();
             server.handlers.put( "/db", new HttpJsonHandler(dbStorage) );
             
-            // 4. Login handler (/login)
-            server.handlers.put( "/login", new HttpLoginHandler() );
-            HttpLoginHandler.appName = Lib.getAppName();
-            HttpLoginHandler.emailFormUrl = "./login.html";
-            HttpLoginHandler.loginCodeUrl = "./loginCode.html";
-            HttpLoginHandler.loggedInUrl = "./loggedIn.html";
-            
             Lib.log( "WebX server listening on port "+port );
-            Lib.log( "Endpoints: /www (static files), /proxy (API proxy), /db (JSON database), /login (auth)" );
+            Lib.log( "Endpoints: /www (static files), /proxy (API proxy), /db (JSON database)" );
             server.start();
             Lib.log( "WebX server stopped" );
         } catch ( Exception e ) {
