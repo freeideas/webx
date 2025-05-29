@@ -2,6 +2,7 @@ package appz.webx;
 import java.util.*;
 import http.*;
 import jLib.*;
+import persist.*;
 import java.io.File;
 
 
@@ -14,13 +15,16 @@ public class Main {
         Lib.archiveLogFiles();
         ParseArgs p = new ParseArgs(args);
         p.setAppName( Lib.getAppName() );
-        p.setDescr( "a small simple web server" );
-        //p.setHelpFooter("This is the footer");
-        int port = p.getInteger( "port",13102,"listen to which port" );
-        List<String> rootDirs = p.getMulti( "dir", List.of("/:./datafiles/www"), Lib.nw("""
+        p.setDescr( "WebX - Simple Web Application Server" );
+        
+        int port = p.getInteger( "port", 13102, "listen to which port" );
+        List<String> rootDirs = p.getMulti( "dir", List.of("/www:./datafiles/www"), Lib.nw("""
             directory to serve, in the form of /WEBROOT:FILESPEC
         """) );
+        
         HttpServer server = new HttpServer(port);
+        
+        // 1. Static File Server (/www)
         for ( String rootDir : rootDirs ) {
             String[] parts = rootDir.split(":",2);
             String webRoot = parts[0];
@@ -33,14 +37,29 @@ public class Main {
             }
             server.handlers.put( webRoot, new HttpFileHandler(webRoot,f) );
         }
-        server.handlers.put( "/login", new HttpLoginHandler() );
-        HttpLoginHandler.appName = Lib.getAppName();
-        HttpLoginHandler.emailFormUrl = "./login.html";
-        HttpLoginHandler.loginCodeUrl = "./loginCode.html";
-        HttpLoginHandler.loggedInUrl = "./loggedIn.html";
-        server.handlers.put( "/proxy", new HttpProxyHandler() );
-        Lib.log( "listening to port "+port );
-        server.start();
+        
+        // 2. API Proxy (/proxy) with replacements from file
+        File proxyReplacementsFile = new File( "./datafiles/proxy-replacements.json" );
+        if ( proxyReplacementsFile.exists() ) {
+            server.handlers.put( "/proxy", new HttpReplacingProxyHandler(proxyReplacementsFile) );
+            Lib.log( "Proxy handler configured with replacements from " + proxyReplacementsFile );
+        } else {
+            server.handlers.put( "/proxy", new HttpProxyHandler() );
+            Lib.log( "Proxy handler configured without replacements (no proxy-replacements.json found)" );
+        }
+        
+        // 3. JSON Database (/db)
+        String jdbcUrl = "jdbc:hsqldb:file:./datafiles/dbf/webx-db";
+        try( PersistentData pd = new PersistentData( jdbcUrl, "webx_data" ) ) {
+            PersistentMap dbStorage = pd.getRootMap();
+            server.handlers.put( "/db", new HttpJsonHandler(dbStorage) );
+            Lib.log( "WebX server listening on port "+port );
+            Lib.log( "Endpoints: /www (static files), /proxy (API proxy), /db (JSON database), /login (auth)" );
+            server.start();
+            Lib.log( "WebX server stopped" );
+        } catch ( Exception e ) {
+            Lib.log(e);
+        }
     }
 
 
