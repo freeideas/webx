@@ -206,6 +206,12 @@ public class Jsonable extends AbstractMap<Object,Object> {
     }
 
 
+    /**
+     * Follows every part of key into data, returning the value found at the end.
+     * @param data a Map or List, which may contain Maps or Lists, etc.
+     * @param keys a sequence of keys or indexes to traverse the tree.
+     * Note: key can be a String, Collection, or Array, and/or a "/" delimited String
+    **/
     public static Object get( Object data, Object keys ) {
         if ( data==null ) return null;
         if ( keys!=null && keys.getClass().isArray() ) return get( data, asList( keys ) );
@@ -243,88 +249,112 @@ public class Jsonable extends AbstractMap<Object,Object> {
         return data;
     }
     @SuppressWarnings("unused")
-    private static boolean get_TEST_() throws Exception {
-        Object data = Map.of( "2", Map.of( "two", List.of( 1, 2, 3, "dos" ) ) );
-        Object[] keys = {"2", "two", 3};
-        Lib.asrtEQ( get( data, keys ), "dos" );
+    private static boolean get_TEST_( boolean findLineNumber ) {
+        if (findLineNumber) throw new RuntimeException();
+        Object data = JsonDecoder.decode("""
+            { "1":["one"], "2":{"two":[1,2,3,"dos"]} }
+        """);
+        Object key = new Object[]{ "2", "two", 3 };
+        Object result = get(data,key);
+        Object expected = "dos";
+        Lib.asrtEQ(result,expected);
         return true;
     }
 
 
 
+
+    /**
+     * If both are Maps, then copies entries from copyFrom into copyInto, and returns copyInto.
+     * If both are Lists, then copies each element of copyFrom to copyInto at the same index, and returns copyInto.
+     * Otherwise, returns copyFrom.
+     * If modifyCopyInto is true but some of the underlying data structures are immutable,
+     * then a new copy is created as needed.
+     **/
     public static Object merge( Object copyFrom, Object copyInto, Boolean modifyCopyInto ) {
-        if ( modifyCopyInto==null ) modifyCopyInto = false;
+        if (modifyCopyInto==null) modifyCopyInto=false;
         if ( copyFrom instanceof Map && copyInto instanceof Map ) {
             Map<Object,Object> fromMap = (Map<Object,Object>) copyFrom;
             Map<Object,Object> intoMap = (Map<Object,Object>) copyInto;
             for ( Map.Entry<Object,Object> entry : fromMap.entrySet() ) {
                 Object key = entry.getKey();
                 Object value = entry.getValue();
-                if ( intoMap.containsKey( key ) ) value = merge( value, intoMap.get( key ), modifyCopyInto );
+                if ( intoMap.containsKey(key) ) value = merge( value, intoMap.get(key), modifyCopyInto );
                 try {
-                    intoMap.put( key, value );
+                    intoMap.put(key,value);
                 } catch ( RuntimeException re ) {
                     Map<Object,Object> newIntoMap = new LinkedHashMap<>();
-                    newIntoMap.putAll( intoMap );
+                    newIntoMap.putAll(intoMap);
                     intoMap = newIntoMap;
-                    intoMap.put( key, value );
+                    intoMap.put(key,value);
                 }
-            }
-            return intoMap;
+            } return intoMap;
         }
         if ( copyFrom instanceof List && copyInto instanceof List ) {
             List<Object> fromList = (List<Object>) copyFrom;
             List<Object> intoList = (List<Object>) copyInto;
-            for ( int i=0; i<fromList.size(); i++ ) {
-                Object value = fromList.get( i );
-                if ( i<intoList.size() ) value = merge( value, intoList.get( i ), modifyCopyInto );
+            for (int i=0; i<fromList.size(); i++) {
+                Object value = fromList.get(i);
+                if ( i<intoList.size() ) value = merge( value, intoList.get(i), modifyCopyInto );
                 try {
-                    if ( i<intoList.size() ) {
-                        intoList.set( i, value );
-                    } else {
-                        intoList.add( value );
-                    }
+                    if ( i< intoList.size() ) { intoList.set(i,value); }
+                    else { intoList.add(value); }
                 } catch ( RuntimeException re ) {
                     List<Object> newIntoList = new ArrayList<>();
-                    newIntoList.addAll( intoList );
+                    newIntoList.addAll(intoList);
                     intoList = newIntoList;
-                    if ( i<intoList.size() ) {
-                        intoList.set( i, value );
-                    } else {
-                        intoList.add( value );
-                    }
+                    if ( i< intoList.size() ) { intoList.set(i,value); }
+                    else { intoList.add(value); }
                 }
-            }
-            return intoList;
+            } return intoList;
         }
         return copyFrom;
     }
-    public static Object merge( Object copyFrom, Object copyInto ) { return merge( copyFrom, copyInto, false ); }
     @SuppressWarnings("unused")
-    private static boolean merge_TEST_() throws Exception {
-        Object o1 = Map.of( "a", 1, "b", 2 );
-        Object o2 = Map.of( "a", 10, "c", 3 );
-        Object o3 = merge( o1, o2 );
-        Lib.asrtEQ( o3, Map.of( "a", 1, "b", 2, "c", 3 ) );
-
-        Object l1 = List.of( 1, 2, 3 );
-        Object l2 = List.of( 10, 20 );
-        Object l3 = merge( l1, l2 );
-        Lib.asrtEQ( l3, List.of( 1, 2, 3 ) );
-
-        Map<String,Object> mixedFrom = new HashMap<>();
-        mixedFrom.put( "list", new ArrayList<>( List.of( 10, 20, 30 ) ) );
-        mixedFrom.put( "num", 77 );
-        Map<String,Object> mixedInto = new HashMap<>();
-        mixedInto.put( "list", new ArrayList<>( List.of( 1, 2 ) ) );
-        mixedInto.put( "map", Map.of( "key", "value" ) );
-        
-        Object mergedMixed = merge( mixedFrom, mixedInto, true );
-        Map<String,Object> mergedMixedMap = (Map<String,Object>) mergedMixed;
-        Lib.asrtEQ( mergedMixedMap.get( "list" ), List.of( 10, 20, 30 ) );
-        Lib.asrtEQ( mergedMixedMap.get( "num" ), 77 );
-        Lib.asrtEQ( mergedMixedMap.get( "map" ), Map.of( "key", "value" ) );
-        
+    private static boolean merge_TEST_( boolean findLineNumber ) {
+        if (findLineNumber) throw new RuntimeException();
+        { // simple map
+            Map<Object,Object> srcMap = JsonDecoder.decodeMap("""
+                { "one":1, "two":2, "three":3 }
+            """);
+            Map<Object,Object> tgtMap = JsonDecoder.decodeMap("""
+                { "three":0, "four":4, "five":5 }
+            """);
+            Object result = merge(srcMap,tgtMap,true);
+            assert result == tgtMap;
+            Map<Object,Object> expected = JsonDecoder.decodeMap("""
+                { "one":1, "two":2, "three":3, "four":4, "five":5 }
+            """);
+            Lib.asrtEQ(expected,result);
+        }
+        { // simple lists
+            Object src = JsonDecoder.decode("""
+                [1,2,3,4]
+            """);
+            Object dst = JsonDecoder.decode("""
+                [-3,-2]
+            """);
+            Object result = merge(src,dst,true);
+            Object expected = JsonDecoder.decode("""
+                [1,2,3,4]
+            """);
+            Lib.asrtEQ(expected,result);
+        }
+        { // mixture of lists and maps
+            Object src = JsonDecoder.decode("""
+                { "a":[1,2,3], "b":2, "c":{1:"one",2:"two"} }
+            """);
+            Object dst = JsonDecoder.decode("""
+                { "a":[1,2,3,4], "b":[1,2], "c":{3:"three",1:"ONE"}, "d":4 }
+            """);
+            Object result = merge(src,dst,true);
+            Object expected = JsonDecoder.decode("""
+                { "a":[1,2,3,4], "b":2, "c":{3:"three",1:"one",2:"two"}, "d":4 }
+            """);
+            String expStr = JsonEncoder.encode(expected);
+            String resStr = JsonEncoder.encode(result);
+            Lib.asrtEQ(expStr,resStr);
+        }
         return true;
     }
 

@@ -1,12 +1,9 @@
 package http;
+import java.util.function.Predicate;
 import java.util.*;
-
-import jLib.Lib;
-import jLib.ParseArgs;
-import jLib.Result;
-
 import java.net.*;
 import java.io.*;
+import jLib.*;
 
 
 
@@ -17,6 +14,7 @@ public class HttpServer {
     public static final String VER = "20250523a";
     public final LinkedHashMap<String,HttpHandler> handlers = new LinkedHashMap<>();
     public final int port;
+    public Predicate<HttpRequest> requestFilter = null;
 
 
 
@@ -80,6 +78,11 @@ public class HttpServer {
                     return;
                 }
                 HttpRequest req = HttpRequest.newHttpRequest( msgResult.ok() );
+                if ( requestFilter != null && ! requestFilter.test(req) ) {
+                    HttpResponse response = new HttpErrorResponse( 403, "Forbidden" );
+                    response.write(sockOut);
+                    return;
+                }
                 HttpResponse response = foundHandler.handle(req);
                 Result<Long,Exception> writeResult = response.write(sockOut);
                 if (! writeResult.isOk() ) {
@@ -108,6 +111,11 @@ public class HttpServer {
         Lib.asrtEQ( server.port, 8080 );
         Lib.asrt( server.handlers != null );
         Lib.asrt( server.handlers.isEmpty() );
+        Lib.asrt( server.requestFilter == null );
+        
+        server.requestFilter = req -> req.headerBlock.headers.containsKey("Authorization");
+        Lib.asrt( server.requestFilter != null );
+        
         return true;
     }
 

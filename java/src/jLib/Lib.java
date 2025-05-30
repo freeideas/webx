@@ -27,6 +27,36 @@ public class Lib {
 
 
     /**
+     * Looks for a file named ".creds.json" in the current directory or any parent directory.
+     * Loads it as json and returns it as a Jsonable object.
+     * The file contents are cached so only the first call will do any I/O.
+    **/
+    public static Jsonable loadCreds() {
+        if ( loadCreds_cache != null ) return loadCreds_cache;
+        // find .creds.json and retry
+        File credsFile = new File("./.creds.json");
+        try{ credsFile = credsFile.getCanonicalFile(); }
+        catch ( IOException unlikely ) { throw new RuntimeException(unlikely); }
+        while (! credsFile.isFile() ) {
+            File pf = credsFile.getParentFile().getParentFile();
+            if ( pf==null || pf.equals(credsFile) ) throw new RuntimeException("Can't find .creds.json");
+            credsFile = new File( pf, ".creds.json" );
+        }
+        loadCreds_cache = new Jsonable( JsonDecoder.decode(credsFile) );
+        return loadCreds_cache;
+    } private static Jsonable loadCreds_cache = null;
+    @SuppressWarnings("unused")
+    private static boolean loadCreds_TEST_( boolean findLineNumber ) {
+        if (findLineNumber) throw new RuntimeException();
+        Jsonable creds = loadCreds();
+        asrt( creds != null );
+        asrt(! isEmpty( creds.get("ACE/SECRET")) );
+        return true;
+    }
+
+
+
+    /**
      * If both are Maps, then copies entries from copyFrom into copyInto, and returns copyInto.
      * If both are Lists, then copies each element of copyFrom to copyInto at the same index, and returns copyInto.
      * Otherwise, returns copyFrom.
@@ -1306,52 +1336,6 @@ public class Lib {
         Throwable t2 = t.getCause();
         if ( t2!=null && t2!=t ) return getRootCause(t2);
         return t;
-    }
-
-
-
-    /**
-     * Follows every part of key into data, returning the value found at the end.
-     * @param data a Map or List, which may contain Maps or Lists, etc.
-     * @param keys a sequence of keys or indexes to traverse the tree.
-     * Note: key can be a String, Collection, or Array, and/or a "/" delimited String
-    **/
-    @SuppressWarnings({"unchecked"})
-    public static Object get( Object data, Object keys ) {
-        if (data==null) return null;
-        if ( keys!=null && keys.getClass().isArray() ) return get( data, asList(keys) );
-        if ( keys instanceof String s ) return get( data, s.split("/") );
-        LinkedList<Object> keyList = new LinkedList<>( asList(keys) );
-        while (! keyList.isEmpty() ) {
-            Object key = keyList.removeFirst();
-            if ( data!=null && data.getClass().isArray() ) data = asList(data);
-            if ( data instanceof Map m ) {
-                if ( keyList.isEmpty() ) return m.get(key);
-                data = m.get(key);
-            } else
-            if ( data instanceof List lst ) {
-                if (key==null) return null;
-                String s = key.toString();
-                Integer index = Integer.parseInt(s);
-                if ( index < 0 ) index = lst.size() + index;
-                if ( index<0 || index>=lst.size() ) return null;
-                if ( keyList.isEmpty() ) return lst.get(index);
-                data = lst.get(index);
-            } else { return null; }
-        }
-        return data;
-    }
-    @SuppressWarnings("unused")
-    private static boolean get_TEST_( boolean findLineNumber ) {
-        if (findLineNumber) throw new RuntimeException();
-        Object data = JsonDecoder.decode("""
-            { "1":["one"], "2":{"two":[1,2,3,"dos"]} }
-        """);
-        Object key = new Object[]{ "2", "two", 3 };
-        Object result = get(data,key);
-        Object expected = "dos";
-        asrtEQ(result,expected);
-        return true;
     }
 
 

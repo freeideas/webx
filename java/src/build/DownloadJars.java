@@ -9,16 +9,17 @@ public class DownloadJars {
         new File("./log").mkdirs();
         // Build the Maven command
         List<String> cmd;
+        String outputDir = new File("./java/lib").getAbsolutePath();
         if (System.getProperty("os.name").toLowerCase().contains("windows")) {
             cmd = List.of(
                 "cmd", "/c",
                 "mvn", "-f", "./java/mvn_config.cfg",
-                "dependency:copy-dependencies", "-DoutputDirectory=./java/lib"
+                "dependency:copy-dependencies", "-DoutputDirectory=" + outputDir
             );
         } else {
             cmd = List.of(
                 "mvn", "-f", "./java/mvn_config.cfg",
-                "dependency:copy-dependencies", "-DoutputDirectory=./java/lib"
+                "dependency:copy-dependencies", "-DoutputDirectory=" + outputDir
             );
         }
 

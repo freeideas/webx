@@ -38,7 +38,7 @@ public class HttpLoginHandler implements HttpHandler {
             String email = req.allParms.get("email").toString();
             String loginCode = req.allParms.get("loginCode").toString();
             String stamp = Lib.nvl(
-                Lib.get( persistentMap, List.of("usr",email,"loginCode",loginCode) ),
+                Jsonable.get( persistentMap, List.of("usr",email,"loginCode",loginCode) ),
                 "20010101235959999"
             );
             long stampMicros = Lib.microsSinceEpoch(stamp);
@@ -68,7 +68,7 @@ public class HttpLoginHandler implements HttpHandler {
 
     private HttpResponse sendLoginCode( String email ) {
         String loginCode = Lib.randToken( "", 6, true );
-        Map<?,?> loginCodes = (Map<?,?>) Lib.get( persistentMap, List.of("usr",email,"loginCode") );
+        Map<?,?> loginCodes = (Map<?,?>) Jsonable.get( persistentMap, List.of("usr",email,"loginCode") );
         if (loginCodes!=null) loginCodes.clear();
         Lib.put( persistentMap, List.of("usr",email,"loginCode",loginCode), Lib.timeStamp() );
         LibEmail.sendEmail(

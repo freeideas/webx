@@ -1,11 +1,7 @@
 package http;
 import java.util.*;
 import java.util.regex.*;
-
-import jLib.JsonDecoder;
-import jLib.JsonEncoder;
-import jLib.JsonSerializable;
-import jLib.Lib;
+import jLib.*;
 import persist.PersistentData;
 
 
@@ -73,7 +69,19 @@ public class AuthToken implements JsonSerializable {
         email = email.toLowerCase();
         String signature = Lib.hashPassword(email+":"+createTimeMicros);
         Lib.put( persistentMap, List.of("usr",email,"tokenz",createTimeMicros), signature );
-        // TODO: remove overage tokens
+        try { // garbage-collect any over-old tokens
+            @SuppressWarnings("unchecked")
+            Map<Object,Object> tokenzMap = (Map<Object,Object>) Jsonable.get( persistentMap, List.of("usr", email, "tokenz") );
+            if ( tokenzMap == null ) tokenzMap = Map.of();
+            long currentTimeMicros = Lib.currentTimeMicros();
+            long maxAgeMicros = MAX_AGE_SECONDS * 1000000;
+            for ( Map.Entry<Object,Object> entry : tokenzMap.entrySet() ) {
+                Object key = entry.getKey();
+                if ( !(key instanceof Long tokenTimeMicros) ) continue;
+                if ( currentTimeMicros - tokenTimeMicros <= maxAgeMicros ) continue;
+                tokenzMap.remove( tokenTimeMicros );
+            }
+        } catch ( Exception e ) { Lib.logException(e); }
         return new AuthToken(email,createTimeMicros,signature);
     }
 
@@ -99,7 +107,7 @@ public class AuthToken implements JsonSerializable {
 
     public boolean isValid() {
         if ( Lib.currentTimeMicros()-createTimeMicros > MAX_AGE_SECONDS*1000000 ) return false;
-        String validSig = (String) Lib.get( persistentMap, List.of("usr",email,"tokenz",createTimeMicros) );
+        String validSig = (String) Jsonable.get( persistentMap, List.of("usr",email,"tokenz",createTimeMicros) );
         return signature.equals(validSig);
     }
 
