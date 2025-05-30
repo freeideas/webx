@@ -2,7 +2,20 @@ package jLib;
 import java.util.*;
 
 
-
+/**
+ * ParseArgs - A flexible command-line argument parser with intelligent features:
+ * 
+ * - Supports multiple argument formats: -arg=value, --arg=value, arg=value
+ * - Boolean arguments can be specified as just --arg (implies true)
+ * - Argument name abbreviation: -p=8080 matches "port" parameter
+ * - Type-safe getters for String, Integer, Float, Boolean, and multi-value lists
+ * - Automatic help generation with beautiful ASCII table formatting
+ * - Smart text wrapping that optimizes column widths for readability
+ * - Default values with clear documentation in help output
+ * - Descriptive parameter documentation shown in aligned columns
+ * 
+ * Example: java MyApp --port=8080 --debug -f=config.txt --verbose
+ */
 public class ParseArgs {
 
 

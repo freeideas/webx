@@ -14,59 +14,81 @@ public class Main {
 
     public static void main( String[] args ) {
         Lib.archiveLogFiles();
+        int originalArgCount = args.length;
         ParseArgs p = new ParseArgs(args);
         p.setAppName( Lib.getAppName() );
         p.setDescr( "WebX - Simple Web Application Server" );
         
+        // Parse all arguments (order matters for help display)
         int port = p.getInteger( "port", 13102, "listen to which port" );
-        List<String> rootDirs = p.getMulti( "dir", List.of("/www:./datafiles/www"), Lib.nw("""
-            directory to serve, in the form of /WEBROOT:FILESPEC
-        """) );
+        String wwwPath = p.getString( "www", "./datafiles/www", "directory to serve static files from" );
+        String proxyPath = p.getString( "proxy", "/proxy", "path for proxy endpoint (use '(none)' to disable)" );
+        String dbPath = p.getString( "db", "/db", "path for database endpoint" );
+        String jdbcUrl = p.getString( "jdbc", "jdbc:hsqldb:file:./datafiles/dbf/webx-db", "JDBC URL for database connection" );
+        boolean run = p.getBoolean( "run", false, "start the server" );
         
-        HttpServer server = new HttpServer(port);
-        
-        // 1. Static File Server (/www)
-        for ( String rootDir : rootDirs ) {
-            String[] parts = rootDir.split(":",2);
-            String webRoot = parts[0];
-            if (! webRoot.startsWith("/") ) webRoot = "/"+webRoot;
-            String filespec = parts[1];
-            File f = new File(filespec);
-            if (! f.exists() ) {
-                Lib.log( "ERROR: "+filespec+" does not exist" );
-                continue;
+        // Show help if not running
+        if ( !run ) {
+            System.out.print( p.getHelp() );
+            if ( originalArgCount > 0 ) {
+                // Show configuration summary if any args were provided  
+                System.out.println( "\nCONFIGURATION SUMMARY:" );
+                System.out.println( "  Server will run on port: " + port );
+                System.out.println( "  Static files directory: " + wwwPath );
+                if ( proxyPath.equalsIgnoreCase("(none)") ) {
+                    System.out.println( "  Proxy endpoint: DISABLED" );
+                } else {
+                    System.out.println( "  Proxy endpoint: " + proxyPath );
+                }
+                System.out.println( "  Database endpoint: " + dbPath );
+                System.out.println( "  Database JDBC URL: " + jdbcUrl );
+                System.out.println( "\nTo start the server, add --run to the command line." );
             }
-            server.handlers.put( webRoot, new HttpFileHandler(webRoot,f) );
+            return;
         }
         
-        // 2. API Proxy (/proxy) with replacements from file
-        File proxyReplacementsFile = new File( "./datafiles/proxy-replacements.json" );
-        if ( !proxyReplacementsFile.exists() ) {
-            // Try fallback location
-            proxyReplacementsFile = new File( "../api-keys.json" );
-            if ( !proxyReplacementsFile.exists() ) {
-                // Create example file
-                createExampleApiKeysFile( proxyReplacementsFile );
-                Lib.log( "Created example API keys file at " + proxyReplacementsFile.getAbsolutePath() );
-            }
-        }
-        
-        if ( proxyReplacementsFile.exists() ) {
-            server.handlers.put( "/proxy", new HttpReplacingProxyHandler(proxyReplacementsFile) );
-            Lib.log( "Proxy handler configured with replacements from " + proxyReplacementsFile );
+        HttpServer server = new HttpServer(port);        
+        // Static File Server
+        File wwwDir = new File(wwwPath);
+        if (! wwwDir.exists() ) {
+            Lib.log( "ERROR: " + wwwPath + " does not exist" );
         } else {
-            server.handlers.put( "/proxy", new HttpProxyHandler() );
-            Lib.log( "Proxy handler configured without replacements" );
+            server.handlers.put( "/", new HttpFileHandler("/", wwwDir) );
+            Lib.log( "Static files configured at / from " + wwwDir.getAbsolutePath() );
         }
-        
-        // 3. JSON Database (/db)
-        String jdbcUrl = "jdbc:hsqldb:file:./datafiles/dbf/webx-db";
+        // Proxy with replacements from ../api-keys.json
+        if ( !proxyPath.equalsIgnoreCase("(none)") ) {
+            if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
+            File apiKeysFile = new File( "../api-keys.json" );
+            if ( !apiKeysFile.exists() ) {
+                // Create example file
+                createExampleApiKeysFile( apiKeysFile );
+                Lib.log( "Created example API keys file at " + apiKeysFile.getAbsolutePath() );
+            }
+            if ( apiKeysFile.exists() ) {
+                server.handlers.put( proxyPath, new HttpReplacingProxyHandler(apiKeysFile) );
+                Lib.log( "Proxy handler configured at " + proxyPath + " with replacements from " + apiKeysFile );
+            } else {
+                server.handlers.put( proxyPath, new HttpProxyHandler() );
+                Lib.log( "Proxy handler configured at " + proxyPath + " without replacements" );
+            }
+        }
+        // JSON Database
+        if ( !dbPath.startsWith("/") ) dbPath = "/" + dbPath;
         try( PersistentData pd = new PersistentData( jdbcUrl, "webx_data" ) ) {
             PersistentMap dbStorage = pd.getRootMap();
-            server.handlers.put( "/db", new HttpJsonHandler(dbStorage) );
+            server.handlers.put( dbPath, new HttpJsonHandler(dbStorage) );
             
             Lib.log( "WebX server listening on port "+port );
-            Lib.log( "Endpoints: /www (static files), /proxy (API proxy), /db (JSON database)" );
+            StringBuilder endpoints = new StringBuilder("Endpoints: ");
+            if ( wwwDir.exists() ) {
+                endpoints.append("/ (static files), ");
+            }
+            if ( !proxyPath.equalsIgnoreCase("(none)") ) {
+                endpoints.append(proxyPath).append(" (API proxy), ");
+            }
+            endpoints.append(dbPath).append(" (JSON database)");
+            Lib.log( endpoints.toString() );
             server.start();
             Lib.log( "WebX server stopped" );
         } catch ( Exception e ) {

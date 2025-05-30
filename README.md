@@ -2,6 +2,8 @@
 
 A lightweight, feature-rich web server that provides everything needed to build modern web applications with just HTML, CSS, and JavaScript.
 
+**Entry Point:** `java/src/appz/webx/Main.java`
+
 ## Overview
 
 WebX is a simple yet powerful web server that provides three core services out of the box:
