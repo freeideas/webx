@@ -21,6 +21,15 @@ public class HttpJsonHandler implements HttpHandler {
     @Override
     public HttpResponse handle( HttpRequest req ) {
         String method = req.headerBlock.getMethod();
+        
+        if ( "GET".equals(method) ) {
+            // Return current data as JSON
+            String jsonData = JsonEncoder.encode( dataMap );
+            HttpHeaderBlock responseHeader = new HttpHeaderBlock( 200, "OK", 
+                Lib.mapOf("Content-Type", "application/json") );
+            return new HttpResponse( responseHeader, jsonData.getBytes() );
+        }
+        
         if ( !("POST".equals(method) || "PUT".equals(method)) ) {
             return new HttpErrorResponse( 405, "Method Not Allowed" );
         }
@@ -32,9 +41,22 @@ public class HttpJsonHandler implements HttpHandler {
         }
         @SuppressWarnings("unchecked")
         Map<Object,Object> requestData = (Map<Object,Object>) req.parsedBody;
+        
+        // Debug: log database requests
+        if ( requestData.size() > 0 ) {
+            Lib.log( "Database POST received with keys: " + requestData.keySet() );
+            if ( requestData.containsKey("test_results") ) {
+                Lib.log( "Test results detected!" );
+            }
+        }
+        
         mergeMap( requestData, dataMap );
-        HttpHeaderBlock responseHeader = new HttpHeaderBlock( 200, "OK", null );
-        return new HttpResponse( responseHeader, "OK".getBytes() );
+        
+        // Return merged data as JSON
+        String jsonData = JsonEncoder.encode( dataMap );
+        HttpHeaderBlock responseHeader = new HttpHeaderBlock( 200, "OK", 
+            Lib.mapOf("Content-Type", "application/json") );
+        return new HttpResponse( responseHeader, jsonData.getBytes() );
     }
 
 

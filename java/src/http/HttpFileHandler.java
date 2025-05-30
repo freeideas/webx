@@ -36,6 +36,9 @@ public class HttpFileHandler implements HttpHandler {
                 return serveDirListing(f);
             }
         }
+        if ( !f.exists() ) {
+            return new HttpErrorResponse( 404, "Not Found" );
+        }
         return new FileResponse(f);
     }
 
