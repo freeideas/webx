@@ -18,13 +18,13 @@ public class HttpMessage {
 
     public HttpMessage( HttpHeaderBlock headerBlock, byte[] body ) {
         this.headerBlock = headerBlock;
-        this.body = body;
+        this.body = body != null ? body : new byte[0];
         String contentType = headerBlock.getContentType();
         String encoding = Lib.nvl( headerBlock.getHeaderValue("Content-Encoding"), "utf-8" );
         Object parsed = null;
-        if ( body.length > 0 ) {
+        if ( this.body.length > 0 ) {
             try {
-                String bodyStr = new String(body,encoding);
+                String bodyStr = new String(this.body,encoding);
                 if ( contentType.toUpperCase().indexOf("JSON") >= 0 ) {
                     parsed = JsonDecoder.decode(bodyStr);
                 } else
