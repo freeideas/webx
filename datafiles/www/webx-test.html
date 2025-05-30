@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebX Server Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .pending {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #test-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebX Server Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Individual Tests</h2>
+        <button onclick="testStaticFile()">Test Static File Serving</button>
+        <button onclick="testDatabase()">Test Database (POST/GET)</button>
+        <button onclick="testProxy()">Test Proxy (httpbin.org)</button>
+        <button onclick="testProxyPost()">Test Proxy POST</button>
+        <button onclick="testDatabasePersistence()">Test DB Persistence</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('test-results');
+        let testId = 0;
+
+        function addResult(test, status, message, details = null) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${status}`;
+            resultDiv.innerHTML = `
+                <strong>${test}</strong>: ${message}
+                ${details ? `<pre>${JSON.stringify(details, null, 2)}</pre>` : ''}
+            `;
+            resultsDiv.appendChild(resultDiv);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        async function testStaticFile() {
+            const testName = 'Static File Test';
+            try {
+                addResult(testName, 'pending', 'Testing static file serving...');
+                const response = await fetch('/webx-test.html');
+                if (response.ok) {
+                    const text = await response.text();
+                    if (text.includes('WebX Server Test Suite')) {
+                        addResult(testName, 'success', 'Static file serving works correctly');
+                        return true;
+                    } else {
+                        addResult(testName, 'error', 'File content mismatch');
+                        return false;
+                    }
+                } else {
+                    addResult(testName, 'error', `HTTP ${response.status}: ${response.statusText}`);
+                    return false;
+                }
+            } catch (error) {
+                addResult(testName, 'error', error.message);
+                return false;
+            }
+        }
+
+        async function testDatabase() {
+            const testName = 'Database Test';
+            try {
+                addResult(testName, 'pending', 'Testing database POST and GET...');
+                
+                // Generate unique test data
+                const testKey = `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const testData = {
+                    users: {
+                        [testKey]: {
+                            name: 'Test User',
+                            email: 'test@example.com',
+                            timestamp: new Date().toISOString()
+                        }
+                    }
+                };
+
+                // POST data
+                const postResponse = await fetch('/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+
+                if (!postResponse.ok) {
+                    addResult(testName, 'error', `POST failed: HTTP ${postResponse.status}`);
+                    return false;
+                }
+
+                // Wait a bit for data to persist
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // GET data back (the server should echo the current state)
+                const getResponse = await fetch('/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})  // Empty POST to get current state
+                });
+
+                if (!getResponse.ok) {
+                    addResult(testName, 'error', `GET failed: HTTP ${getResponse.status}`);
+                    return false;
+                }
+
+                const responseData = await getResponse.json();
+                
+                // Check if our data exists
+                if (responseData.users && responseData.users[testKey]) {
+                    addResult(testName, 'success', 'Database POST/GET working correctly', {
+                        posted: testData,
+                        retrieved: responseData.users[testKey]
+                    });
+                    return true;
+                } else {
+                    addResult(testName, 'error', 'Data not found in response', responseData);
+                    return false;
+                }
+            } catch (error) {
+                addResult(testName, 'error', error.message);
+                return false;
+            }
+        }
+
+        async function testProxy() {
+            const testName = 'Proxy GET Test';
+            try {
+                addResult(testName, 'pending', 'Testing proxy with httpbin.org...');
+                
+                const response = await fetch('/proxy', {
+                    method: 'GET',
+                    headers: {
+                        'X-Target-URL': 'https://httpbin.org/get?test=webx'
+                    }
+                });
+
+                if (!response.ok) {
+                    addResult(testName, 'error', `HTTP ${response.status}: ${response.statusText}`);
+                    return false;
+                }
+
+                const data = await response.json();
+                
+                // httpbin.org should echo back our query parameters
+                if (data.args && data.args.test === 'webx') {
+                    addResult(testName, 'success', 'Proxy GET working correctly', {
+                        url: data.url,
+                        args: data.args,
+                        headers: data.headers
+                    });
+                    return true;
+                } else {
+                    addResult(testName, 'error', 'Unexpected response format', data);
+                    return false;
+                }
+            } catch (error) {
+                addResult(testName, 'error', error.message);
+                return false;
+            }
+        }
+
+        async function testProxyPost() {
+            const testName = 'Proxy POST Test';
+            try {
+                addResult(testName, 'pending', 'Testing proxy POST with httpbin.org...');
+                
+                const testPayload = {
+                    test: 'webx-proxy',
+                    timestamp: new Date().toISOString(),
+                    random: Math.random()
+                };
+
+                const response = await fetch('/proxy', {
+                    method: 'POST',
+                    headers: {
+                        'X-Target-URL': 'https://httpbin.org/post',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testPayload)
+                });
+
+                if (!response.ok) {
+                    addResult(testName, 'error', `HTTP ${response.status}: ${response.statusText}`);
+                    return false;
+                }
+
+                const data = await response.json();
+                
+                // httpbin.org should echo back our POST data
+                if (data.json && data.json.test === 'webx-proxy') {
+                    addResult(testName, 'success', 'Proxy POST working correctly', {
+                        sent: testPayload,
+                        received: data.json,
+                        headers: data.headers
+                    });
+                    return true;
+                } else {
+                    addResult(testName, 'error', 'POST data mismatch', data);
+                    return false;
+                }
+            } catch (error) {
+                addResult(testName, 'error', error.message);
+                return false;
+            }
+        }
+
+        async function testDatabasePersistence() {
+            const testName = 'Database Persistence Test';
+            try {
+                addResult(testName, 'pending', 'Testing database data persistence...');
+                
+                // First, add some data with a unique marker
+                const marker = `persist_test_${Date.now()}`;
+                const testData = {
+                    persistence_tests: {
+                        [marker]: {
+                            created: new Date().toISOString(),
+                            value: 'This should persist'
+                        }
+                    }
+                };
+
+                // POST the marker data
+                const postResponse = await fetch('/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+
+                if (!postResponse.ok) {
+                    addResult(testName, 'error', `Initial POST failed: HTTP ${postResponse.status}`);
+                    return false;
+                }
+
+                // Wait a moment
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                // Now post different data to ensure we're not just getting an echo
+                const differentData = {
+                    other_data: {
+                        foo: 'bar'
+                    }
+                };
+
+                const secondResponse = await fetch('/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(differentData)
+                });
+
+                if (!secondResponse.ok) {
+                    addResult(testName, 'error', `Second POST failed: HTTP ${secondResponse.status}`);
+                    return false;
+                }
+
+                const allData = await secondResponse.json();
+
+                // Check if our original data still exists
+                if (allData.persistence_tests && 
+                    allData.persistence_tests[marker] && 
+                    allData.persistence_tests[marker].value === 'This should persist') {
+                    addResult(testName, 'success', 'Database persistence confirmed', {
+                        marker: marker,
+                        foundData: allData.persistence_tests[marker],
+                        otherDataExists: !!allData.other_data
+                    });
+                    return true;
+                } else {
+                    addResult(testName, 'error', 'Original data not found', allData);
+                    return false;
+                }
+            } catch (error) {
+                addResult(testName, 'error', error.message);
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            clearResults();
+            addResult('Test Suite', 'pending', 'Starting all tests...');
+            
+            const tests = [
+                testStaticFile,
+                testDatabase,
+                testProxy,
+                testProxyPost,
+                testDatabasePersistence
+            ];
+            
+            let passed = 0;
+            let failed = 0;
+            const testResults = {};
+            
+            for (const test of tests) {
+                const testName = test.name;
+                try {
+                    const result = await test();
+                    testResults[testName] = result ? 'PASS' : 'FAIL';
+                    if (result) passed++;
+                    else failed++;
+                } catch (e) {
+                    testResults[testName] = 'ERROR: ' + e.message;
+                    failed++;
+                }
+                
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            const status = failed === 0 ? 'success' : 'error';
+            addResult('Test Suite', status, 
+                `Completed: ${passed} passed, ${failed} failed out of ${tests.length} tests`);
+            
+            // Write test results to database
+            try {
+                const timestamp = new Date().toISOString();
+                const resultData = {
+                    test_results: {
+                        webx_integration_test: {
+                            timestamp: timestamp,
+                            passed: passed,
+                            failed: failed,
+                            total: tests.length,
+                            status: status,
+                            details: testResults,
+                            userAgent: navigator.userAgent
+                        }
+                    }
+                };
+                
+                const response = await fetch('/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(resultData)
+                });
+                
+                if (response.ok) {
+                    addResult('Test Results', 'success', 'Test results saved to database');
+                } else {
+                    addResult('Test Results', 'error', 'Failed to save test results');
+                }
+            } catch (error) {
+                addResult('Test Results', 'error', 'Error saving results: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
