@@ -33,9 +33,9 @@ public class Test {
             "persist.PersistentData",
             "persist.PersistentList",
             "persist.PersistentMap",
-            "build.Build",
-            "build.DownloadJars",
-            "build.HelloRoot",
+            "buildtools.Build",
+            "buildtools.DownloadJars",
+            "buildtools.HelloRoot",
             "appz.webx.Test"  // Include this class itself for webxServerBasic_TEST_ and webxJavaScriptTests_TEST_
         };
 
