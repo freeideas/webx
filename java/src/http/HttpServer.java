@@ -1,6 +1,8 @@
 package http;
 import java.util.function.Predicate;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.HashMap;
 import java.net.*;
 import java.io.*;
 import jLib.*;
@@ -11,10 +13,10 @@ public class HttpServer {
 
 
 
-    public static final String VER = "20250523a";
+    public static final String VER = "20250601a";
     public final LinkedHashMap<String,HttpHandler> handlers = new LinkedHashMap<>();
     public final int port;
-    public Predicate<HttpRequest> requestFilter = null;
+    public Predicate<HttpRequest> requestFilter = new SecurityGuard();
     private String shutdownCode = null;
     private volatile boolean shouldShutdown = false;
 
@@ -73,7 +75,30 @@ public class HttpServer {
         return new HttpErrorHandler( 404, "no matching handler" );
     }
 
+    public static String shutdownTimestamp() {
+        String currentTimeStamp = Lib.timeStamp();
+        return currentTimeStamp.replaceAll("[^0-9]", "").substring(0, 10); // YYYYMMDDHH
+    }
 
+    private boolean shouldShutDown( HttpHeaderBlock headerBlock ) {
+        if ( shutdownCode == null || headerBlock.firstLine == null || !headerBlock.firstLine.contains(shutdownCode) ) {
+            return false;
+        }
+        
+        // Generate current UTC timestamp truncated to hour (YYYYMMDDHH)
+        String currentHourStamp = shutdownTimestamp();
+        
+        // Extract digits-only version of first line to check for timestamp
+        String firstLineDigits = headerBlock.firstLine.replaceAll("[^0-9]", "");
+        
+        if ( firstLineDigits.contains(currentHourStamp) ) {
+            Lib.log( "Shutdown code and valid timestamp detected: " + shutdownCode + " with hour stamp: " + currentHourStamp );
+            return true;
+        } else {
+            Lib.log( "Shutdown code detected but timestamp validation failed. Expected hour stamp: " + currentHourStamp + ", found digits: " + firstLineDigits );
+            return false;
+        }
+    }
 
     private void handleClient( Socket clientSocket ) throws IOException {
         InputStream rawSockInp = null;
@@ -95,16 +120,20 @@ public class HttpServer {
                 if (! headerResult.isOk() ) return;
                 HttpHeaderBlock headerBlock = headerResult.ok();
                 
-                // Check for shutdown code in the first line of the request
-                if ( shutdownCode != null && headerBlock.firstLine != null && headerBlock.firstLine.contains(shutdownCode) ) {
-                    Lib.log( "Shutdown code detected in request: " + shutdownCode );
+                // Check for shutdown request
+                if ( shouldShutDown(headerBlock) ) {
                     shouldShutdown = true;
                     HttpResponse shutdownResponse = new HttpResponse( 
                         new HttpHeaderBlock( "HTTP/1.1 200 OK", new LinkedHashMap<>() ),
                         "Server shutting down".getBytes()
                     );
                     shutdownResponse.write(sockOut);
-                    return; // Exit this client handler
+                    return;
+                } else if ( shutdownCode != null && headerBlock.firstLine != null && headerBlock.firstLine.contains(shutdownCode) ) {
+                    // Shutdown code detected but timestamp validation failed
+                    HttpResponse response = new HttpErrorResponse( 403, "Invalid shutdown request" );
+                    response.write(sockOut);
+                    return;
                 }
                 HttpHandler foundHandler = findHandler(headerBlock);
                 if (foundHandler==null) foundHandler = new HttpErrorHandler( 404, "no matching handler" );
@@ -147,7 +176,7 @@ public class HttpServer {
         Lib.asrtEQ( server.port, 8080 );
         Lib.asrt( server.handlers != null );
         Lib.asrt( server.handlers.isEmpty() );
-        Lib.asrt( server.requestFilter == null );
+        Lib.asrt( server.requestFilter != null ); // Now defaults to SecurityGuard
         Lib.asrt( server.shutdownCode == null );
         Lib.asrt( !server.isShutdown() );
         
@@ -161,7 +190,60 @@ public class HttpServer {
         return true;
     }
 
+    public static boolean shutdownTimestamp_TEST_() {
+        // Test the timestamp validation logic for shutdown
+        String currentHourStamp = shutdownTimestamp();
+        
+        // Test valid shutdown request format
+        String validShutdownLine = "GET /SHUTDOWN123" + currentHourStamp + "456 HTTP/1.1";
+        String validDigits = validShutdownLine.replaceAll("[^0-9]", "");
+        Lib.asrt( validDigits.contains(currentHourStamp), "Valid shutdown line should contain current hour stamp" );
+        
+        // Test invalid shutdown request (wrong hour)
+        String wrongHour = currentHourStamp.substring(0, 8) + "99"; // Change hour to 99
+        String invalidShutdownLine = "GET /SHUTDOWN123" + wrongHour + "456 HTTP/1.1";
+        String invalidDigits = invalidShutdownLine.replaceAll("[^0-9]", "");
+        Lib.asrt( !invalidDigits.contains(currentHourStamp), "Invalid shutdown line should not contain current hour stamp" );
+        
+        return true;
+    }
 
+    public static boolean shutdownTimestamp_method_TEST_() {
+        // Test the shutdownTimestamp() method
+        String timestamp = shutdownTimestamp();
+        Lib.asrt( timestamp != null, "Timestamp should not be null" );
+        Lib.asrt( timestamp.length() == 10, "Timestamp should be 10 characters (YYYYMMDDHH)" );
+        Lib.asrt( timestamp.matches("\\d{10}"), "Timestamp should be all digits" );
+        
+        // Test that it represents current time (roughly)
+        String fullTimestamp = Lib.timeStamp().replaceAll("[^0-9]", "");
+        Lib.asrt( fullTimestamp.startsWith(timestamp), "Timestamp should match current time prefix" );
+        
+        return true;
+    }
+
+    public static boolean shouldShutDown_TEST_() {
+        HttpServer server = new HttpServer(8080);
+        server.setShutdownCode("SHUTDOWN123");
+        
+        String currentHourStamp = shutdownTimestamp();
+        
+        // Test valid shutdown request
+        Map<String,String> headers = new HashMap<>();
+        HttpHeaderBlock validHeader = new HttpHeaderBlock("GET /SHUTDOWN123" + currentHourStamp + " HTTP/1.1", headers);
+        Lib.asrt( server.shouldShutDown(validHeader), "Should shutdown with valid timestamp" );
+        
+        // Test invalid shutdown request (wrong timestamp)
+        String wrongHour = currentHourStamp.substring(0, 8) + "99";
+        HttpHeaderBlock invalidHeader = new HttpHeaderBlock("GET /SHUTDOWN123" + wrongHour + " HTTP/1.1", headers);
+        Lib.asrt( !server.shouldShutDown(invalidHeader), "Should not shutdown with invalid timestamp" );
+        
+        // Test no shutdown code
+        HttpHeaderBlock noCodeHeader = new HttpHeaderBlock("GET /normal-request HTTP/1.1", headers);
+        Lib.asrt( !server.shouldShutDown(noCodeHeader), "Should not shutdown without shutdown code" );
+        
+        return true;
+    }
 
     public static void main( String[] args ) throws Exception { Lib.testClass(); }
 

@@ -23,11 +23,11 @@ else
     # Check if argument is a file
     if [ -f "$ARG" ]; then
         echo "Compiling file: $ARG"
-        javac -Xlint:all -Xlint:unused -cp "./java/tmp:./java/lib/*" -d ./java/tmp "$ARG"
+        javac -Xlint:all -cp "./java/tmp:./java/lib/*" -d ./java/tmp "$ARG"
     elif [ -d "$ARG" ]; then
         echo "Compiling directory: $ARG"
         # Find all .java files in the directory and compile them
-        find "$ARG" -name "*.java" -print0 | xargs -0 javac -Xlint:all -Xlint:unused -cp "./java/tmp:./java/lib/*" -d ./java/tmp
+        find "$ARG" -name "*.java" -print0 | xargs -0 javac -Xlint:all -cp "./java/tmp:./java/lib/*" -d ./java/tmp
     else
         echo "Error: '$ARG' is not a valid file or directory"
         exit 1

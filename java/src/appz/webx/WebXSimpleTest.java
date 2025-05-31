@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.sql.*;
 import jLib.*;
+import http.HttpServer;
 
 public class WebXSimpleTest {
     
@@ -261,7 +262,8 @@ public class WebXSimpleTest {
             if (serverThread != null && serverThread.isAlive()) {
                 try {
                     System.out.println("Sending shutdown request to proxy test server...");
-                    URL shutdownUrl = URI.create("http://localhost:" + testPort + "/" + shutdownCode).toURL();
+                    String timestamp = HttpServer.shutdownTimestamp();
+                    URL shutdownUrl = URI.create("http://localhost:" + testPort + "/" + shutdownCode + timestamp).toURL();
                     HttpURLConnection conn = (HttpURLConnection) shutdownUrl.openConnection();
                     conn.setConnectTimeout(2000);
                     conn.setReadTimeout(2000);
@@ -515,7 +517,8 @@ public class WebXSimpleTest {
             if (serverThread != null && serverThread.isAlive()) {
                 try {
                     System.out.println("Sending shutdown request to DB test server...");
-                    URL shutdownUrl = URI.create("http://localhost:" + testPort + "/" + shutdownCode).toURL();
+                    String timestamp = HttpServer.shutdownTimestamp();
+                    URL shutdownUrl = URI.create("http://localhost:" + testPort + "/" + shutdownCode + timestamp).toURL();
                     HttpURLConnection conn = (HttpURLConnection) shutdownUrl.openConnection();
                     conn.setConnectTimeout(2000);
                     conn.setReadTimeout(2000);

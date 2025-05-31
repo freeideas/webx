@@ -313,7 +313,8 @@ public class HttpProxyHandler implements HttpHandler {
             if (serverThread != null && serverThread.isAlive()) {
                 try {
                     System.out.println("Sending shutdown request to debug server...");
-                    URL shutdownUrl = URI.create("http://localhost:" + testPort + "/" + shutdownCode).toURL();
+                    String timestamp = HttpServer.shutdownTimestamp();
+                    URL shutdownUrl = URI.create("http://localhost:" + testPort + "/" + shutdownCode + timestamp).toURL();
                     HttpURLConnection conn = (HttpURLConnection) shutdownUrl.openConnection();
                     conn.setConnectTimeout(2000);
                     conn.setReadTimeout(2000);
