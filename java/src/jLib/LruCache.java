@@ -231,7 +231,7 @@ public class LruCache<K,V> implements Map<K,V> {
 
     @Override
     public boolean equals( Object o ) {
-        if (! (o instanceof Map m ) ) return false;
+        if (! (o instanceof Map<?,?> m ) ) return false;
         synchronized (this) {
             while ( evictOne() );
             return key2entry.equals(m);

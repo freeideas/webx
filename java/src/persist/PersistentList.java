@@ -83,7 +83,7 @@ public class PersistentList extends AbstractList<Object> {
 
 
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "try"})
     private static boolean _TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
         try ( PersistentData pd = PersistentData.temp() ) {
@@ -118,7 +118,7 @@ public class PersistentList extends AbstractList<Object> {
         }
         return true;
     }
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "try"})
     private static boolean list_TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
         try ( PersistentData pd = PersistentData.temp() ) {

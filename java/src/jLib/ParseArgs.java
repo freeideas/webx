@@ -94,7 +94,7 @@ public class ParseArgs {
         sb.append('\n');
         sb.append("ARGS:");
         for (var attr : name2usage.entrySet() ) {
-            var argName = (String)attr.getKey();
+            var argName = attr.getKey();
             var attrMap = attr.getValue();
             var argType = (String)attrMap.get("argType");
             var defaultValue = attrMap.get("defaultValue");
@@ -109,7 +109,7 @@ public class ParseArgs {
         rows[0] = new String[]{"ARGNAME","TYPE","DESCRIPTION"};
         int entryIdx = 1;
         for (var attr : name2usage.entrySet() ) {
-            var argName = (String)attr.getKey();
+            var argName = attr.getKey();
             var attrMap = attr.getValue();
             var argType = (String)attrMap.get("argType");
             var argDesc = (String)attrMap.get("argDesc");

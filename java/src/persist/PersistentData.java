@@ -14,6 +14,7 @@ import jLib.Lib;
  * - Lists and Map sizes can exceed Integer.MAX_VALUE.
  * - Entire Lists and Maps are not normally ever loaded into memory.
  */
+@SuppressWarnings("try")
 public class PersistentData implements AutoCloseable {
     private static final long R00T_ID = -1000;
     private static final long R00T_PARENT_ID = -9999;

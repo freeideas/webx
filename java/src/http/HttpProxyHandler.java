@@ -233,7 +233,6 @@ public class HttpProxyHandler implements HttpHandler {
         Thread serverThread = null;
         
         try {
-            // Create the same server setup as WebXWebShotTest
             serverThread = new Thread(() -> {
                 try {
                     String testDbUrl = "jdbc:hsqldb:mem:debug" + testPort;

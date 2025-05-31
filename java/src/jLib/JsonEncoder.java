@@ -84,11 +84,11 @@ public class JsonEncoder {
             writeNumber(n);
         } else if (o instanceof Boolean b) {
             writeBoolean(b);
-        } else if (o instanceof Collection c) {
+        } else if (o instanceof Collection<?> c) {
             writeList(c);
-        } else if (o instanceof Iterator it) {
+        } else if (o instanceof Iterator<?> it) {
             writeList(it);
-        } else if (o instanceof Map m) {
+        } else if (o instanceof Map<?,?> m) {
             writeMap(m);
         } else if (o instanceof File f) {
             try {

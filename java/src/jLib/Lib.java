@@ -271,6 +271,7 @@ public class Lib {
     /*
      * a thread that remembers its parent thread, and can be closed
      */
+    @SuppressWarnings("this-escape")
     public static class ChildThread extends Thread implements AutoCloseable {
         { cleaner.register( this, ()->close() ); }
         private Thread parent;
@@ -1033,7 +1034,6 @@ public class Lib {
                     copy(inp,bout);
                     bout.flush();
                     fout.flush();
-                    fout.close();
                 }
             }
             return null;
@@ -1258,7 +1258,7 @@ public class Lib {
         while ( mat.find() ) {
             //String wholeExpression = mat.group();
             String varName = mat.group(1);
-            String keyName = (String) findKey(varName,normalVars);
+            String keyName = findKey(varName,normalVars);
             Object value = null;
             if ( keyName!=null && vars.containsKey(keyName) ) {
                 value = vars.get(keyName);
@@ -1659,6 +1659,7 @@ public class Lib {
 
     public static class TmpDir implements AutoCloseable {
         public final File dir;
+        @SuppressWarnings("this-escape")
         public TmpDir() {
             dir = new File( System.getProperty("java.io.tmpdir"), "tmp_"+uniqID() );
             dir.mkdirs();
@@ -1768,7 +1769,6 @@ public class Lib {
     /**
     * a better Map.of; which has ordered keys, allows nulls, is immutable, and toString is json.
     **/
-    @SafeVarargs
     public static <K,V> Map<K,V> mapOf( Object... keyVals ) {
         Map<K,V> map = new LinkedHashMap<>();
         for (int i=0; i<keyVals.length; i+=2) {
@@ -2074,6 +2074,7 @@ public class Lib {
     private static boolean fileCopy_TEST_() {
         if ( System.currentTimeMillis() > 0 ) return true; // disable test until something changes
         // run examples from documentation
+        @SuppressWarnings("overrides")
         Object filter = new Object(){ public boolean equals( Object o ){
             if ( o instanceof List ) {
                 Iterator<?> it = ( (List<?>)o ).iterator();
@@ -2347,8 +2348,8 @@ public class Lib {
             return true;
         }
         if ( o instanceof Number n ) return n.doubleValue()<.0001 && n.doubleValue()>(-.9999);
-        if ( o instanceof Collection c ) return c.isEmpty();
-        if ( o instanceof Map m ) return m.isEmpty();
+        if ( o instanceof Collection<?> c ) return c.isEmpty();
+        if ( o instanceof Map<?,?> m ) return m.isEmpty();
         if ( o.getClass().isArray() ) return Array.getLength(o)==0;
         return false;
     }
@@ -2665,7 +2666,7 @@ public class Lib {
             for ( int i=0; i<aArr.length; i++ ) if ( aArr[i] != bArr[i] ) return false;
             return true;
         }
-        if ( (a instanceof Map aMap) && (b instanceof Map bMap) ) {
+        if ( (a instanceof Map<?,?> aMap) && (b instanceof Map<?,?> bMap) ) {
             if ( aMap.size() != bMap.size() ) return false;
             for ( Object k : aMap.keySet() ) {
                 @SuppressWarnings("unchecked")

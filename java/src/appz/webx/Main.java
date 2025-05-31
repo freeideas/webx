@@ -11,6 +11,7 @@ public class Main {
 
 
 
+    @SuppressWarnings("try")
     public static void main( String[] args ) {
         Lib.archiveLogFiles();
         int originalArgCount = args.length;

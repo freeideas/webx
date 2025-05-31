@@ -293,9 +293,9 @@
             await test4();
         }
 
-        // Start tests automatically after page load
+        // Start tests immediately after page load
         window.addEventListener('load', () => {
-            setTimeout(runAllTests, 1000);
+            runAllTests();
         });
     </script>
 </body>

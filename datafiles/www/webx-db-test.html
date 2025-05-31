@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebX Database Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section.success {
+            border-color: #4CAF50;
+            background: #f1f8f4;
+        }
+        .test-section.error {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+        .test-section.pending {
+            border-color: #ff9800;
+            background: #fff3e0;
+        }
+        .status {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .details {
+            font-family: monospace;
+            font-size: 0.9em;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .timestamp {
+            text-align: center;
+            color: #666;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗄️ WebX Database Endpoint Test</h1>
+        <div class="timestamp">Test started at: <span id="startTime"></span></div>
+        
+        <div id="dbTest" class="test-section pending">
+            <div class="status">Database Write Test</div>
+            <div class="details" id="dbTest-details">Pending...</div>
+        </div>
+
+        <div class="timestamp">Test completed at: <span id="endTime">-</span></div>
+    </div>
+
+    <script>
+        // Set start time
+        document.getElementById('startTime').textContent = new Date().toLocaleString();
+
+        // Update test section UI
+        function updateTestUI(testId, success, details) {
+            const section = document.getElementById(testId);
+            const detailsEl = document.getElementById(testId + '-details');
+            
+            section.className = 'test-section ' + (success ? 'success' : 'error');
+            detailsEl.textContent = typeof details === 'object' ? JSON.stringify(details, null, 2) : details;
+            
+            document.getElementById('endTime').textContent = new Date().toLocaleString();
+        }
+
+        // Database Write Test
+        async function testDatabaseWrite() {
+            try {
+                console.log('Starting database write test...');
+                
+                const testData = {
+                    dbTest: {
+                        timestamp: new Date().toISOString(),
+                        testType: 'simple-db-test',
+                        browser: 'headless',
+                        testRun: Date.now()
+                    }
+                };
+                
+                console.log('Sending data to /db:', testData);
+                
+                const response = await fetch('/db', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const responseData = await response.text();
+                console.log('Response data:', responseData);
+                
+                updateTestUI('dbTest', true, {
+                    status: 'PASS - Database write successful',
+                    responseStatus: response.status,
+                    dataWritten: testData,
+                    serverResponse: responseData
+                });
+                
+                // Signal completion for WebShot
+                document.body.setAttribute('data-test-complete', 'success');
+                
+            } catch (error) {
+                console.error('Database test failed:', error);
+                updateTestUI('dbTest', false, `FAIL: ${error.message}`);
+                
+                // Signal completion for WebShot
+                document.body.setAttribute('data-test-complete', 'error');
+            }
+        }
+
+        // Start test immediately after page load without delay
+        window.addEventListener('load', () => {
+            console.log('Page loaded, starting database test immediately...');
+            testDatabaseWrite();
+        });
+    </script>
+</body>
+</html>

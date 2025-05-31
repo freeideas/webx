@@ -220,7 +220,7 @@ public class Jsonable extends AbstractMap<Object,Object> {
         while ( !keyList.isEmpty() ) {
             Object key = keyList.removeFirst();
             if ( data!=null && data.getClass().isArray() ) data = asList( data );
-            if ( data instanceof Map m ) {
+            if ( data instanceof Map<?,?> m ) {
                 Object result = m.get( key );
                 if ( result==null ) {
                     if ( key instanceof String ) {
@@ -234,7 +234,7 @@ public class Jsonable extends AbstractMap<Object,Object> {
                 }
                 if ( keyList.isEmpty() ) return result;
                 data = result;
-            } else if ( data instanceof List lst ) {
+            } else if ( data instanceof List<?> lst ) {
                 if ( key==null ) return null;
                 String s = key.toString();
                 Integer index = Integer.parseInt( s );

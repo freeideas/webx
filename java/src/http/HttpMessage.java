@@ -40,9 +40,9 @@ public class HttpMessage {
         this.parsedBody = parsed;
         Map<String,Object> allParms = new LinkedHashMap<>();
         allParms.putAll( headerBlock.cookieMap() );
-        if ( parsed instanceof Map m ) {
+        if ( parsed instanceof Map<?,?> m ) {
             @SuppressWarnings("unchecked")
-            Map<String,Object> parsedMap = m;
+            Map<String,Object> parsedMap = (Map<String,Object>) m;
             allParms.putAll( parsedMap );
         }
         allParms.putAll( headerBlock.queryMap() );
