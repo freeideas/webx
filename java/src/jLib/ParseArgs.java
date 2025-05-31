@@ -14,6 +14,9 @@ import java.util.*;
  * - Default values with clear documentation in help output
  * - Descriptive parameter documentation shown in aligned columns
  * 
+ * TODO: BUG - Boolean flags without "=" don't work correctly (e.g., --run should set run=true)
+ *       Currently only -run=true works, but --run by itself doesn't work as documented
+ * 
  * Example: java MyApp --port=8080 --debug -f=config.txt --verbose
  */
 public class ParseArgs {
