@@ -91,6 +91,7 @@ public class Test {
         
         // Use a random port to avoid conflicts
         int testPort = 10000 + (int)(Math.random() * 10000);
+        String shutdownCode = "SHUTDOWN" + testPort;
         
         try ( Lib.TmpDir tmpDir = new Lib.TmpDir() ) {
             // Create test directories
@@ -114,6 +115,7 @@ public class Test {
                 "--static=www@" + wwwDir.getAbsolutePath(),
                 "--proxy=proxy@../api-keys.json",
                 "--db=db@" + jdbcUrl,
+                "--shutdown=" + shutdownCode,
                 "--run"
             };
             
@@ -265,10 +267,24 @@ public class Test {
             // Give server time to finish any pending operations
             Thread.sleep( 500 );
             
+            // Gracefully shutdown the server
+            try {
+                System.out.println( "\nShutting down test server..." );
+                URL shutdownUrl = URI.create("http://localhost:" + testPort + "/" + shutdownCode).toURL();
+                HttpURLConnection conn = (HttpURLConnection) shutdownUrl.openConnection();
+                conn.setConnectTimeout(2000);
+                conn.setReadTimeout(2000);
+                conn.getResponseCode(); // Trigger the request
+                conn.disconnect();
+                System.out.println( "Server shutdown complete" );
+            } catch ( Exception e ) {
+                System.out.println( "Shutdown request failed: " + e.getMessage() );
+            }
+            
             System.out.println( "\nNOTE: This test verifies basic server functionality." );
             System.out.println( "For full integration testing including JavaScript execution:" );
             System.out.println( "1. Start the server: ./java/java.sh appz.webx.Main --run" );
-            System.out.println( "2. Open http://localhost:13102/webx-test.html in a browser" );
+            System.out.println( "2. Open http://localhost:13102/www/webx-test.html in a browser" );
             System.out.println( "3. Click 'Run All Tests' to execute the full test suite" );
             
             return allTestsPassed;

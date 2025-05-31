@@ -365,10 +365,5 @@ public class ParseArgs {
 
 
 
-    public static void main( String[] args ) throws Exception {
-        System.out.println( "Tests "+( Lib.testClass( Lib.thisClass() ) ? "PASS!" : "fail." ) );
-    }
-
-
-
+    public static void main( String[] args ) throws Exception { Lib.testClass(); }
 }

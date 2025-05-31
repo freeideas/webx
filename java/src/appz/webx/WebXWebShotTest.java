@@ -11,7 +11,7 @@ public class WebXWebShotTest {
     private static final int TEST_PORT_BASE = 14000; // Use higher port range to avoid conflicts
     
     public static void main(String[] args) throws Exception {
-        Lib.testClass(WebXWebShotTest.class);
+        Lib.testClass();
     }
     
     // Get a unique port for each test using timestamp to avoid conflicts
@@ -29,16 +29,18 @@ public class WebXWebShotTest {
         
         int testPort = getNextPort();
         String testDbUrl = "jdbc:hsqldb:mem:webxtest" + testPort;
+        String shutdownCode = "SHUTDOWN" + testPort;
         Thread serverThread = null;
         
         try {
             // Start WebX server in a thread using Main.main()
             serverThread = new Thread(() -> {
                 try {
-                    System.out.println("Starting server with args: --port=" + testPort + " --db=db@" + testDbUrl + " --run");
+                    System.out.println("Starting server with args: --port=" + testPort + " --db=db@" + testDbUrl + " --shutdown=" + shutdownCode + " --run");
                     Main.main(new String[]{
                         "--port=" + testPort,
                         "--db=db@" + testDbUrl,
+                        "--shutdown=" + shutdownCode,
                         "--run"
                     });
                 } catch (Exception e) {
@@ -237,9 +239,21 @@ public class WebXWebShotTest {
             e.printStackTrace();
             return false;
         } finally {
-            // Stop the server
-            if (serverThread != null) {
-                serverThread.interrupt();
+            // Stop the server gracefully using shutdown code
+            if (serverThread != null && serverThread.isAlive()) {
+                try {
+                    System.out.println("Sending shutdown request to server...");
+                    URL shutdownUrl = URI.create("http://localhost:" + testPort + "/" + shutdownCode).toURL();
+                    HttpURLConnection conn = (HttpURLConnection) shutdownUrl.openConnection();
+                    conn.setConnectTimeout(2000);
+                    conn.setReadTimeout(2000);
+                    conn.getResponseCode(); // Trigger the request
+                    conn.disconnect();
+                    System.out.println("Shutdown request sent");
+                } catch (Exception e) {
+                    System.out.println("Shutdown request failed, using interrupt: " + e.getMessage());
+                    serverThread.interrupt();
+                }
                 try {
                     serverThread.join(5000); // Wait up to 5 seconds for clean shutdown
                 } catch (InterruptedException e) {
@@ -304,14 +318,16 @@ public class WebXWebShotTest {
     public static boolean proxyEndpointTest_TEST_() throws Exception {
         int testPort = getNextPort();
         String testDbUrl = "jdbc:hsqldb:mem:proxytest" + testPort;
+        String shutdownCode = "SHUTDOWN" + testPort;
         
         // Start server
         Thread testThread = new Thread(() -> {
             try {
-                System.out.println("Starting proxy test server with args: --port=" + testPort + " --db=db@" + testDbUrl + " --run");
+                System.out.println("Starting proxy test server with args: --port=" + testPort + " --db=db@" + testDbUrl + " --shutdown=" + shutdownCode + " --run");
                 Main.main(new String[]{
                     "--port=" + testPort,
                     "--db=db@" + testDbUrl,
+                    "--shutdown=" + shutdownCode,
                     "--run"
                 });
             } catch (Exception e) {
@@ -373,11 +389,26 @@ public class WebXWebShotTest {
             e.printStackTrace();
             return false;
         } finally {
-            testThread.interrupt();
-            try {
-                testThread.join(5000);
-            } catch (InterruptedException e) {
-                // Ignore
+            // Stop the server gracefully using shutdown code
+            if (testThread != null && testThread.isAlive()) {
+                try {
+                    System.out.println("Sending shutdown request to proxy test server...");
+                    URL shutdownUrl = URI.create("http://localhost:" + testPort + "/" + shutdownCode).toURL();
+                    HttpURLConnection conn = (HttpURLConnection) shutdownUrl.openConnection();
+                    conn.setConnectTimeout(2000);
+                    conn.setReadTimeout(2000);
+                    conn.getResponseCode(); // Trigger the request
+                    conn.disconnect();
+                    System.out.println("Shutdown request sent");
+                } catch (Exception e) {
+                    System.out.println("Shutdown request failed, using interrupt: " + e.getMessage());
+                    testThread.interrupt();
+                }
+                try {
+                    testThread.join(5000);
+                } catch (InterruptedException e) {
+                    // Ignore
+                }
             }
         }
     }

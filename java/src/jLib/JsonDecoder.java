@@ -669,8 +669,5 @@ public class JsonDecoder {
         return true;
     }
 
-    public static void main(String[] args) throws Exception {
-        Lib.testClass( JsonDecoder.class );
-    }
-
+    public static void main(String[] args) throws Exception { Lib.testClass(); }
 }

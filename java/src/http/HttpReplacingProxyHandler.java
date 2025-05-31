@@ -535,6 +535,6 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
 
 
-    public static void main( String[] args ) throws Exception { Lib.testClass( HttpReplacingProxyHandler.class ); }
+    public static void main( String[] args ) throws Exception { Lib.testClass(); }
 }
 

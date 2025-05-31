@@ -23,6 +23,7 @@ public class Main {
         String staticConfig = p.getString( "static", "www@./datafiles/www", "static files endpoint as path@directory (use 'NONE' to disable)" );
         String proxyConfig = p.getString( "proxy", "proxy@../api-keys.json", "proxy endpoint as path@config-file (use 'NONE' to disable)" );
         String dbConfig = p.getString( "db", "db@jdbc:hsqldb:file:./datafiles/dbf/webx-db", "database endpoint as path@jdbc-url (use 'NONE' to disable)" );
+        String shutdownCode = p.getString( "shutdown", null, "shutdown code - if provided, server will exit when this code appears in the first line of any request" );
         boolean run = p.getBoolean( "run", false, "start the server" );
         
         // Show help if not running
@@ -52,7 +53,10 @@ public class Main {
             return;
         }
         
-        HttpServer server = new HttpServer(port);        
+        HttpServer server = new HttpServer(port);
+        if ( shutdownCode != null ) {
+            server.setShutdownCode( shutdownCode );
+        }        
         // Static File Server
         if ( !staticConfig.equalsIgnoreCase("NONE") ) {
             String[] staticParts = staticConfig.split("@", 2);

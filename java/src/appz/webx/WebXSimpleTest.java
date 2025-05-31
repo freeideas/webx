@@ -9,12 +9,14 @@ public class WebXSimpleTest {
         // Simple test that uses Main.main() and WebShot
         
         String tempDb = "/tmp/webx-test-" + System.currentTimeMillis();
+        String shutdownCode = "SHUTDOWN13104";
         
         // Start WebX in a thread with temp database
         Thread serverThread = new Thread(() -> {
             Main.main(new String[]{
                 "--port=13104",
                 "--db=db@jdbc:hsqldb:file:" + tempDb + ";shutdown=true",
+                "--shutdown=" + shutdownCode,
                 "--run"
             });
         });
@@ -60,8 +62,27 @@ public class WebXSimpleTest {
             }
             
         } finally {
-            // Stop server
-            serverThread.interrupt();
+            // Stop server gracefully using shutdown code
+            if (serverThread != null && serverThread.isAlive()) {
+                try {
+                    System.out.println("Sending shutdown request to server...");
+                    java.net.URL shutdownUrl = java.net.URI.create("http://localhost:13104/" + shutdownCode).toURL();
+                    java.net.HttpURLConnection conn = (java.net.HttpURLConnection) shutdownUrl.openConnection();
+                    conn.setConnectTimeout(2000);
+                    conn.setReadTimeout(2000);
+                    conn.getResponseCode(); // Trigger the request
+                    conn.disconnect();
+                    System.out.println("Shutdown request sent");
+                } catch (Exception e) {
+                    System.out.println("Shutdown request failed, using interrupt: " + e.getMessage());
+                    serverThread.interrupt();
+                }
+                try {
+                    serverThread.join(3000); // Wait up to 3 seconds for clean shutdown
+                } catch (InterruptedException e) {
+                    // Ignore
+                }
+            }
             
             // Cleanup
             new File(tempDb + ".script").delete();
