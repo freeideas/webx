@@ -6,7 +6,6 @@ import java.sql.*;
 import java.util.*;
 import jLib.*;
 import persist.*;
-import http.*;
 
 public class WebXWebShotTest {
     private static final int TEST_PORT_BASE = 14000; // Use higher port range to avoid conflicts

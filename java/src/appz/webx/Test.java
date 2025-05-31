@@ -137,7 +137,7 @@ public class Test {
             // Test 1: Static file serving (HTML)
             System.out.println( "Test 1: Static HTML file..." );
             try {
-                HttpResponse resp = httpGet( baseUrl + "/test.html" );
+                HttpResponse resp = httpGet( baseUrl + "/www/test.html" );
                 if ( resp.statusCode != 200 ) {
                     System.err.println( "  FAIL: Expected 200, got " + resp.statusCode );
                     allTestsPassed = false;
@@ -155,7 +155,7 @@ public class Test {
             // Test 2: Static file serving (JSON)
             System.out.println( "Test 2: Static JSON file..." );
             try {
-                HttpResponse resp = httpGet( baseUrl + "/data.json" );
+                HttpResponse resp = httpGet( baseUrl + "/www/data.json" );
                 if ( resp.statusCode != 200 ) {
                     System.err.println( "  FAIL: Expected 200, got " + resp.statusCode );
                     allTestsPassed = false;
@@ -229,7 +229,7 @@ public class Test {
                     File testHtmlDest = new File( wwwDir, "webx-test.html" );
                     Lib.string2file( Lib.file2string(testHtmlSrc), testHtmlDest, false );
                     
-                    HttpResponse testPageResp = httpGet( baseUrl + "/webx-test.html" );
+                    HttpResponse testPageResp = httpGet( baseUrl + "/www/webx-test.html" );
                     if ( testPageResp.statusCode == 200 && testPageResp.body.contains("WebX Server Test Suite") ) {
                         System.out.println( "  PASS: Test HTML page served correctly" );
                     } else {
@@ -250,7 +250,7 @@ public class Test {
             // Test 5: 404 handling
             System.out.println( "Test 5: 404 handling..." );
             try {
-                HttpResponse notFoundResp = httpGet( baseUrl + "/does-not-exist.html" );
+                HttpResponse notFoundResp = httpGet( baseUrl + "/www/does-not-exist.html" );
                 if ( notFoundResp.statusCode == 404 ) {
                     System.out.println( "  PASS: 404 returned for missing file" );
                 } else {
@@ -301,12 +301,11 @@ public class Test {
     private static class HttpResponse {
         final int statusCode;
         final String body;
-        final Map<String,String> headers;
         
-        HttpResponse( int statusCode, String body, Map<String,String> headers ) {
+        HttpResponse(int statusCode, String body, Map<String,String> headers) {
             this.statusCode = statusCode;
             this.body = body;
-            this.headers = headers;
+            // headers parameter is no longer stored
         }
     }
     

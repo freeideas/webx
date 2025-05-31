@@ -2,7 +2,6 @@ package appz.webx;
 
 import java.io.*;
 import java.nio.file.*;
-import jLib.*;
 
 public class WebXSimpleTest {
     
