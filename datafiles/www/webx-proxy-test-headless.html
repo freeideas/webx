@@ -143,13 +143,13 @@
             }
         }
 
-        // Test 1: HTTPBin GET
+        // Test 1: JSONPlaceholder GET
         async function test1() {
             try {
                 const response = await fetch('/proxy', {
                     method: 'GET',
                     headers: {
-                        'X-Target-URL': 'https://httpbin.org/get?test=webx-headless'
+                        'X-Target-URL': 'https://jsonplaceholder.typicode.com/posts/1'
                     }
                 });
                 
@@ -158,12 +158,12 @@
                 }
                 
                 const data = await response.json();
-                if (data.args && data.args.test === 'webx-headless') {
+                if (data.id === 1 && data.title) {
                     updateTestUI('test1', true, {
                         status: 'PASS',
                         responseStatus: response.status,
-                        args: data.args,
-                        headers: data.headers['User-Agent']
+                        postId: data.id,
+                        title: data.title.substring(0, 30) + '...'
                     });
                 } else {
                     throw new Error('Response validation failed');
@@ -173,19 +173,19 @@
             }
         }
 
-        // Test 2: HTTPBin POST
+        // Test 2: JSONPlaceholder POST
         async function test2() {
             try {
                 const testData = {
-                    test: 'webx-proxy',
-                    timestamp: Date.now(),
-                    message: 'Testing from headless browser'
+                    title: 'WebX Proxy Test',
+                    body: 'Testing from headless browser',
+                    userId: 1
                 };
                 
                 const response = await fetch('/proxy', {
                     method: 'POST',
                     headers: {
-                        'X-Target-URL': 'https://httpbin.org/post',
+                        'X-Target-URL': 'https://jsonplaceholder.typicode.com/posts',
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(testData)
@@ -196,14 +196,13 @@
                 }
                 
                 const data = await response.json();
-                const received = JSON.parse(data.data);
                 
-                if (received.test === 'webx-proxy') {
+                if (data.id && data.title === testData.title) {
                     updateTestUI('test2', true, {
                         status: 'PASS',
                         responseStatus: response.status,
                         sentData: testData,
-                        receivedData: received
+                        createdPost: { id: data.id, title: data.title }
                     });
                 } else {
                     throw new Error('POST data mismatch');

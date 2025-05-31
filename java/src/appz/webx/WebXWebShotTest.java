@@ -332,10 +332,17 @@ public class WebXWebShotTest {
             // Test proxy endpoint
             URL url = new URL("http://localhost:" + testPort + "/proxy");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("X-Target-URL", "https://httpbin.org/get?test=webx");
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("X-Target-URL", "https://jsonplaceholder.typicode.com/posts");
+            conn.setRequestProperty("Content-Type", "application/json");
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
+            conn.setDoOutput(true);
+            
+            String postData = "{\"title\":\"WebX Test\",\"body\":\"Testing proxy\",\"userId\":1}";
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(postData.getBytes());
+            }
             
             int responseCode = conn.getResponseCode();
             if (responseCode != 200) {
@@ -353,7 +360,7 @@ public class WebXWebShotTest {
             }
             
             String responseStr = response.toString();
-            boolean success = responseStr.contains("\"test\": \"webx\"") || responseStr.contains("\"test\":\"webx\"");
+            boolean success = responseStr.contains("\"id\":") && responseStr.contains("\"title\":");
             
             System.out.println("Proxy test: " + (success ? "PASS" : "FAIL"));
             if (!success) {
