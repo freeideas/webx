@@ -22,7 +22,7 @@ public class HttpMessage {
         String contentType = headerBlock.getContentType();
         String encoding = Lib.nvl( headerBlock.getHeaderValue("Content-Encoding"), "utf-8" );
         Object parsed = null;
-        if ( body.length > 0 ) {
+        if ( body != null && body.length > 0 ) {
             try {
                 String bodyStr = new String(body,encoding);
                 if ( contentType.toUpperCase().indexOf("JSON") >= 0 ) {

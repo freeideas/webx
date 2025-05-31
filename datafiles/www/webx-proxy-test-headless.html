@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebX Proxy Test - Headless</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section.success {
+            border-color: #4CAF50;
+            background: #f1f8f4;
+        }
+        .test-section.error {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+        .test-section.pending {
+            border-color: #ff9800;
+            background: #fff3e0;
+        }
+        .status {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .details {
+            font-family: monospace;
+            font-size: 0.9em;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        .timestamp {
+            text-align: center;
+            color: #666;
+            margin-top: 20px;
+        }
+        .summary {
+            text-align: center;
+            font-size: 1.5em;
+            margin: 20px 0;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 WebX Proxy Endpoint Test</h1>
+        <div class="timestamp">Test started at: <span id="startTime"></span></div>
+        
+        <div class="summary" id="summary">
+            Running tests...
+        </div>
+
+        <div id="test1" class="test-section pending">
+            <div class="status">Test 1: HTTPBin GET Request</div>
+            <div class="details" id="test1-details">Pending...</div>
+        </div>
+
+        <div id="test2" class="test-section pending">
+            <div class="status">Test 2: HTTPBin POST Request</div>
+            <div class="details" id="test2-details">Pending...</div>
+        </div>
+
+        <div id="test3" class="test-section pending">
+            <div class="status">Test 3: JSONPlaceholder API</div>
+            <div class="details" id="test3-details">Pending...</div>
+        </div>
+
+        <div id="test4" class="test-section pending">
+            <div class="status">Test 4: Database Write</div>
+            <div class="details" id="test4-details">Pending...</div>
+        </div>
+
+        <div class="timestamp">Test completed at: <span id="endTime">-</span></div>
+    </div>
+
+    <script>
+        // Set start time
+        document.getElementById('startTime').textContent = new Date().toLocaleString();
+
+        // Test results tracker
+        const results = {
+            total: 4,
+            passed: 0,
+            failed: 0
+        };
+
+        // Update test section UI
+        function updateTestUI(testId, success, details) {
+            const section = document.getElementById(testId);
+            const detailsEl = document.getElementById(testId + '-details');
+            
+            section.className = 'test-section ' + (success ? 'success' : 'error');
+            detailsEl.textContent = typeof details === 'object' ? JSON.stringify(details, null, 2) : details;
+            
+            if (success) {
+                results.passed++;
+            } else {
+                results.failed++;
+            }
+            
+            updateSummary();
+        }
+
+        // Update summary
+        function updateSummary() {
+            const summaryEl = document.getElementById('summary');
+            if (results.passed + results.failed === results.total) {
+                const allPassed = results.failed === 0;
+                summaryEl.innerHTML = allPassed 
+                    ? `✅ All ${results.total} tests passed!`
+                    : `⚠️ ${results.passed}/${results.total} tests passed (${results.failed} failed)`;
+                summaryEl.style.background = allPassed ? '#c8e6c9' : '#ffcdd2';
+                document.getElementById('endTime').textContent = new Date().toLocaleString();
+            } else {
+                summaryEl.textContent = `Running tests... (${results.passed + results.failed}/${results.total} completed)`;
+            }
+        }
+
+        // Test 1: HTTPBin GET
+        async function test1() {
+            try {
+                const response = await fetch('/proxy', {
+                    method: 'GET',
+                    headers: {
+                        'X-Target-URL': 'https://httpbin.org/get?test=webx-headless'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (data.args && data.args.test === 'webx-headless') {
+                    updateTestUI('test1', true, {
+                        status: 'PASS',
+                        responseStatus: response.status,
+                        args: data.args,
+                        headers: data.headers['User-Agent']
+                    });
+                } else {
+                    throw new Error('Response validation failed');
+                }
+            } catch (error) {
+                updateTestUI('test1', false, `FAIL: ${error.message}`);
+            }
+        }
+
+        // Test 2: HTTPBin POST
+        async function test2() {
+            try {
+                const testData = {
+                    test: 'webx-proxy',
+                    timestamp: Date.now(),
+                    message: 'Testing from headless browser'
+                };
+                
+                const response = await fetch('/proxy', {
+                    method: 'POST',
+                    headers: {
+                        'X-Target-URL': 'https://httpbin.org/post',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const received = JSON.parse(data.data);
+                
+                if (received.test === 'webx-proxy') {
+                    updateTestUI('test2', true, {
+                        status: 'PASS',
+                        responseStatus: response.status,
+                        sentData: testData,
+                        receivedData: received
+                    });
+                } else {
+                    throw new Error('POST data mismatch');
+                }
+            } catch (error) {
+                updateTestUI('test2', false, `FAIL: ${error.message}`);
+            }
+        }
+
+        // Test 3: JSONPlaceholder
+        async function test3() {
+            try {
+                const response = await fetch('/proxy', {
+                    method: 'GET',
+                    headers: {
+                        'X-Target-URL': 'https://jsonplaceholder.typicode.com/users/1'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (data.id === 1 && data.username && data.email) {
+                    updateTestUI('test3', true, {
+                        status: 'PASS',
+                        responseStatus: response.status,
+                        user: {
+                            id: data.id,
+                            name: data.name,
+                            username: data.username,
+                            email: data.email
+                        }
+                    });
+                } else {
+                    throw new Error('Invalid user data');
+                }
+            } catch (error) {
+                updateTestUI('test3', false, `FAIL: ${error.message}`);
+            }
+        }
+
+        // Test 4: Database Write
+        async function test4() {
+            try {
+                const testData = {
+                    proxyTest: {
+                        timestamp: new Date().toISOString(),
+                        browser: 'headless',
+                        testRun: Date.now()
+                    }
+                };
+                
+                const response = await fetch('/db', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                updateTestUI('test4', true, {
+                    status: 'PASS',
+                    responseStatus: response.status,
+                    dataWritten: testData
+                });
+            } catch (error) {
+                updateTestUI('test4', false, `FAIL: ${error.message}`);
+            }
+        }
+
+        // Run all tests with delays
+        async function runAllTests() {
+            await test1();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await test2();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await test3();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await test4();
+        }
+
+        // Start tests automatically after page load
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 1000);
+        });
+    </script>
+</body>
+</html>

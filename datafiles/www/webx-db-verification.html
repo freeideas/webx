@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebX Database Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+        }
+        .success {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+        .info {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Database Verification</h1>
+        <div id="result" class="result">
+            Checking database for test results...
+        </div>
+    </div>
+
+    <script>
+        // This page verifies that the headless test wrote to the database
+        async function verifyDatabase() {
+            const resultEl = document.getElementById('result');
+            
+            try {
+                // The headless test should have written to the database
+                // We'll check by writing a marker and seeing what else is there
+                const marker = {
+                    verification: {
+                        timestamp: new Date().toISOString(),
+                        purpose: 'checking_database_contents'
+                    }
+                };
+                
+                const response = await fetch('/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(marker)
+                });
+                
+                if (response.ok) {
+                    // In a real scenario, we'd have a GET endpoint for the database
+                    // For now, we'll show what we know was written
+                    resultEl.className = 'result success';
+                    resultEl.textContent = `✅ Database is accessible and writable
+
+Test data that should be in the database:
+1. From proxy test page:
+   - proxyTest.timestamp
+   - proxyTest.browser = "headless"
+   - proxyTest.testRun (timestamp)
+
+2. From verification:
+   - verification.timestamp = "${marker.verification.timestamp}"
+   - verification.purpose = "checking_database_contents"
+
+Note: WebX's /db endpoint only accepts POST/PUT.
+To fully verify, you would need to check the database files directly
+or add a GET endpoint to the server.`;
+                } else {
+                    throw new Error(`Database write failed: ${response.status}`);
+                }
+            } catch (error) {
+                resultEl.className = 'result error';
+                resultEl.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+        
+        // Run verification on load
+        window.addEventListener('load', () => {
+            setTimeout(verifyDatabase, 500);
+        });
+    </script>
+</body>
+</html>
