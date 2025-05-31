@@ -4,7 +4,6 @@ import java.util.*;
 import java.io.*;
 import java.net.*;
 import jLib.*;
-import http.*;
 
 public class Test {
 
