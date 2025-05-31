@@ -112,10 +112,9 @@ public class Test {
             String jdbcUrl = "jdbc:hsqldb:mem:test_" + System.currentTimeMillis();
             String[] serverArgs = {
                 "--port=" + testPort,
-                "--www=" + wwwDir.getAbsolutePath(),
-                "--proxy=/proxy",
-                "--db=/db",
-                "--jdbc=" + jdbcUrl,
+                "--static=www@" + wwwDir.getAbsolutePath(),
+                "--proxy=proxy@../api-keys.json",
+                "--db=db@" + jdbcUrl,
                 "--run"
             };
             

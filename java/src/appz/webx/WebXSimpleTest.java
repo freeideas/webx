@@ -14,8 +14,8 @@ public class WebXSimpleTest {
         // Start WebX in a thread with temp database
         Thread serverThread = new Thread(() -> {
             Main.main(new String[]{
-                "--port", "13104",
-                "--jdbc", "jdbc:hsqldb:file:" + tempDb + ";shutdown=true",
+                "--port=13104",
+                "--db=db@jdbc:hsqldb:file:" + tempDb + ";shutdown=true",
                 "--run"
             });
         });
@@ -36,7 +36,7 @@ public class WebXSimpleTest {
             System.out.println("Running WebShot test...");
             Process p = new ProcessBuilder(
                 webshot.getAbsolutePath(),
-                "http://localhost:13104/webx-proxy-test-headless.html",
+                "http://localhost:13104/www/webx-proxy-test-headless.html",
                 "test-output.png",
                 "1280x800"
             ).start();
