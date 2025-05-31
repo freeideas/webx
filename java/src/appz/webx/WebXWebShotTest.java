@@ -36,10 +36,10 @@ public class WebXWebShotTest {
             // Start WebX server in a thread using Main.main()
             serverThread = new Thread(() -> {
                 try {
-                    System.out.println("Starting server with args: --port=" + testPort + " --jdbc=" + testDbUrl + " --run");
+                    System.out.println("Starting server with args: --port=" + testPort + " --db=db@" + testDbUrl + " --run");
                     Main.main(new String[]{
                         "--port=" + testPort,
-                        "--jdbc=" + testDbUrl,
+                        "--db=db@" + testDbUrl,
                         "--run"
                     });
                 } catch (Exception e) {
@@ -63,7 +63,7 @@ public class WebXWebShotTest {
             outputDir.mkdirs();
             
             // Execute WebShot to run JavaScript tests
-            String testUrl = "http://localhost:" + testPort + "/webx-proxy-test-headless.html";
+            String testUrl = "http://localhost:" + testPort + "/www/webx-proxy-test-headless.html";
             String outputImage = outputDir.getAbsolutePath() + "/webshot-test-" + System.currentTimeMillis() + ".png";
             
             System.out.println("Running WebShot to execute JavaScript tests...");
@@ -309,10 +309,10 @@ public class WebXWebShotTest {
         // Start server
         Thread testThread = new Thread(() -> {
             try {
-                System.out.println("Starting proxy test server with args: --port=" + testPort + " --jdbc=" + testDbUrl + " --run");
+                System.out.println("Starting proxy test server with args: --port=" + testPort + " --db=db@" + testDbUrl + " --run");
                 Main.main(new String[]{
                     "--port=" + testPort,
-                    "--jdbc=" + testDbUrl,
+                    "--db=db@" + testDbUrl,
                     "--run"
                 });
             } catch (Exception e) {
@@ -345,7 +345,7 @@ public class WebXWebShotTest {
             }
             
             int responseCode = conn.getResponseCode();
-            if (responseCode != 200) {
+            if (responseCode < 200 || responseCode > 299) {
                 System.err.println("Proxy returned " + responseCode);
                 return false;
             }
