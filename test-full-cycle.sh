@@ -17,7 +17,7 @@ echo ""
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 WEBX_DIR="$SCRIPT_DIR"
 WEBSHOT_DIR="$SCRIPT_DIR/../webshot"
-OUTPUT_DIR="$WEBX_DIR/test-results"
+OUTPUT_DIR="$WEBX_DIR/log"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 DB_DIR="/tmp/webx-test-db-$TIMESTAMP"
 

@@ -59,7 +59,7 @@ public class WebXWebShotTest {
             System.out.println("Server is ready on port " + testPort);
             
             // Create output directory
-            File outputDir = new File("./test-results");
+            File outputDir = new File("./log");
             outputDir.mkdirs();
             
             // Execute WebShot to run JavaScript tests

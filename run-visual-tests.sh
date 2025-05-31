@@ -80,7 +80,7 @@ echo "   Waiting for tests to complete..."
 sleep 5
 
 echo -e "${BLUE}5. Capturing test results with WebShot...${NC}"
-OUTPUT_FILE="$WEBX_DIR/test-results-$(date +%Y%m%d-%H%M%S).png"
+OUTPUT_FILE="$WEBX_DIR/log/test-results-$(date +%Y%m%d-%H%M%S).png"
 
 # Capture the test results
 "$WEBSHOT" "$TEST_URL" "$OUTPUT_FILE" 1920x1080
