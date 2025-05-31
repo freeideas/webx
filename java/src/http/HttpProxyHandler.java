@@ -241,7 +241,7 @@ public class HttpProxyHandler implements HttpHandler {
             Thread.sleep(3000);
             
             // Make the exact same request as proxyEndpointTest
-            URL url = new URL("http://localhost:" + testPort + "/proxy");
+            URL url = URI.create("http://localhost:" + testPort + "/proxy").toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("X-Target-URL", "https://jsonplaceholder.typicode.com/posts");

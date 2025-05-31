@@ -330,7 +330,7 @@ public class WebXWebShotTest {
             }
             
             // Test proxy endpoint
-            URL url = new URL("http://localhost:" + testPort + "/proxy");
+            URL url = URI.create("http://localhost:" + testPort + "/proxy").toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("X-Target-URL", "https://jsonplaceholder.typicode.com/posts");

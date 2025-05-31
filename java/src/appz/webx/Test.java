@@ -161,6 +161,7 @@ public class Test {
                     System.err.println( "  FAIL: Expected 200, got " + resp.statusCode );
                     allTestsPassed = false;
                 } else {
+                    @SuppressWarnings("unchecked")
                     Map<String,Object> data = (Map<String,Object>) JsonDecoder.decode( resp.body );
                     if ( !"data".equals( data.get("test") ) || !Integer.valueOf(42).equals( data.get("number") ) ) {
                         System.err.println( "  FAIL: JSON data mismatch" );
@@ -185,7 +186,9 @@ public class Test {
                     allTestsPassed = false;
                 } else {
                     // The response should contain our data merged with any existing data
+                    @SuppressWarnings("unchecked")
                     Map<String,Object> respData = (Map<String,Object>) JsonDecoder.decode( postResp.body );
+                    @SuppressWarnings("unchecked")
                     Map<String,Object> users = (Map<String,Object>) respData.get("users");
                     if ( users == null || !users.containsKey("test_user") ) {
                         System.err.println( "  FAIL: Posted data not in response" );
@@ -199,7 +202,9 @@ public class Test {
                 String moreData = "{\"users\":{\"another_user\":{\"name\":\"Another\"}},\"config\":{\"version\":\"1.0\"}}";
                 HttpResponse mergeResp = httpPost( baseUrl + "/db", moreData, "application/json" );
                 if ( mergeResp.statusCode == 200 ) {
+                    @SuppressWarnings("unchecked")
                     Map<String,Object> merged = (Map<String,Object>) JsonDecoder.decode( mergeResp.body );
+                    @SuppressWarnings("unchecked")
                     Map<String,Object> users = (Map<String,Object>) merged.get("users");
                     if ( users != null && users.containsKey("test_user") && users.containsKey("another_user") 
                          && merged.containsKey("config") ) {
@@ -313,7 +318,7 @@ public class Test {
     
     // Helper method for HTTP GET with headers
     private static HttpResponse httpGetWithHeaders( String urlStr, Map<String,String> headers ) throws Exception {
-        URL url = new URL( urlStr );
+        URL url = URI.create( urlStr ).toURL();
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod( "GET" );
         conn.setConnectTimeout( 5000 );
@@ -334,7 +339,7 @@ public class Test {
     // Helper method for HTTP POST with headers
     private static HttpResponse httpPostWithHeaders( String urlStr, String body, String contentType, 
                                                      Map<String,String> headers ) throws Exception {
-        URL url = new URL( urlStr );
+        URL url = URI.create( urlStr ).toURL();
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod( "POST" );
         conn.setDoOutput( true );
