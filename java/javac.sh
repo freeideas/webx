@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.."
 if [ $# -eq 0 ]; then
     # No arguments - compile all Java files
     echo "Compiling all Java sources..."
-    javac -cp "./java/tmp:./java/lib/*" -d ./java/tmp java/src/**/*.java
+    find java/src -name "*.java" -print0 | xargs -0 javac -cp "./java/tmp:./java/lib/*" -d ./java/tmp
 else
     ARG="$1"
     
