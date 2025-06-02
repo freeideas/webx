@@ -14,12 +14,10 @@ public class Main {
     @SuppressWarnings("try")
     public static void main( String[] args ) {
         Lib.archiveLogFiles();
-        int originalArgCount = args.length;
         ParseArgs p = new ParseArgs(args);
         p.setAppName( Lib.getAppName() );
         p.setDescr( "WebX - Simple Web Application Server" );
         
-        // Parse all arguments (order matters for help display)
         int port = p.getInteger( "port", 13102, "listen to which port" );
         String staticConfig = p.getString( "static", "www@./datafiles/www", "static files endpoint as path@directory (use 'NONE' to disable)" );
         String proxyConfig = p.getString( "proxy", "proxy@../api-keys.json", "proxy endpoint as path@config-file (use 'NONE' to disable)" );
@@ -28,67 +26,77 @@ public class Main {
         String shutdownCode = p.getString( "shutdown", null, "shutdown code - if provided, server will exit when this code appears in the first line of any request" );
         boolean run = p.getBoolean( "run", false, "start the server" );
         
-        // Show help if not running
-        if ( !run ) {
-            System.out.print( p.getHelp() );
-            if ( originalArgCount > 0 ) {
-                // Show configuration summary if any args were provided  
-                System.out.println( "\nCONFIGURATION SUMMARY:" );
-                System.out.println( "  Server will run on port: " + port );
-                if ( staticConfig.equalsIgnoreCase("NONE") ) {
-                    System.out.println( "  Static files: DISABLED" );
-                } else {
-                    System.out.println( "  Static files: " + staticConfig );
-                }
-                if ( proxyConfig.equalsIgnoreCase("NONE") ) {
-                    System.out.println( "  Proxy endpoint: DISABLED" );
-                } else {
-                    System.out.println( "  Proxy: " + proxyConfig );
-                }
-                if ( dbConfig.equalsIgnoreCase("NONE") ) {
-                    System.out.println( "  Database: DISABLED" );
-                } else {
-                    System.out.println( "  Database: " + dbConfig );
-                }
-                if ( loginConfig.equalsIgnoreCase("NONE") ) {
-                    System.out.println( "  Login: DISABLED" );
-                } else {
-                    System.out.println( "  Login: " + loginConfig );
-                }
-                System.out.println( "\nTo start the server, add --run to the command line." );
-            }
-            return;
+        System.out.print( p.getHelp() );
+        System.out.println( "\nCONFIGURATION SUMMARY:" );
+        System.out.println( "  Server will run on port: " + port );
+        
+        if ( staticConfig.equalsIgnoreCase("NONE") ) {
+            System.out.println( "  Static files: DISABLED" );
+        } else {
+            String[] staticParts = staticConfig.split("@", 2);
+            String staticPath = staticParts.length>0 ? staticParts[0] : "www";
+            String staticDir = staticParts.length>1 ? staticParts[1] : "./datafiles/www";
+            if ( !staticPath.startsWith("/") ) staticPath = "/" + staticPath;
+            System.out.println( "  " + staticPath + " serves static files from " + staticDir );
         }
         
+        if ( proxyConfig.equalsIgnoreCase("NONE") ) {
+            System.out.println( "  Proxy endpoint: DISABLED" );
+        } else {
+            String[] proxyParts = proxyConfig.split("@", 2);
+            String proxyPath = proxyParts.length>0 ? proxyParts[0] : "proxy";
+            String proxyConfigFile = proxyParts.length>1 ? proxyParts[1] : "../api-keys.json";
+            if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
+            System.out.println( "  " + proxyPath + " proxies external APIs (config: " + proxyConfigFile + ")" );
+        }
+        
+        if ( dbConfig.equalsIgnoreCase("NONE") ) {
+            System.out.println( "  Database: DISABLED" );
+        } else {
+            String[] dbParts = dbConfig.split("@", 2);
+            String dbPath = dbParts.length>0 ? dbParts[0] : "db";
+            String jdbcUrl = dbParts.length>1 ? dbParts[1] : "jdbc:hsqldb:file:./datafiles/dbf/webx-db";
+            if ( !dbPath.startsWith("/") ) dbPath = "/" + dbPath;
+            System.out.println( "  " + dbPath + " provides JSON database storage (" + jdbcUrl + ")" );
+        }
+        
+        if ( loginConfig.equalsIgnoreCase("NONE") ) {
+            System.out.println( "  Login: DISABLED" );
+        } else {
+            String[] loginParts = loginConfig.split("@", 2);
+            String loginPath = loginParts.length>0 ? loginParts[0] : "login";
+            String appName = loginParts.length>1 ? loginParts[1] : "WebX";
+            if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
+            System.out.println( "  " + loginPath + " provides email authentication for '" + appName + "'" );
+        }
+        System.out.println( "  run is " + run + ", so " + (run ? "service will start now" : "exiting") );
+        
+        if ( !run ) return;
+        
         HttpServer server = new HttpServer(port);
-        if ( shutdownCode != null ) {
-            server.setShutdownCode( shutdownCode );
-        }        
-        // Static File Server
+        if ( shutdownCode!=null ) server.setShutdownCode( shutdownCode );
+        
         if ( !staticConfig.equalsIgnoreCase("NONE") ) {
             String[] staticParts = staticConfig.split("@", 2);
-            String staticPath = staticParts.length > 0 ? staticParts[0] : "www";
-            String staticDir = staticParts.length > 1 ? staticParts[1] : "./datafiles/www";
-            if (!staticPath.startsWith("/")) staticPath = "/" + staticPath;
-            
+            String staticPath = staticParts.length>0 ? staticParts[0] : "www";
+            String staticDir = staticParts.length>1 ? staticParts[1] : "./datafiles/www";
+            if ( !staticPath.startsWith("/") ) staticPath = "/" + staticPath;
             File wwwDir = new File(staticDir);
-            if (! wwwDir.exists() ) {
+            if ( !wwwDir.exists() ) {
                 Lib.log( "ERROR: " + staticDir + " does not exist" );
             } else {
                 server.handlers.put( staticPath, new HttpFileHandler(staticPath, wwwDir) );
                 Lib.log( "Static files configured at " + staticPath + " from " + wwwDir.getAbsolutePath() );
             }
         }
-        // Proxy handler
+        
         if ( !proxyConfig.equalsIgnoreCase("NONE") ) {
             String[] proxyParts = proxyConfig.split("@", 2);
-            String proxyPath = proxyParts.length > 0 ? proxyParts[0] : "proxy";
-            String proxyConfigFile = proxyParts.length > 1 ? proxyParts[1] : "../api-keys.json";
+            String proxyPath = proxyParts.length>0 ? proxyParts[0] : "proxy";
+            String proxyConfigFile = proxyParts.length>1 ? proxyParts[1] : "../api-keys.json";
             if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
-            
             File apiKeysFile = new File( proxyConfigFile );
             if ( !apiKeysFile.exists() ) {
-                // Create example file
                 createExampleApiKeysFile( apiKeysFile );
                 Lib.log( "Created example API keys file at " + apiKeysFile.getAbsolutePath() );
             }
@@ -100,39 +108,34 @@ public class Main {
                 Lib.log( "Proxy handler configured at " + proxyPath + " without replacements" );
             }
         }
-        // Login handler
+        
         if ( !loginConfig.equalsIgnoreCase("NONE") ) {
             String[] loginParts = loginConfig.split("@", 2);
-            String loginPath = loginParts.length > 0 ? loginParts[0] : "login";
-            String appName = loginParts.length > 1 ? loginParts[1] : "WebX";
+            String loginPath = loginParts.length>0 ? loginParts[0] : "login";
+            String appName = loginParts.length>1 ? loginParts[1] : "WebX";
             if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
-            
             HttpLoginHandler.appName = appName;
             server.handlers.put( loginPath, new HttpLoginHandler() );
             Lib.log( "Login handler configured at " + loginPath + " for app: " + appName );
         }
-        // JSON Database
+        
         if ( !dbConfig.equalsIgnoreCase("NONE") ) {
             String[] dbParts = dbConfig.split("@", 2);
-            String dbPath = dbParts.length > 0 ? dbParts[0] : "db";
-            String jdbcUrl = dbParts.length > 1 ? dbParts[1] : "jdbc:hsqldb:file:./datafiles/dbf/webx-db";
+            String dbPath = dbParts.length>0 ? dbParts[0] : "db";
+            String jdbcUrl = dbParts.length>1 ? dbParts[1] : "jdbc:hsqldb:file:./datafiles/dbf/webx-db";
             if ( !dbPath.startsWith("/") ) dbPath = "/" + dbPath;
-            
             try( PersistentData pd = new PersistentData( jdbcUrl, "webx_data" ) ) {
                 PersistentMap dbStorage = pd.getRootMap();
                 server.handlers.put( dbPath, new HttpJsonHandler(dbStorage) );
-                
                 Lib.log( "WebX server listening on port "+port );
                 StringBuilder endpoints = new StringBuilder("Endpoints: ");
                 if ( !staticConfig.equalsIgnoreCase("NONE") ) {
                     String[] staticParts = staticConfig.split("@", 2);
-                    String staticPath = staticParts.length > 0 ? staticParts[0] : "www";
-                    if (!staticPath.startsWith("/")) staticPath = "/" + staticPath;
-                    String staticDir = staticParts.length > 1 ? staticParts[1] : "./datafiles/www";
+                    String staticPath = staticParts.length>0 ? staticParts[0] : "www";
+                    if ( !staticPath.startsWith("/") ) staticPath = "/" + staticPath;
+                    String staticDir = staticParts.length>1 ? staticParts[1] : "./datafiles/www";
                     File wwwDir = new File(staticDir);
-                    if ( wwwDir.exists() ) {
-                        endpoints.append(staticPath).append(" (static files), ");
-                    }
+                    if ( wwwDir.exists() ) endpoints.append(staticPath).append(" (static files), ");
                 }
                 if ( !proxyConfig.equalsIgnoreCase("NONE") ) {
                     String proxyPath = proxyConfig.split("@", 2)[0];
@@ -148,21 +151,17 @@ public class Main {
                 Lib.log( endpoints.toString() );
                 server.start();
                 Lib.log( "WebX server stopped" );
-            } catch ( Exception e ) {
-                Lib.log(e);
-            }
+            } catch ( Exception e ) { Lib.log(e); }
         } else {
             Lib.log( "WebX server listening on port "+port );
             StringBuilder endpoints = new StringBuilder("Endpoints: ");
             if ( !staticConfig.equalsIgnoreCase("NONE") ) {
                 String[] staticParts = staticConfig.split("@", 2);
-                String staticPath = staticParts.length > 0 ? staticParts[0] : "www";
-                if (!staticPath.startsWith("/")) staticPath = "/" + staticPath;
-                String staticDir = staticParts.length > 1 ? staticParts[1] : "./datafiles/www";
+                String staticPath = staticParts.length>0 ? staticParts[0] : "www";
+                if ( !staticPath.startsWith("/") ) staticPath = "/" + staticPath;
+                String staticDir = staticParts.length>1 ? staticParts[1] : "./datafiles/www";
                 File wwwDir = new File(staticDir);
-                if ( wwwDir.exists() ) {
-                    endpoints.append(staticPath).append(" (static files), ");
-                }
+                if ( wwwDir.exists() ) endpoints.append(staticPath).append(" (static files), ");
             }
             if ( !proxyConfig.equalsIgnoreCase("NONE") ) {
                 String proxyPath = proxyConfig.split("@", 2)[0];
@@ -174,14 +173,9 @@ public class Main {
                 if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
                 endpoints.append(loginPath).append(" (login), ");
             }
-            // Remove trailing comma and space if present
             String endpointsStr = endpoints.toString();
-            if (endpointsStr.endsWith(", ")) {
-                endpointsStr = endpointsStr.substring(0, endpointsStr.length() - 2);
-            }
-            if (endpointsStr.equals("Endpoints: ")) {
-                endpointsStr = "No endpoints configured";
-            }
+            if ( endpointsStr.endsWith(", ") ) endpointsStr = endpointsStr.substring(0, endpointsStr.length()-2);
+            if ( endpointsStr.equals("Endpoints: ") ) endpointsStr = "No endpoints configured";
             Lib.log( endpointsStr );
             server.start();
             Lib.log( "WebX server stopped" );
@@ -221,20 +215,11 @@ public class Main {
                 }
             }
         """;
-        
         try {
-            // Ensure parent directory exists
             File parentDir = file.getParentFile();
-            if ( parentDir != null && !parentDir.exists() ) {
-                parentDir.mkdirs();
-            }
-            
-            try ( FileWriter writer = new FileWriter( file ) ) {
-                writer.write( exampleContent );
-            }
-        } catch ( Exception e ) {
-            Lib.log( "Failed to create example API keys file: " + e.getMessage() );
-        }
+            if ( parentDir!=null && !parentDir.exists() ) parentDir.mkdirs();
+            try ( FileWriter writer = new FileWriter( file ) ) { writer.write( exampleContent ); }
+        } catch ( Exception e ) { Lib.log( "Failed to create example API keys file: " + e.getMessage() ); }
     }
 
 

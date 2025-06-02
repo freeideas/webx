@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebX Login Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="email"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="email"]:focus, input[type="text"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #b8daff;
+        }
+        #codeSection {
+            display: none;
+        }
+        .readonly {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebX Login Test</h1>
+        
+        <div class="form-group">
+            <label for="email">Email Address:</label>
+            <input type="email" id="email" placeholder="Enter your email address" required>
+        </div>
+        
+        <button id="sendEmailBtn" onclick="sendEmail()">Send Login Code</button>
+        
+        <div id="codeSection">
+            <div class="form-group">
+                <label for="loginCode">Login Code:</label>
+                <input type="text" id="loginCode" placeholder="Enter 6-digit code from email" maxlength="6" pattern="[0-9]{6}">
+            </div>
+            <button id="validateBtn" onclick="validateCode()">Login</button>
+        </div>
+        
+        <div id="message"></div>
+    </div>
+
+    <script>
+        let currentEmail = '';
+
+        function showMessage(text, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = text;
+            messageDiv.className = 'message ' + type;
+        }
+
+        function setLoading(button, loading) {
+            button.disabled = loading;
+            button.textContent = loading ? 'Loading...' : button.dataset.originalText;
+        }
+
+        async function sendEmail() {
+            const emailInput = document.getElementById('email');
+            const email = emailInput.value.trim();
+            
+            if (!email) {
+                showMessage('Please enter an email address', 'error');
+                return;
+            }
+            
+            if (!email.includes('@') || !email.includes('.')) {
+                showMessage('Please enter a valid email address', 'error');
+                return;
+            }
+
+            const sendBtn = document.getElementById('sendEmailBtn');
+            sendBtn.dataset.originalText = sendBtn.textContent;
+            setLoading(sendBtn, true);
+            
+            try {
+                const response = await fetch('/login?command=sendEmail&email=' + encodeURIComponent(email), {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentEmail = email;
+                    emailInput.classList.add('readonly');
+                    emailInput.readOnly = true;
+                    document.getElementById('codeSection').style.display = 'block';
+                    document.getElementById('loginCode').focus();
+                    showMessage('Login code sent! Check your email and enter the 6-digit code below.', 'success');
+                    sendBtn.textContent = 'Resend Code';
+                } else {
+                    showMessage('Failed to send email: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            } finally {
+                setLoading(sendBtn, false);
+            }
+        }
+
+        async function validateCode() {
+            const code = document.getElementById('loginCode').value.trim();
+            
+            if (!code) {
+                showMessage('Please enter the login code', 'error');
+                return;
+            }
+            
+            if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+                showMessage('Login code must be exactly 6 digits', 'error');
+                return;
+            }
+
+            const validateBtn = document.getElementById('validateBtn');
+            validateBtn.dataset.originalText = validateBtn.textContent;
+            setLoading(validateBtn, true);
+            
+            try {
+                const response = await fetch('/login?command=validateLoginCode&email=' + encodeURIComponent(currentEmail) + '&loginCode=' + encodeURIComponent(code), {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('Login successful! Redirecting...', 'success');
+                    // Store the auth token for the logged in page
+                    localStorage.setItem('authToken', result.authToken);
+                    localStorage.setItem('userEmail', result.email);
+                    // Redirect after a brief delay
+                    setTimeout(() => {
+                        window.location.href = 'loggedIn.html';
+                    }, 1500);
+                } else {
+                    showMessage('Login failed: ' + (result.error || 'Invalid code'), 'error');
+                    document.getElementById('loginCode').value = '';
+                    document.getElementById('loginCode').focus();
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            } finally {
+                setLoading(validateBtn, false);
+            }
+        }
+
+        // Allow Enter key to submit forms
+        document.getElementById('email').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendEmail();
+            }
+        });
+
+        document.getElementById('loginCode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                validateCode();
+            }
+        });
+        
+        // Auto-focus email field
+        document.getElementById('email').focus();
+    </script>
+</body>
+</html>

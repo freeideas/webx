@@ -1,3 +1,21 @@
+# CRITICAL: CODE FORMATTING
+ALL code changes must strictly follow CODE_GUIDELINES.md:
+- Brevity above all concerns
+- Spaces inside parentheses with punctuation: `if ( condition )`
+- No spaces around operators: `a==b && b==c`
+- Early returns to avoid nesting
+- 3 blank lines between methods
+- Single-line methods: `public void method() { callMethod(); }`
+
+<system-reminder>
+MANDATORY: Every code edit must follow CODE_GUIDELINES.md exactly. Check:
+- Parentheses spacing: `methodName( arg1, arg2 )` vs `methodName()`
+- Operator spacing: `a==b && b==c`
+- 3 blank lines between methods
+- Early returns instead of nesting
+- Single-line methods when possible
+</system-reminder>
+
 ## Build Commands
 
 All scripts mentioned below can be run from any directory - they automatically change to the project root.

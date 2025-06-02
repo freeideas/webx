@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebX - Logged In</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #28a745;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .user-info {
+            background-color: #e8f5e8;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+            border-left: 4px solid #28a745;
+        }
+        .user-info h2 {
+            color: #155724;
+            margin-top: 0;
+        }
+        .user-info p {
+            margin: 10px 0;
+            color: #155724;
+        }
+        .actions {
+            display: grid;
+            gap: 15px;
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #b8daff;
+        }
+        .token-display {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Successfully Logged In!</h1>
+        
+        <div class="user-info">
+            <h2>Welcome!</h2>
+            <p><strong>Email:</strong> <span id="userEmail">Loading...</span></p>
+            <p><strong>Login Time:</strong> <span id="loginTime">Loading...</span></p>
+            <p><strong>Auth Token:</strong> 
+                <button id="toggleToken" class="btn-secondary" style="font-size: 12px; padding: 5px 10px;">Show Token</button>
+            </p>
+            <div id="tokenDisplay" class="token-display hidden"></div>
+        </div>
+        
+        <div class="actions">
+            <button class="btn-primary" onclick="testUserEmail()">Test User Email API</button>
+            <button class="btn-secondary" onclick="testDatabase()">Test Database Access</button>
+            <button class="btn-secondary" onclick="goToTests()">View Other Tests</button>
+            <button class="btn-danger" onclick="logout()">Logout</button>
+        </div>
+        
+        <div id="message"></div>
+    </div>
+
+    <script>
+        let authToken = '';
+        let userEmail = '';
+
+        function showMessage(text, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = text;
+            messageDiv.className = 'message ' + type;
+        }
+
+        function initializePage() {
+            // Get stored auth info
+            authToken = localStorage.getItem('authToken');
+            userEmail = localStorage.getItem('userEmail');
+            
+            if (!authToken || !userEmail) {
+                showMessage('No authentication found. Redirecting to login...', 'error');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+                return;
+            }
+            
+            // Display user info
+            document.getElementById('userEmail').textContent = userEmail;
+            document.getElementById('loginTime').textContent = new Date().toLocaleString();
+            document.getElementById('tokenDisplay').textContent = authToken;
+            
+            showMessage('Authentication loaded successfully!', 'success');
+        }
+
+        async function testUserEmail() {
+            try {
+                const response = await fetch('/login?command=userEmail', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + authToken
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('✅ User Email API Test Successful! Email: ' + result.email, 'success');
+                } else {
+                    showMessage('❌ User Email API Test Failed: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Network error testing User Email API: ' + error.message, 'error');
+            }
+        }
+
+        async function testDatabase() {
+            try {
+                // Test writing to database
+                const testData = {
+                    userSessions: {
+                        [userEmail]: {
+                            lastLogin: new Date().toISOString(),
+                            loginCount: Math.floor(Math.random() * 10) + 1,
+                            testMessage: 'Hello from logged in user!'
+                        }
+                    }
+                };
+                
+                const response = await fetch('/db', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                if (response.ok) {
+                    showMessage('✅ Database test successful! Data saved for user: ' + userEmail, 'success');
+                } else {
+                    showMessage('❌ Database test failed with status: ' + response.status, 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Network error testing database: ' + error.message, 'error');
+            }
+        }
+
+        function goToTests() {
+            window.location.href = './';
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userEmail');
+            showMessage('Logged out successfully. Redirecting...', 'info');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 1500);
+        }
+
+        // Toggle token display
+        document.getElementById('toggleToken').addEventListener('click', function() {
+            const tokenDisplay = document.getElementById('tokenDisplay');
+            const button = document.getElementById('toggleToken');
+            
+            if (tokenDisplay.classList.contains('hidden')) {
+                tokenDisplay.classList.remove('hidden');
+                button.textContent = 'Hide Token';
+            } else {
+                tokenDisplay.classList.add('hidden');
+                button.textContent = 'Show Token';
+            }
+        });
+
+        // Initialize page on load
+        window.addEventListener('load', initializePage);
+    </script>
+</body>
+</html>

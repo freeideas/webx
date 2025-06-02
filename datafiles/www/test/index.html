@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebX Test Suite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-style: italic;
+        }
+        .test-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        .test-card {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        .test-card:hover {
+            border-color: #007bff;
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .test-card h3 {
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .test-card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .test-card a {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .test-card a:hover {
+            background-color: #0056b3;
+        }
+        .endpoint-list {
+            background-color: #e8f4fd;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 30px 0;
+            border-left: 4px solid #007bff;
+        }
+        .endpoint-list h3 {
+            color: #0056b3;
+            margin-top: 0;
+        }
+        .endpoint-list ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .endpoint-list li {
+            color: #333;
+            margin: 8px 0;
+        }
+        .code {
+            font-family: monospace;
+            background-color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #e83e8c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebX Test Suite</h1>
+        <p class="subtitle">Testing WebX's four core services</p>
+        
+        <div class="endpoint-list">
+            <h3>Available WebX Endpoints</h3>
+            <ul>
+                <li><span class="code">/www</span> - Static file serving</li>
+                <li><span class="code">/proxy</span> - API proxy (bypasses CORS)</li>
+                <li><span class="code">/db</span> - JSON database</li>
+                <li><span class="code">/login</span> - Email authentication</li>
+            </ul>
+        </div>
+        
+        <div class="test-grid">
+            <div class="test-card">
+                <h3>🔐 Login System</h3>
+                <p>Test the complete email-based authentication flow with 6-digit codes and JWT tokens. Demonstrates the <span class="code">/login</span> endpoint.</p>
+                <a href="login.html">Test Login</a>
+            </div>
+            
+            <div class="test-card">
+                <h3>💾 Database Test</h3>
+                <p>Test the JSON database functionality with POST/PUT operations and data persistence. Demonstrates the <span class="code">/db</span> endpoint.</p>
+                <a href="webx-db-test.html">Test Database</a>
+            </div>
+            
+            <div class="test-card">
+                <h3>🌐 Proxy Test</h3>
+                <p>Test the API proxy functionality to bypass CORS restrictions when accessing external APIs. Demonstrates the <span class="code">/proxy</span> endpoint.</p>
+                <a href="#" onclick="alert('Proxy test coming soon!'); return false;">Coming Soon</a>
+            </div>
+            
+            <div class="test-card">
+                <h3>📁 Static Files</h3>
+                <p>This page itself demonstrates static file serving. All HTML, CSS, and JS files are served via the <span class="code">/www</span> endpoint.</p>
+                <a href="../">View Root</a>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
+            <p style="color: #666; font-size: 14px;">
+                WebX Server - All four core services working together<br>
+                <span class="code">Static Files + API Proxy + JSON Database + Email Auth</span>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
