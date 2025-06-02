@@ -24,6 +24,7 @@ public class Main {
         String staticConfig = p.getString( "static", "www@./datafiles/www", "static files endpoint as path@directory (use 'NONE' to disable)" );
         String proxyConfig = p.getString( "proxy", "proxy@../api-keys.json", "proxy endpoint as path@config-file (use 'NONE' to disable)" );
         String dbConfig = p.getString( "db", "db@jdbc:hsqldb:file:./datafiles/dbf/webx-db", "database endpoint as path@jdbc-url (use 'NONE' to disable)" );
+        String loginConfig = p.getString( "login", "login@WebX", "login endpoint as path@app-name (use 'NONE' to disable)" );
         String shutdownCode = p.getString( "shutdown", null, "shutdown code - if provided, server will exit when this code appears in the first line of any request" );
         boolean run = p.getBoolean( "run", false, "start the server" );
         
@@ -48,6 +49,11 @@ public class Main {
                     System.out.println( "  Database: DISABLED" );
                 } else {
                     System.out.println( "  Database: " + dbConfig );
+                }
+                if ( loginConfig.equalsIgnoreCase("NONE") ) {
+                    System.out.println( "  Login: DISABLED" );
+                } else {
+                    System.out.println( "  Login: " + loginConfig );
                 }
                 System.out.println( "\nTo start the server, add --run to the command line." );
             }
@@ -94,6 +100,17 @@ public class Main {
                 Lib.log( "Proxy handler configured at " + proxyPath + " without replacements" );
             }
         }
+        // Login handler
+        if ( !loginConfig.equalsIgnoreCase("NONE") ) {
+            String[] loginParts = loginConfig.split("@", 2);
+            String loginPath = loginParts.length > 0 ? loginParts[0] : "login";
+            String appName = loginParts.length > 1 ? loginParts[1] : "WebX";
+            if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
+            
+            HttpLoginHandler.appName = appName;
+            server.handlers.put( loginPath, new HttpLoginHandler() );
+            Lib.log( "Login handler configured at " + loginPath + " for app: " + appName );
+        }
         // JSON Database
         if ( !dbConfig.equalsIgnoreCase("NONE") ) {
             String[] dbParts = dbConfig.split("@", 2);
@@ -122,6 +139,11 @@ public class Main {
                     if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
                     endpoints.append(proxyPath).append(" (API proxy), ");
                 }
+                if ( !loginConfig.equalsIgnoreCase("NONE") ) {
+                    String loginPath = loginConfig.split("@", 2)[0];
+                    if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
+                    endpoints.append(loginPath).append(" (login), ");
+                }
                 endpoints.append(dbPath).append(" (JSON database)");
                 Lib.log( endpoints.toString() );
                 server.start();
@@ -146,6 +168,11 @@ public class Main {
                 String proxyPath = proxyConfig.split("@", 2)[0];
                 if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
                 endpoints.append(proxyPath).append(" (API proxy), ");
+            }
+            if ( !loginConfig.equalsIgnoreCase("NONE") ) {
+                String loginPath = loginConfig.split("@", 2)[0];
+                if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
+                endpoints.append(loginPath).append(" (login), ");
             }
             // Remove trailing comma and space if present
             String endpointsStr = endpoints.toString();

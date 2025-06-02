@@ -99,6 +99,14 @@ while ( true ) {
 - Debug logs are almost always useless because it takes too much time to read them
 - A deliberately minimal testing framework is used in this codebase, which consists of `jLib.Lib.testClass()`, which finds all static methods in the class whose name ends with `"_TEST_"` and return a boolean. These methods can call `Lib.asrt( some boolean condition, "a message that helps us identify which line of code failed" )` and `Lib.asrtEQ( a, b, "a message that helps us identify which line of code failed" )`. These eliminate the need for any console output for testing. These test methods should declare `throws Exception`, and not catch any exceptions, but just let them naturally bubble up to the testing framework, except of course in special cases where an exception is expected.
 
+### On Testing Philosophy
+
+- Tests should focus on verifying that components behave correctly with valid inputs
+- Testing error handling and edge cases is usually not valuable - focus on the happy path
+- A component that works correctly with proper inputs is far more important than one that gracefully handles invalid inputs
+- Time spent testing error conditions is better spent making the component work better with correct inputs
+- Exception: Test error conditions only when they represent important business logic or security boundaries
+
 This document outlines the formatting guidelines for Java code.
 The code examples below here are good examples of how to format your code.
 

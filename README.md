@@ -6,13 +6,14 @@ A lightweight, feature-rich web server that provides everything needed to build 
 
 ## Overview
 
-WebX is a simple yet powerful web server that provides three core services out of the box:
+WebX is a simple yet powerful web server that provides four core services out of the box:
 
 - **Static File Serving** (`/www`) - Serve your HTML, CSS, JS, and other static assets
 - **API Proxy** (`/proxy`) - Allow web pages to access any external API, bypassing CORS restrictions
 - **JSON Database** (`/db`) - A persistent JSON data store that accepts POST/PUT requests and merges data into a persistent structure
+- **Email Authentication** (`/login`) - JSON API for email-based login with 6-digit codes and JWT tokens
 
-With these three services, you can build fully-functional web applications without any backend code. Your HTML/CSS/JS pages have everything they need to store data, access external APIs, and serve content.
+With these four services, you can build fully-functional web applications without any backend code. Your HTML/CSS/JS pages have everything they need to store data, access external APIs, authenticate users, and serve content.
 
 ## Quick Start
 
@@ -46,13 +47,14 @@ WebX uses a unified `path@config` format for all endpoints:
 ./java/java.sh appz.webx.Main --static=www@/path/to/your/files
 
 # Custom endpoint paths
-./java/java.sh appz.webx.Main --static=files@./public --proxy=api@./keys.json --db=data@jdbc:hsqldb:mem:myapp
+./java/java.sh appz.webx.Main --static=files@./public --proxy=api@./keys.json --db=data@jdbc:hsqldb:mem:myapp --login=auth@MyApp
 ```
 
 **Parameter Format:**
 - `--static=path@directory` - Static files served at `/path` from `directory`
 - `--proxy=path@config-file` - Proxy endpoint at `/path` using `config-file` for API keys
 - `--db=path@jdbc-url` - Database endpoint at `/path` using `jdbc-url`
+- `--login=path@app-name` - Login endpoint at `/path` with `app-name` for email subjects
 
 **Disabling Endpoints:**
 Any endpoint can be disabled by setting it to `NONE` (case-insensitive):
@@ -66,8 +68,11 @@ Any endpoint can be disabled by setting it to `NONE` (case-insensitive):
 # Disable database
 ./java/java.sh appz.webx.Main --db=None --run
 
+# Disable login
+./java/java.sh appz.webx.Main --login=NONE --run
+
 # Run with only proxy enabled
-./java/java.sh appz.webx.Main --static=NONE --db=NONE --run
+./java/java.sh appz.webx.Main --static=NONE --db=NONE --login=NONE --run
 ```
 
 **Note:** Command line arguments must use the `--arg=value` format (with equals sign). Space-separated arguments like `--port 8080` are not supported.
@@ -163,7 +168,75 @@ Features:
 - Persistent storage across server restarts
 - Simple POST/PUT interface
 
+### 4. Email Authentication (`/login`)
+
+A JSON API for email-based authentication using 6-digit login codes sent via email, with JWT token management.
+
+**Usage from JavaScript:**
+
+**Send Login Code:**
+```javascript
+// Request a login code be sent to email
+const response = await fetch('/login?command=sendEmail&email=user@example.com', {
+    method: 'POST'
+});
+const result = await response.json();
+// Returns: {"success": true, "message": "Email sent successfully"}
+```
+
+**Validate Login Code:**
+```javascript
+// Validate the 6-digit code and get auth token
+const response = await fetch('/login?command=validateLoginCode&email=user@example.com&loginCode=123456', {
+    method: 'POST'
+});
+const result = await response.json();
+// Returns: {"success": true, "authToken": "...", "email": "user@example.com"}
+// Also sets Authorization cookie automatically
+```
+
+**Get Current User:**
+```javascript
+// Get email from any valid auth token in request
+const response = await fetch('/login?command=userEmail', {
+    method: 'GET'
+});
+const result = await response.json();
+// Returns: {"success": true, "email": "user@example.com"}
+```
+
+Features:
+- Email-based authentication with 6-digit codes
+- 1-hour login code expiration for security
+- JWT tokens set as cookies and returned in JSON
+- No passwords required - just email verification
+- Persistent login sessions across browser restarts
+- Works with any valid AuthToken found in request headers or cookies
+
 ## Additional Features
+
+### Security & Access Control
+
+WebX provides extensible security through the `SecurityGuard` class (`java/src/http/SecurityGuard.java`), which allows you to implement custom authorization rules for both proxy and database access.
+
+**Example Use Cases:**
+- **Cookie-based database access control** - Extend SecurityGuard to read user cookies and restrict database writes to user-owned data paths
+- **API proxy restrictions** - Control which external APIs users can access based on their authentication level
+- **Role-based permissions** - Implement arbitrary access rules based on request headers, paths, or content
+
+**Implementation:**
+```java
+// Custom security rule example
+SecurityGuard guard = new SecurityGuard();
+guard.rules.add(request -> {
+    String cookie = request.headerBlock.headers.get("Cookie");
+    String path = request.headerBlock.path;
+    // Only allow users to write to their own database namespace
+    return path.startsWith("/db/user_" + extractUserId(cookie));
+});
+```
+
+The SecurityGuard uses a simple predicate-based system where all rules must pass for a request to be allowed. This provides fine-grained control over application security without requiring framework-specific knowledge.
 
 ### Request Logging
 
