@@ -13,6 +13,17 @@ public class Main {
 
     @SuppressWarnings("try")
     public static void main( String[] args ) {
+        if ( System.currentTimeMillis()<0 && ( args==null || args.length==0 ) ) { // for manual testing
+            args = new String[]{
+                "--port=13102",
+                "--static=ww@./datafiles/www",
+                "--proxy=prx@../api-keys.json",
+                "--db=db@jdbc:hsqldb:mem:webx-db",
+                "--login=login@WebX",
+                "--shutdown=SHUTDOWN13102",
+                "--run"
+            };
+        }
         Lib.archiveLogFiles();
         ParseArgs p = new ParseArgs(args);
         p.setAppName( Lib.getAppName() );
