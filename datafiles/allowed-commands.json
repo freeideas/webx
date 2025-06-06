@@ -1,0 +1,31 @@
+{
+    "allowedCommands": {
+        "echo": {
+            "executable": "/bin/echo",
+            "allowAllArgs": true,
+            "maxTimeout": 1000
+        },
+        "ls": {
+            "executable": "/bin/ls",
+            "allowedArgs": ["^-[la]+$", "^/tmp/.*", "^\\./.*"],
+            "maxTimeout": 5000
+        },
+        "date": {
+            "executable": "/bin/date",
+            "allowAllArgs": true,
+            "maxTimeout": 1000
+        },
+        "pwd": {
+            "executable": "/bin/pwd",
+            "allowAllArgs": false,
+            "maxTimeout": 1000
+        },
+        "whoami": {
+            "executable": "/usr/bin/whoami",
+            "allowAllArgs": false,
+            "maxTimeout": 1000
+        }
+    },
+    "defaultTimeout": 3000,
+    "maxConcurrentCommands": 10
+}

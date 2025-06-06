@@ -33,6 +33,7 @@ public class Main {
         String proxyConfig = p.getString( "proxy", "proxy@../api-keys.json", "proxy endpoint as path@config-file (use 'NONE' to disable)" );
         String dbConfig = p.getString( "db", "db@jdbc:hsqldb:file:./datafiles/dbf/webx-db", "database endpoint as path@jdbc-url (use 'NONE' to disable)" );
         String loginConfig = p.getString( "login", "login@WebX", "login endpoint as path@app-name (use 'NONE' to disable)" );
+        String oscmdConfig = p.getString( "oscmd", "NONE", "OS command endpoint as path@config-file (use 'NONE' to disable)" );
         String shutdownCode = p.getString( "shutdown", null, "shutdown code - if provided, server will exit when this code appears in the first line of any request" );
         boolean run = p.getBoolean( "run", false, "start the server" );
         
@@ -78,6 +79,16 @@ public class Main {
             String appName = loginParts.length>1 ? loginParts[1] : "WebX";
             if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
             System.out.println( "  " + loginPath + " provides email authentication for '" + appName + "'" );
+        }
+        
+        if ( oscmdConfig.equalsIgnoreCase("NONE") ) {
+            System.out.println( "  OS Command: DISABLED" );
+        } else {
+            String[] oscmdParts = oscmdConfig.split("@", 2);
+            String oscmdPath = oscmdParts.length>0 ? oscmdParts[0] : "oscmd";
+            String oscmdConfigFile = oscmdParts.length>1 ? oscmdParts[1] : "./allowed-commands.json";
+            if ( !oscmdPath.startsWith("/") ) oscmdPath = "/" + oscmdPath;
+            System.out.println( "  " + oscmdPath + " executes OS commands (config: " + oscmdConfigFile + ")" );
         }
         System.out.println( "  run is " + run + ", so " + (run ? "service will start now" : "exiting") );
         
@@ -129,6 +140,20 @@ public class Main {
             Lib.log( "Login handler configured at " + loginPath + " for app: " + appName );
         }
         
+        if ( !oscmdConfig.equalsIgnoreCase("NONE") ) {
+            String[] oscmdParts = oscmdConfig.split("@", 2);
+            String oscmdPath = oscmdParts.length>0 ? oscmdParts[0] : "oscmd";
+            String oscmdConfigFile = oscmdParts.length>1 ? oscmdParts[1] : "./allowed-commands.json";
+            if ( !oscmdPath.startsWith("/") ) oscmdPath = "/" + oscmdPath;
+            try {
+                HttpOsCommandHandler oscmdHandler = new HttpOsCommandHandler( oscmdConfigFile );
+                server.handlers.put( oscmdPath, oscmdHandler );
+                Lib.log( "OS command handler configured at " + oscmdPath + " with config: " + oscmdConfigFile );
+            } catch ( IOException e ) {
+                Lib.log( "ERROR: Failed to configure OS command handler: " + e.getMessage() );
+            }
+        }
+        
         if ( !dbConfig.equalsIgnoreCase("NONE") ) {
             String[] dbParts = dbConfig.split("@", 2);
             String dbPath = dbParts.length>0 ? dbParts[0] : "db";
@@ -157,6 +182,11 @@ public class Main {
                     if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
                     endpoints.append(loginPath).append(" (login), ");
                 }
+                if ( !oscmdConfig.equalsIgnoreCase("NONE") ) {
+                    String oscmdPath = oscmdConfig.split("@", 2)[0];
+                    if ( !oscmdPath.startsWith("/") ) oscmdPath = "/" + oscmdPath;
+                    endpoints.append(oscmdPath).append(" (OS commands), ");
+                }
                 endpoints.append(dbPath).append(" (JSON database)");
                 Lib.log( endpoints.toString() );
                 server.start();
@@ -182,6 +212,11 @@ public class Main {
                 String loginPath = loginConfig.split("@", 2)[0];
                 if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
                 endpoints.append(loginPath).append(" (login), ");
+            }
+            if ( !oscmdConfig.equalsIgnoreCase("NONE") ) {
+                String oscmdPath = oscmdConfig.split("@", 2)[0];
+                if ( !oscmdPath.startsWith("/") ) oscmdPath = "/" + oscmdPath;
+                endpoints.append(oscmdPath).append(" (OS commands), ");
             }
             String endpointsStr = endpoints.toString();
             if ( endpointsStr.endsWith(", ") ) endpointsStr = endpointsStr.substring(0, endpointsStr.length()-2);
