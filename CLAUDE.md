@@ -110,12 +110,14 @@ This is a multi-language project with both Java and Python components, organized
 - Test files and assets in `datafiles/files4testing/`
 
 ### Code Style
-Follow the strict formatting guidelines in CODE_GUIDELINES.md:
+**MANDATORY**: Follow the strict formatting guidelines in CODE_GUIDELINES.md:
 - Brevity above all other concerns
 - Early returns to avoid nesting
 - Minimal comments (usually only when marked with NOTE; usually only for overview and surprises)
 - Specific spacing rules for parentheses and operators
 - 120 character line limit
+
+**⚠️ REMINDER: Always check CODE_GUIDELINES.md before writing any code ⚠️**
 
 ### Testing
 - Java: Methods ending in `_TEST_` that return boolean

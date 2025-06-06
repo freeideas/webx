@@ -260,8 +260,14 @@ All HTTP requests are automatically logged to `./log/` directory for debugging a
 
 ### Run Tests
 ```bash
+# Run basic tests
 ./java/java.sh Test
+
+# Run ALL tests across the entire project (recommended!)
+./java/java.sh buildtools.TestAllClasses
 ```
+
+**TestAllClasses** is our comprehensive test discovery engine that automatically finds and tests every Java class in the project. It provides detailed reporting, handles missing dependencies gracefully, and returns proper exit codes for CI/CD integration.
 
 ### Download Dependencies
 ```bash

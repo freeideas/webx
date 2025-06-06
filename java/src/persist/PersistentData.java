@@ -23,6 +23,14 @@ public class PersistentData implements AutoCloseable {
     public final ConcurrentLinkedDeque<Runnable> beforeClose = new ConcurrentLinkedDeque<>();
     public final ConcurrentLinkedDeque<Runnable> afterClose = new ConcurrentLinkedDeque<>();
     public static String defaultJdbcUrl = "jdbc:hsqldb:file:./datafiles/dbf/PersistentData";
+    
+    static {
+        try {
+            Class.forName("org.hsqldb.jdbc.JDBCDriver");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Failed to load HSQLDB JDBC driver", e);
+        }
+    }
 
 
 

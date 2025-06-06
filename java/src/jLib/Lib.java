@@ -14,15 +14,43 @@ import java.util.concurrent.atomic.*;
 import java.util.regex.*;
 import java.util.stream.*;
 import javax.script.*;
+import javax.net.ssl.*;
+import java.util.zip.*;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import java.util.zip.*;
 
 
 
 public class Lib {
     public static final java.lang.ref.Cleaner cleaner = java.lang.ref.Cleaner.create(); // so everyone can use one cleaner instead of having many
     public static final String CRLF = "\r\n";
+
+
+
+    public static ServerSocket createServerSocket(
+        int port, boolean tls, File cert, String keystorePassword
+    ) throws IOException {
+        if (!tls) return new ServerSocket(port, 50);
+        try {
+            SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
+            if (cert != null) {
+                // Load the keystore from the provided certificate file
+                KeyStore keyStore = KeyStore.getInstance("PKCS12");
+                try (FileInputStream fis = new FileInputStream(cert)) {
+                    keyStore.load(fis, keystorePassword.toCharArray());
+                }
+                KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                keyManagerFactory.init(keyStore, keystorePassword.toCharArray());
+                sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+            } else {
+                sslContext.init(null, null, null);
+            }
+            SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
+            return sslServerSocketFactory.createServerSocket(port, 50);
+        }
+        catch (IOException ioe) { throw ioe; }
+        catch (Exception e) { throw new IOException(e); }
+    }
 
 
 
@@ -2828,7 +2856,7 @@ public class Lib {
     public static boolean testClass( Class<?> claz ) {
         Class<?> clas = claz==null ? getCallingClass() : claz;
         archiveLogFiles();
-        // a class for probing and comparing Methods
+        System.out.println("Testing class: " + clas.getName());        
         class MethodInfo implements Comparable<MethodInfo> {
             public final Method method;
             public int methodLineNumber = Integer.MAX_VALUE;
@@ -2861,7 +2889,8 @@ public class Lib {
             @Override
             public String toString() {
                 String s = (
-                    method.getName() + ( methodLineNumber==Integer.MAX_VALUE ? "" : ":"+ methodLineNumber )
+                    clas.getSimpleName() + "." + method.getName() + 
+                    ( methodLineNumber==Integer.MAX_VALUE ? "" : ":"+ methodLineNumber )
                 );
                 if (errMsg!=null) s += "\n   "+errMsg;
                 if (errLoc!=null) {
@@ -2917,10 +2946,10 @@ public class Lib {
             }
         }
         if ( failedMethods.isEmpty() ) {
-            System.out.println("All tests PASS!");
+            System.out.println( "All tests PASS in class "+clas.getName() );
             return true;
         }
-        System.out.println("Failed tests:");
+        System.out.println( "Failed tests in class "+clas.getName()+":" );
         for ( MethodInfo mi : failedMethods ) System.out.println(mi);
         return false;
     }
