@@ -1,4 +1,5 @@
 {
+    "_comment": "DEPRECATED: This file is no longer used. OS command validation is now handled by DefaultSecurityGuard.",
     "allowedCommands": {
         "echo": {
             "executable": "/bin/echo",

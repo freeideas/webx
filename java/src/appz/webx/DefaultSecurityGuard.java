@@ -1,6 +1,8 @@
 package appz.webx;
 import http.*;
 import jLib.*;
+import java.util.*;
+import java.util.regex.Pattern;
 
 
 public class DefaultSecurityGuard extends SecurityGuard {
@@ -36,6 +38,55 @@ public class DefaultSecurityGuard extends SecurityGuard {
                 AuthToken authToken = AuthToken.find(cookie);
                 if ( authToken!=null && authToken.isValid() ) return true;
             }
+            return false;
+        });
+        
+        // Validate OS commands and arguments
+        rules.add( req -> {
+            String path = req.headerBlock.getRequestPath();
+            if ( !path.equals("/oscmd") ) return true;
+            if ( req.parsedBody==null || !(req.parsedBody instanceof Map) ) return false;
+            
+            @SuppressWarnings("unchecked")
+            Map<Object,Object> body=(Map<Object,Object>)req.parsedBody;
+            String command=(String)body.get( "command" );
+            @SuppressWarnings("unchecked")
+            List<String> args=body.containsKey( "args" ) ? (List<String>)body.get( "args" ) : Collections.emptyList();
+            Integer timeout=body.containsKey( "timeout" ) ? ((Number)body.get( "timeout" )).intValue() : null;
+            
+            // Check if command is allowed
+            Set<String> allowedCommands=new HashSet<>( Arrays.asList( "echo", "ls", "date", "pwd", "whoami", "claude", "cd" ) );
+            if ( !allowedCommands.contains( command ) ) return false;
+            
+            // Validate command-specific arguments
+            if ( "echo".equals( command ) ) return true; // Allow all args for echo
+            if ( "date".equals( command ) ) return true; // Allow all args for date
+            if ( "claude".equals( command ) ) return true; // Allow all args for claude
+            if ( "pwd".equals( command ) ) return args.isEmpty(); // No args for pwd
+            if ( "whoami".equals( command ) ) return args.isEmpty(); // No args for whoami
+            
+            if ( "ls".equals( command ) ) {
+                for ( String arg:args ) {
+                    // Allow -l, -a, -la flags and paths starting with /tmp/ or ./
+                    if ( !arg.matches( "^-[la]+$" ) && !arg.startsWith( "/tmp/" ) && !arg.startsWith( "./" ) ) return false;
+                }
+                return true;
+            }
+            
+            if ( "cd".equals( command ) ) {
+                // For cd command, args should be ["-c", "cd <path>"]
+                if ( args.size()!=2 ) return false;
+                if ( !"-c".equals( args.get( 0 ) ) ) return false;
+                if ( !args.get( 1 ).startsWith( "cd " ) ) return false;
+                return true;
+            }
+            
+            // Validate timeout (max 120000ms for claude, 5000ms for ls, 1000ms for others)
+            if ( timeout!=null ) {
+                int maxTimeout="claude".equals( command ) ? 120000 : "ls".equals( command ) ? 5000 : 1000;
+                if ( timeout>maxTimeout ) return false;
+            }
+            
             return false;
         });
     }

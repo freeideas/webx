@@ -10,8 +10,7 @@ import jLib.*;
 
 public class HttpOsCommandHandler implements HttpHandler {
     
-    private final String configPath;
-    private final Map<String,CommandConfig> allowedCommands;
+    private final SecurityGuard securityGuard;
     private final int defaultTimeout;
     private final int maxConcurrentCommands;
     private final Semaphore commandSemaphore;
@@ -19,12 +18,17 @@ public class HttpOsCommandHandler implements HttpHandler {
     
     
     
-    public HttpOsCommandHandler( String configPath ) throws IOException {
-        this.configPath=configPath;
-        Map<String,Object> config=loadConfig();
-        this.allowedCommands=parseAllowedCommands( (Map<String,Object>)config.get( "allowedCommands" ) );
-        this.defaultTimeout=((Number)config.getOrDefault( "defaultTimeout", 3000 )).intValue();
-        this.maxConcurrentCommands=((Number)config.getOrDefault( "maxConcurrentCommands", 10 )).intValue();
+    public HttpOsCommandHandler( SecurityGuard securityGuard ) {
+        this( securityGuard, 3000, 10 );
+    }
+    
+    
+    
+    
+    public HttpOsCommandHandler( SecurityGuard securityGuard, int defaultTimeout, int maxConcurrentCommands ) {
+        this.securityGuard=securityGuard;
+        this.defaultTimeout=defaultTimeout;
+        this.maxConcurrentCommands=maxConcurrentCommands;
         this.commandSemaphore=new Semaphore( maxConcurrentCommands );
     }
     
@@ -52,14 +56,9 @@ public class HttpOsCommandHandler implements HttpHandler {
             
             if ( command==null || command.isEmpty() ) return new HttpErrorResponse( 400, "Missing command" );
             
-            CommandConfig config=allowedCommands.get( command );
-            if ( config==null ) return new HttpErrorResponse( 403, "Command not allowed: "+command );
+            if ( !securityGuard.test( request ) ) return new HttpErrorResponse( 403, "Command not allowed by security guard" );
             
-            if ( !validateArgs( config, args ) ) return new HttpErrorResponse( 403, "Invalid arguments for command: "+command );
-            
-            if ( timeout>config.maxTimeout ) timeout=config.maxTimeout;
-            
-            Map<String,Object> result=executeCommand( config, args, timeout );
+            Map<String,Object> result=executeCommand( command, args, timeout );
             String jsonResponse=JsonEncoder.encode( result );
             HttpHeaderBlock responseHeader=new HttpHeaderBlock( 200, "OK", 
                 Lib.mapOf( "Content-Type", "application/json" ) );
@@ -73,77 +72,35 @@ public class HttpOsCommandHandler implements HttpHandler {
     
     
     
-    private Map<String,Object> loadConfig() throws IOException {
-        String json=Files.readString( Paths.get( configPath ) );
-        Object decoded=JsonDecoder.decode( json );
-        if ( !(decoded instanceof Map) ) throw new IOException( "Invalid config format" );
-        @SuppressWarnings("unchecked")
-        Map<String,Object> map=(Map<String,Object>)decoded;
-        return map;
+    public static Map<String,String> getCommandExecutables() {
+        Map<String,String> executables=new HashMap<>();
+        executables.put( "echo", "/bin/echo" );
+        executables.put( "ls", "/bin/ls" );
+        executables.put( "date", "/bin/date" );
+        executables.put( "pwd", "/bin/pwd" );
+        executables.put( "whoami", "/usr/bin/whoami" );
+        executables.put( "claude", "/home/ace/.npm-global/bin/claude" );
+        executables.put( "cd", "/bin/bash" );
+        return executables;
     }
     
     
     
     
-    private Map<String,CommandConfig> parseAllowedCommands( Map<String,Object> commands ) {
-        Map<String,CommandConfig> result=new HashMap<>();
-        for ( Map.Entry<String,Object> entry:commands.entrySet() ) {
-            String name=entry.getKey();
-            @SuppressWarnings("unchecked")
-            Map<String,Object> cmdConfig=(Map<String,Object>)entry.getValue();
-            CommandConfig config=new CommandConfig();
-            config.executable=(String)cmdConfig.get( "executable" );
-            config.allowAllArgs=(boolean)cmdConfig.getOrDefault( "allowAllArgs", false );
-            config.maxTimeout=((Number)cmdConfig.getOrDefault( "maxTimeout", defaultTimeout )).intValue();
-            
-            @SuppressWarnings("unchecked")
-            List<String> allowedArgs=(List<String>)cmdConfig.get( "allowedArgs" );
-            if ( allowedArgs!=null ) {
-                config.allowedArgPatterns=new ArrayList<>();
-                for ( String pattern:allowedArgs ) {
-                    config.allowedArgPatterns.add( Pattern.compile( pattern ) );
-                }
-            }
-            
-            result.put( name, config );
-        }
-        return result;
-    }
-    
-    
-    
-    
-    private boolean validateArgs( CommandConfig config, List<String> args ) {
-        if ( config.allowAllArgs ) return true;
-        if ( config.allowedArgPatterns==null ) return args.isEmpty();
-        
-        for ( String arg:args ) {
-            boolean allowed=false;
-            for ( Pattern pattern:config.allowedArgPatterns ) {
-                if ( pattern.matcher( arg ).matches() ) {
-                    allowed=true;
-                    break;
-                }
-            }
-            if ( !allowed ) return false;
-        }
-        return true;
-    }
-    
-    
-    
-    
-    private Map<String,Object> executeCommand( CommandConfig config, List<String> args, int timeout ) throws Exception {
+    private Map<String,Object> executeCommand( String command, List<String> args, int timeout ) throws Exception {
         if ( !commandSemaphore.tryAcquire( timeout, TimeUnit.MILLISECONDS ) ) {
             throw new RuntimeException( "Too many concurrent commands" );
         }
         
         try {
-            List<String> command=new ArrayList<>();
-            command.add( config.executable );
-            command.addAll( args );
+            String executable=getCommandExecutables().get( command );
+            if ( executable==null ) throw new RuntimeException( "Unknown command: "+command );
             
-            ProcessBuilder pb=new ProcessBuilder( command );
+            List<String> commandList=new ArrayList<>();
+            commandList.add( executable );
+            commandList.addAll( args );
+            
+            ProcessBuilder pb=new ProcessBuilder( commandList );
             Process process=pb.start();
             
             ByteArrayOutputStream stdout=new ByteArrayOutputStream();
@@ -195,12 +152,6 @@ public class HttpOsCommandHandler implements HttpHandler {
     
     
     
-    private static class CommandConfig {
-        String executable;
-        boolean allowAllArgs;
-        List<Pattern> allowedArgPatterns;
-        int maxTimeout;
-    }
     
     
     
@@ -214,28 +165,28 @@ public class HttpOsCommandHandler implements HttpHandler {
     
     
     public static boolean mainTest_TEST_() throws Exception {
-        String testConfig="{\n"+
-            "  \"allowedCommands\": {\n"+
-            "    \"echo\": {\n"+
-            "      \"executable\": \"/bin/echo\",\n"+
-            "      \"allowAllArgs\": true,\n"+
-            "      \"maxTimeout\": 1000\n"+
-            "    },\n"+
-            "    \"ls\": {\n"+
-            "      \"executable\": \"/bin/ls\",\n"+
-            "      \"allowedArgs\": [\"^-[la]+$\", \"^/tmp.*\"],\n"+
-            "      \"maxTimeout\": 5000\n"+
-            "    }\n"+
-            "  },\n"+
-            "  \"defaultTimeout\": 3000,\n"+
-            "  \"maxConcurrentCommands\": 10\n"+
-            "}";
+        SecurityGuard testGuard=new SecurityGuard() {
+            @Override
+            public boolean test( HttpRequest request ) {
+                if ( request.parsedBody==null || !(request.parsedBody instanceof Map) ) return false;
+                @SuppressWarnings("unchecked")
+                Map<Object,Object> body=(Map<Object,Object>)request.parsedBody;
+                String command=(String)body.get( "command" );
+                @SuppressWarnings("unchecked")
+                List<String> args=body.containsKey( "args" ) ? (List<String>)body.get( "args" ) : Collections.emptyList();
+                
+                if ( "echo".equals( command ) ) return true;
+                if ( "ls".equals( command ) ) {
+                    for ( String arg:args ) {
+                        if ( !arg.matches( "^-[la]+$" ) && !arg.startsWith( "/tmp" ) ) return false;
+                    }
+                    return true;
+                }
+                return false;
+            }
+        };
         
-        File tempConfig=File.createTempFile( "oscmd-test", ".json" );
-        tempConfig.deleteOnExit();
-        Files.writeString( tempConfig.toPath(), testConfig );
-        
-        HttpOsCommandHandler handler=new HttpOsCommandHandler( tempConfig.getAbsolutePath() );
+        HttpOsCommandHandler handler=new HttpOsCommandHandler( testGuard );
         
         Map<String,String> headers=new HashMap<>();
         headers.put( "Content-Type", "application/json" );
