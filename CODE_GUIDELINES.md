@@ -114,7 +114,7 @@ The code examples below here are good examples of how to format your code.
 
 ### Blank Lines
 - Use 3 blank lines:
-  - Between methods
+  - Between methods or function defs
   - Before the first method and after the last method
   - Between imports and class declaration
   - EXCEPTION: anonymous inner classes have no blank lines
