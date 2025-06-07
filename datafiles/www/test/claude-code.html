@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Web Interface</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .auth-container {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .auth-container.authenticated {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .main-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .config-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        input[type="text"], input[type="password"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            min-height: 120px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .auth-button {
+            background-color: #28a745;
+        }
+        .auth-button:hover {
+            background-color: #218838;
+        }
+        .logout-button {
+            background-color: #dc3545;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+        .logout-button:hover {
+            background-color: #c82333;
+        }
+        .output-section {
+            margin-top: 30px;
+        }
+        .output-container {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .output-container.error {
+            background-color: #fff5f5;
+            border-color: #dc3545;
+        }
+        .output-header {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .output-content {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.5;
+            margin: 0;
+        }
+        .stderr {
+            color: #dc3545;
+        }
+        .conversation-history {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .prompt-entry {
+            background-color: #e3f2fd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .prompt-label {
+            font-weight: 600;
+            color: #1976d2;
+        }
+        .loading {
+            display: none;
+            margin-left: 10px;
+            color: #666;
+        }
+        .loading.active {
+            display: inline-block;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Claude Code Web Interface</h1>
+    
+    <div id="authContainer" class="auth-container">
+        <div id="loginSection">
+            <p><strong>Authentication Required:</strong> You must be logged in to use Claude Code.</p>
+            <label for="authToken">Auth Token:</label>
+            <input type="password" id="authToken" placeholder="Paste your auth token here">
+            <button class="auth-button" onclick="authenticate()">Authenticate</button>
+        </div>
+        <div id="loggedInSection" class="hidden">
+            <p><strong>Authenticated</strong> <button class="logout-button" onclick="logout()">Logout</button></p>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="config-section">
+            <label for="workingDirectory">Working Directory:</label>
+            <input type="text" id="workingDirectory" value="/home/ace/prjx/webx" placeholder="/path/to/project">
+        </div>
+        
+        <div class="config-section">
+            <label for="prompt">Prompt for Claude Code:</label>
+            <textarea id="prompt" placeholder="Enter your prompt for Claude Code..."></textarea>
+            <button id="executeButton" onclick="executeClaudeCode()" disabled>Execute Claude Code</button>
+            <span class="loading" id="loading">Processing...</span>
+        </div>
+        
+        <div class="output-section">
+            <h2>Conversation History</h2>
+            <div id="conversationHistory" class="conversation-history"></div>
+        </div>
+    </div>
+    
+    <script>
+        let authTokenValue = '';
+        
+        // Check if already authenticated on page load
+        window.addEventListener('load', () => {
+            const savedToken = localStorage.getItem('webx_auth_token');
+            if (savedToken) {
+                authTokenValue = savedToken;
+                showAuthenticated();
+            }
+        });
+        
+        async function authenticate() {
+            const token = document.getElementById('authToken').value.trim();
+            if (!token) {
+                alert('Please enter an auth token');
+                return;
+            }
+            
+            // Test authentication by trying a simple command
+            try {
+                const response = await fetch('/oscmd', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token,
+                        'Cookie': 'authToken=' + token
+                    },
+                    body: JSON.stringify({
+                        command: 'echo',
+                        args: ['test'],
+                        timeout: 1000
+                    })
+                });
+                
+                if (response.status === 200) {
+                    authTokenValue = token;
+                    localStorage.setItem('webx_auth_token', token);
+                    showAuthenticated();
+                } else {
+                    alert('Authentication failed. Please check your token.');
+                }
+            } catch (error) {
+                alert('Authentication error: ' + error.message);
+            }
+        }
+        
+        function showAuthenticated() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('loggedInSection').classList.remove('hidden');
+            document.getElementById('authContainer').classList.add('authenticated');
+            document.getElementById('executeButton').disabled = false;
+            document.getElementById('authToken').value = '';
+        }
+        
+        function logout() {
+            authTokenValue = '';
+            localStorage.removeItem('webx_auth_token');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('loggedInSection').classList.add('hidden');
+            document.getElementById('authContainer').classList.remove('authenticated');
+            document.getElementById('executeButton').disabled = true;
+        }
+        
+        async function executeClaudeCode() {
+            const prompt = document.getElementById('prompt').value.trim();
+            const workingDir = document.getElementById('workingDirectory').value.trim();
+            
+            if (!prompt) {
+                alert('Please enter a prompt');
+                return;
+            }
+            
+            if (!authTokenValue) {
+                alert('Please authenticate first');
+                return;
+            }
+            
+            const executeButton = document.getElementById('executeButton');
+            const loading = document.getElementById('loading');
+            
+            executeButton.disabled = true;
+            loading.classList.add('active');
+            
+            // Add prompt to history
+            addToHistory('prompt', prompt);
+            
+            try {
+                // First, change to the working directory
+                if (workingDir) {
+                    await executeCommand('cd', [workingDir]);
+                }
+                
+                // Execute claude code command
+                const response = await fetch('/oscmd', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authTokenValue,
+                        'Cookie': 'authToken=' + authTokenValue
+                    },
+                    body: JSON.stringify({
+                        command: 'claude',
+                        args: ['--dangerously-skip-permissions', '-p', prompt],
+                        timeout: 60000 // 60 seconds timeout for Claude
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 200 && data.success) {
+                    addToHistory('output', data.stdout || '', data.stderr || '', data.exitCode);
+                } else {
+                    addToHistory('error', data.error || 'Command failed', '', response.status);
+                }
+                
+                // Clear the prompt after successful execution
+                document.getElementById('prompt').value = '';
+                
+            } catch (error) {
+                addToHistory('error', 'Network error: ' + error.message, '', 0);
+            } finally {
+                executeButton.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+        
+        async function executeCommand(command, args) {
+            const response = await fetch('/oscmd', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + authTokenValue
+                },
+                body: JSON.stringify({
+                    command: command,
+                    args: args,
+                    timeout: 5000
+                })
+            });
+            return response.json();
+        }
+        
+        function addToHistory(type, content, stderr = '', exitCode = 0) {
+            const historyDiv = document.getElementById('conversationHistory');
+            const entry = document.createElement('div');
+            
+            if (type === 'prompt') {
+                entry.className = 'prompt-entry';
+                entry.innerHTML = `<div class="prompt-label">Prompt:</div><pre class="output-content">${escapeHtml(content)}</pre>`;
+            } else {
+                entry.className = 'output-container' + (type === 'error' ? ' error' : '');
+                let html = `<div class="output-header">${type === 'error' ? 'Error' : 'Claude Code Output'}</div>`;
+                
+                if (content) {
+                    html += `<pre class="output-content">${escapeHtml(content)}</pre>`;
+                }
+                
+                if (stderr) {
+                    html += `<div class="output-header">stderr:</div><pre class="output-content stderr">${escapeHtml(stderr)}</pre>`;
+                }
+                
+                if (exitCode !== undefined && exitCode !== 0) {
+                    html += `<div>Exit code: ${exitCode}</div>`;
+                }
+                
+                entry.innerHTML = html;
+            }
+            
+            historyDiv.appendChild(entry);
+            historyDiv.scrollTop = historyDiv.scrollHeight;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Allow executing on Enter key (Ctrl+Enter for multi-line)
+        document.getElementById('prompt').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                if (!document.getElementById('executeButton').disabled) {
+                    executeClaudeCode();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

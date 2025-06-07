@@ -24,6 +24,16 @@
             "executable": "/usr/bin/whoami",
             "allowAllArgs": false,
             "maxTimeout": 1000
+        },
+        "claude": {
+            "executable": "/home/ace/.npm-global/bin/claude",
+            "allowAllArgs": true,
+            "maxTimeout": 120000
+        },
+        "cd": {
+            "executable": "/bin/bash",
+            "allowedArgs": ["^-c$", "^cd .*"],
+            "maxTimeout": 1000
         }
     },
     "defaultTimeout": 3000,
