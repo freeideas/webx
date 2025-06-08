@@ -18,6 +18,19 @@ public class Email {
 
 
 
+    public Email( String smtpHost, int smtpPort, String imapHost, int imapPort, 
+                  String username, String password, String defaultFrom ) {
+        this.smtpHost = smtpHost;
+        this.smtpPort = smtpPort;
+        this.imapHost = imapHost;
+        this.imapPort = imapPort;
+        this.username = username;
+        this.password = password;
+        this.defaultFrom = defaultFrom;
+    }
+
+
+
     public Email() {
         Jsonable creds = Lib.loadCreds();
         this.smtpHost = (String) creds.get( "ACE", "SMTP", "HOST" );
@@ -244,6 +257,16 @@ public class Email {
         p.setAppName( "Email" );
         p.setDescr( "Email utility for sending and reading emails via SMTP/IMAP" );
         
+        // Email server configuration parameters
+        String smtpHost = p.getString( "smtp-host", null, "SMTP server hostname" );
+        Integer smtpPort = p.getInteger( "smtp-port", 465, "SMTP server port" );
+        String imapHost = p.getString( "imap-host", null, "IMAP server hostname" );
+        Integer imapPort = p.getInteger( "imap-port", 993, "IMAP server port" );
+        String username = p.getString( "username", null, "Email username" );
+        String password = p.getString( "password", null, "Email password" );
+        String defaultFrom = p.getString( "default-from", null, "Default sender address" );
+        
+        // Command and operation parameters
         String command = p.getString( "command", "", "Command: send, read, read-unread, or test" );
         String to = p.getString( "to", null, "Recipient email address (send)" );
         String subject = p.getString( "subject", "", "Email subject (send)" );
@@ -256,14 +279,37 @@ public class Email {
         if ( help || command.isEmpty() ) {
             System.out.println( p.getHelp() );
             System.out.println( "\nExamples:" );
-            System.out.println( "  Email -command=send -to=user@example.com -subject=\"Hello\" -body=\"Message\"" );
-            System.out.println( "  Email -command=read -max=20" );
-            System.out.println( "  Email -command=read-unread" );
+            System.out.println( "  # Send email:" );
+            System.out.println( "  Email -command=send -smtp-host=mail.example.com -username=user@example.com -password=pass -to=recipient@example.com -subject=\"Hello\" -body=\"Message\"" );
+            System.out.println( "  # Read emails:" );
+            System.out.println( "  Email -command=read -imap-host=mail.example.com -username=user@example.com -password=pass -max=20" );
+            System.out.println( "  # Using config file:" );
+            System.out.println( "  Email @config.json -command=send -to=user@example.com -subject=\"Hello\"" );
+            System.out.println( "  # Test (uses .creds.json):" );
             System.out.println( "  Email -command=test" );
             System.exit( 0 );
         }
         
-        Email email = new Email();
+        Email email;
+        
+        // For test command, use the no-arg constructor that loads from .creds.json
+        if ( command.equals("test") ) {
+            email = new Email();
+        } else {
+            // Validate required parameters for other commands
+            if ( smtpHost==null || username==null || password==null ) {
+                System.err.println( "Error: smtp-host, username, and password are required (or use @config.json)" );
+                System.exit( 1 );
+            }
+            if ( (command.equals("read") || command.equals("read-unread")) && imapHost==null ) {
+                System.err.println( "Error: imap-host is required for reading emails" );
+                System.exit( 1 );
+            }
+            if ( defaultFrom==null ) defaultFrom = username;
+            if ( imapHost==null ) imapHost = smtpHost;
+            
+            email = new Email( smtpHost, smtpPort, imapHost, imapPort, username, password, defaultFrom );
+        }
         
         switch ( command ) {
             case "send":
@@ -273,7 +319,7 @@ public class Email {
                 }
                 Result<Boolean,Exception> result = email.sendEmail( to, subject, body, from, contentType );
                 if ( result.isOk() ) {
-                    System.out.println( "Email sent successfully" );
+                    System.out.println( "Email sent to " + to );
                 } else {
                     System.err.println( "Failed to send email: " + result.err().getMessage() );
                     System.exit( 1 );
@@ -286,10 +332,17 @@ public class Email {
                 Result<List<EmailMessage>,Exception> readResult = email.readEmails( "INBOX", maxCount, unreadOnly );
                 if ( readResult.isOk() ) {
                     List<EmailMessage> emails = readResult.ok();
-                    System.out.println( "Found " + emails.size() + " emails:" );
-                    for ( int i=0; i<emails.size(); i++ ) {
-                        System.out.println( "\n--- Email " + (i+1) + " ---" );
-                        System.out.println( emails.get(i) );
+                    for ( EmailMessage msg : emails ) {
+                        System.out.println( "===BEGIN EMAIL===" );
+                        System.out.println( "ID: " + msg.id );
+                        System.out.println( "From: " + msg.from );
+                        System.out.println( "Subject: " + msg.subject );
+                        System.out.println( "Date: " + msg.date );
+                        System.out.println( "Read: " + msg.isRead );
+                        System.out.println( "Content-Type: " + msg.contentType );
+                        System.out.println( "Body:" );
+                        System.out.println( msg.body );
+                        System.out.println( "===END EMAIL===" );
                     }
                 } else {
                     System.err.println( "Failed to read emails: " + readResult.err().getMessage() );

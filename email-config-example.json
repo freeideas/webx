@@ -1,0 +1,9 @@
+{
+  "smtp-host": "mail.example.com",
+  "smtp-port": "465",
+  "imap-host": "mail.example.com", 
+  "imap-port": "993",
+  "username": "user@example.com",
+  "password": "yourpassword",
+  "default-from": "user@example.com"
+}
