@@ -15,6 +15,7 @@ public class Main {
         if ( System.currentTimeMillis()<0 && ( args==null || args.length==0 ) ) { // for manual testing
             args = new String[]{
                 "--port=13102",
+                "--base=/app001",
                 "--static=ww@./datafiles/www",
                 "--proxy=prx@../api-keys.json",
                 "--db=db@jdbc:hsqldb:mem:webx-db",
@@ -30,6 +31,7 @@ public class Main {
         
         int port = p.getInteger( "port", 13102, "listen to which port" );
         boolean https = p.getBoolean( "https", true, "use HTTPS (true) or HTTP (false)" );
+        String basePath = p.getString( "base", "", "base path for all endpoints (e.g., '/app1')" );
         String staticConfig = p.getString( "static", "www@./datafiles/www", "static files endpoint as path@directory (use 'NONE' to disable)" );
         String proxyConfig = p.getString( "proxy", "proxy@../api-keys.json", "proxy endpoint as path@config-file (use 'NONE' to disable)" );
         String dbConfig = p.getString( "db", "db@jdbc:hsqldb:file:./datafiles/dbf/webx-db", "database endpoint as path@jdbc-url (use 'NONE' to disable)" );
@@ -38,9 +40,16 @@ public class Main {
         String shutdownCode = p.getString( "shutdown", null, "shutdown code - if provided, server will exit when this code appears in the first line of any request" );
         boolean run = p.getBoolean( "run", false, "start the server" );
         
+        // Normalize base path
+        if ( basePath!=null && !basePath.isEmpty() ) {
+            basePath = Lib.normalizePath( basePath );
+            if ( !basePath.startsWith("/") ) basePath = "/" + basePath;
+        }
+        
         System.out.print( p.getHelp() );
         System.out.println( "\nCONFIGURATION SUMMARY:" );
         System.out.println( "  Server will run on port: " + port + " (" + (https ? "HTTPS" : "HTTP") + ")" );
+        if ( basePath!=null && !basePath.isEmpty() ) System.out.println( "  Base path: " + basePath );
         
         if ( staticConfig.equalsIgnoreCase("NONE") ) {
             System.out.println( "  Static files: DISABLED" );
@@ -49,7 +58,7 @@ public class Main {
             String staticPath = staticParts.length>0 ? staticParts[0] : "www";
             String staticDir = staticParts.length>1 ? staticParts[1] : "./datafiles/www";
             if ( !staticPath.startsWith("/") ) staticPath = "/" + staticPath;
-            System.out.println( "  " + staticPath + " serves static files from " + staticDir );
+            System.out.println( "  " + basePath + staticPath + " serves static files from " + staticDir );
         }
         
         if ( proxyConfig.equalsIgnoreCase("NONE") ) {
@@ -59,7 +68,7 @@ public class Main {
             String proxyPath = proxyParts.length>0 ? proxyParts[0] : "proxy";
             String proxyConfigFile = proxyParts.length>1 ? proxyParts[1] : "../api-keys.json";
             if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
-            System.out.println( "  " + proxyPath + " proxies external APIs (config: " + proxyConfigFile + ")" );
+            System.out.println( "  " + basePath + proxyPath + " proxies external APIs (config: " + proxyConfigFile + ")" );
         }
         
         if ( dbConfig.equalsIgnoreCase("NONE") ) {
@@ -69,7 +78,7 @@ public class Main {
             String dbPath = dbParts.length>0 ? dbParts[0] : "db";
             String jdbcUrl = dbParts.length>1 ? dbParts[1] : "jdbc:hsqldb:file:./datafiles/dbf/webx-db";
             if ( !dbPath.startsWith("/") ) dbPath = "/" + dbPath;
-            System.out.println( "  " + dbPath + " provides JSON database storage (" + jdbcUrl + ")" );
+            System.out.println( "  " + basePath + dbPath + " provides JSON database storage (" + jdbcUrl + ")" );
         }
         
         if ( loginConfig.equalsIgnoreCase("NONE") ) {
@@ -79,14 +88,14 @@ public class Main {
             String loginPath = loginParts.length>0 ? loginParts[0] : "login";
             String appName = loginParts.length>1 ? loginParts[1] : "WebX";
             if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
-            System.out.println( "  " + loginPath + " provides email authentication for '" + appName + "'" );
+            System.out.println( "  " + basePath + loginPath + " provides email authentication for '" + appName + "'" );
         }
         
         if ( oscmdConfig.equalsIgnoreCase("NONE") ) {
             System.out.println( "  OS Command: DISABLED" );
         } else {
             String oscmdPath = oscmdConfig.startsWith("/") ? oscmdConfig : "/" + oscmdConfig;
-            System.out.println( "  " + oscmdPath + " executes OS commands (protected by security guard)" );
+            System.out.println( "  " + basePath + oscmdPath + " executes OS commands (protected by security guard)" );
         }
         System.out.println( "  run is " + run + ", so " + (run ? "service will start now" : "exiting") );
         
@@ -104,12 +113,13 @@ public class Main {
             String staticPath = staticParts.length>0 ? staticParts[0] : "www";
             String staticDir = staticParts.length>1 ? staticParts[1] : "./datafiles/www";
             if ( !staticPath.startsWith("/") ) staticPath = "/" + staticPath;
+            String fullStaticPath = basePath + staticPath;
             File wwwDir = new File(staticDir);
             if ( !wwwDir.exists() ) {
                 Lib.log( "ERROR: " + staticDir + " does not exist" );
             } else {
-                server.handlers.put( staticPath, new HttpFileHandler(staticPath, wwwDir) );
-                Lib.log( "Static files configured at " + staticPath + " from " + wwwDir.getAbsolutePath() );
+                server.handlers.put( fullStaticPath, new HttpFileHandler(fullStaticPath, wwwDir) );
+                Lib.log( "Static files configured at " + fullStaticPath + " from " + wwwDir.getAbsolutePath() );
             }
         }
         
@@ -118,17 +128,18 @@ public class Main {
             String proxyPath = proxyParts.length>0 ? proxyParts[0] : "proxy";
             String proxyConfigFile = proxyParts.length>1 ? proxyParts[1] : "../api-keys.json";
             if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
+            String fullProxyPath = basePath + proxyPath;
             File apiKeysFile = new File( proxyConfigFile );
             if ( !apiKeysFile.exists() ) {
                 createExampleApiKeysFile( apiKeysFile );
                 Lib.log( "Created example API keys file at " + apiKeysFile.getAbsolutePath() );
             }
             if ( apiKeysFile.exists() ) {
-                server.handlers.put( proxyPath, new HttpReplacingProxyHandler(apiKeysFile) );
-                Lib.log( "Proxy handler configured at " + proxyPath + " with replacements from " + apiKeysFile );
+                server.handlers.put( fullProxyPath, new HttpReplacingProxyHandler(apiKeysFile) );
+                Lib.log( "Proxy handler configured at " + fullProxyPath + " with replacements from " + apiKeysFile );
             } else {
-                server.handlers.put( proxyPath, new HttpProxyHandler() );
-                Lib.log( "Proxy handler configured at " + proxyPath + " without replacements" );
+                server.handlers.put( fullProxyPath, new HttpProxyHandler() );
+                Lib.log( "Proxy handler configured at " + fullProxyPath + " without replacements" );
             }
         }
         
@@ -137,16 +148,18 @@ public class Main {
             String loginPath = loginParts.length>0 ? loginParts[0] : "login";
             String appName = loginParts.length>1 ? loginParts[1] : "WebX";
             if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
+            String fullLoginPath = basePath + loginPath;
             HttpLoginHandler.appName = appName;
-            server.handlers.put( loginPath, new HttpLoginHandler() );
-            Lib.log( "Login handler configured at " + loginPath + " for app: " + appName );
+            server.handlers.put( fullLoginPath, new HttpLoginHandler() );
+            Lib.log( "Login handler configured at " + fullLoginPath + " for app: " + appName );
         }
         
         if ( !oscmdConfig.equalsIgnoreCase("NONE") ) {
             String oscmdPath = oscmdConfig.startsWith("/") ? oscmdConfig : "/" + oscmdConfig;
+            String fullOscmdPath = basePath + oscmdPath;
             HttpOsCommandHandler oscmdHandler = new HttpOsCommandHandler( securityGuard );
-            server.handlers.put( oscmdPath, oscmdHandler );
-            Lib.log( "OS command handler configured at " + oscmdPath + " (protected by security guard)" );
+            server.handlers.put( fullOscmdPath, oscmdHandler );
+            Lib.log( "OS command handler configured at " + fullOscmdPath + " (protected by security guard)" );
         }
         
         if ( !dbConfig.equalsIgnoreCase("NONE") ) {
@@ -154,9 +167,10 @@ public class Main {
             String dbPath = dbParts.length>0 ? dbParts[0] : "db";
             String jdbcUrl = dbParts.length>1 ? dbParts[1] : "jdbc:hsqldb:file:./datafiles/dbf/webx-db";
             if ( !dbPath.startsWith("/") ) dbPath = "/" + dbPath;
+            String fullDbPath = basePath + dbPath;
             try( PersistentData pd = new PersistentData( jdbcUrl, "webx_data" ) ) {
                 PersistentMap dbStorage = pd.getRootMap();
-                server.handlers.put( dbPath, new HttpJsonHandler(dbStorage) );
+                server.handlers.put( fullDbPath, new HttpJsonHandler(dbStorage) );
                 Lib.log( "WebX server listening on port "+port );
                 StringBuilder endpoints = new StringBuilder("Endpoints: ");
                 if ( !staticConfig.equalsIgnoreCase("NONE") ) {
@@ -165,23 +179,23 @@ public class Main {
                     if ( !staticPath.startsWith("/") ) staticPath = "/" + staticPath;
                     String staticDir = staticParts.length>1 ? staticParts[1] : "./datafiles/www";
                     File wwwDir = new File(staticDir);
-                    if ( wwwDir.exists() ) endpoints.append(staticPath).append(" (static files), ");
+                    if ( wwwDir.exists() ) endpoints.append(basePath).append(staticPath).append(" (static files), ");
                 }
                 if ( !proxyConfig.equalsIgnoreCase("NONE") ) {
                     String proxyPath = proxyConfig.split("@", 2)[0];
                     if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
-                    endpoints.append(proxyPath).append(" (API proxy), ");
+                    endpoints.append(basePath).append(proxyPath).append(" (API proxy), ");
                 }
                 if ( !loginConfig.equalsIgnoreCase("NONE") ) {
                     String loginPath = loginConfig.split("@", 2)[0];
                     if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
-                    endpoints.append(loginPath).append(" (login), ");
+                    endpoints.append(basePath).append(loginPath).append(" (login), ");
                 }
                 if ( !oscmdConfig.equalsIgnoreCase("NONE") ) {
                     String oscmdPath = oscmdConfig.startsWith("/") ? oscmdConfig : "/" + oscmdConfig;
-                    endpoints.append(oscmdPath).append(" (OS commands), ");
+                    endpoints.append(basePath).append(oscmdPath).append(" (OS commands), ");
                 }
-                endpoints.append(dbPath).append(" (JSON database)");
+                endpoints.append(basePath).append(dbPath).append(" (JSON database)");
                 Lib.log( endpoints.toString() );
                 server.start();
                 Lib.log( "WebX server stopped" );
