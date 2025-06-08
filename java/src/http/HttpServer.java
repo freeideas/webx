@@ -16,6 +16,7 @@ public class HttpServer {
     public static final String VER = "20250601a";
     public final LinkedHashMap<String,HttpHandler> handlers = new LinkedHashMap<>();
     public final int port;
+    public final boolean useHttps;
     public Predicate<HttpRequest> requestFilter = new SecurityGuard();
     private String shutdownCode = null;
     private volatile boolean shouldShutdown = false;
@@ -23,7 +24,14 @@ public class HttpServer {
 
 
     public HttpServer( int port ) {
+        this( port, true );
+    }
+
+
+
+    public HttpServer( int port, boolean useHttps ) {
         this.port = port;
+        this.useHttps = useHttps;
     }
 
 
@@ -41,7 +49,7 @@ public class HttpServer {
 
 
     public void start() {
-        try ( ServerSocket serverSocket = new ServerSocket(port); ) {
+        try ( ServerSocket serverSocket = useHttps ? Lib.createServerSocket( port, true, null, null, null ) : new ServerSocket(port); ) {
             serverSocket.setSoTimeout(1000); // Set timeout so we can check shutdown flag
             while (!shouldShutdown) {
                 try {

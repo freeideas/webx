@@ -1,5 +1,6 @@
 package jLib;
 import java.util.*;
+import java.io.File;
 
 
 /**
@@ -13,6 +14,7 @@ import java.util.*;
  * - Smart text wrapping that optimizes column widths for readability
  * - Default values with clear documentation in help output
  * - Descriptive parameter documentation shown in aligned columns
+ * - File references: @filename.json expands to the contents of the file
  *
  * Example: java MyApp --port=8080 --debug -f=config.txt --verbose
  */
@@ -29,7 +31,7 @@ public class ParseArgs {
 
 
     public ParseArgs( String[] commandLine ) {
-        this.commandLine = commandLine;
+        this.commandLine = expandFromFiles(commandLine);
     }
 
 
@@ -45,6 +47,44 @@ public class ParseArgs {
     public ParseArgs setHelpFooter( String helpFooter ) {
         this.helpFooter = helpFooter;
         return this;
+    }
+
+
+
+    /**
+     * NOTE: Expands @filename references to JSON file contents in command line args.
+     */
+    private static String[] expandFromFiles( String[] args ) {
+        if ( args==null ) return new String[0];
+        List<String> result = new ArrayList<>();
+        boolean hasFileRefs = false;
+        for ( String arg: args ) {
+            if ( arg==null || !arg.startsWith("@") ) {
+                result.add(arg);
+                continue;
+            }
+            hasFileRefs = true;
+            String filePath = arg.substring(1);
+            File file = new File(filePath);
+            if ( !file.exists() ) throw new IllegalArgumentException( "File not found: "+filePath );
+            if ( !file.canRead() ) throw new IllegalArgumentException( "Cannot read file: "+filePath );
+            Object decoded;
+            try { decoded = JsonDecoder.decode(file); }
+            catch ( Exception e ) { throw new IllegalArgumentException( "Failed to parse JSON file: "+filePath, e ); }
+            if ( decoded instanceof List<?> list ) {
+                for ( Object item: list ) if ( item!=null ) result.add( item.toString() );
+            } else if ( decoded instanceof Map<?,?> map ) {
+                for ( Map.Entry<?,?> entry: map.entrySet() ) {
+                    String key = entry.getKey().toString();
+                    String value = entry.getValue()!=null ? entry.getValue().toString() : "";
+                    result.add( "--"+key+"="+value );
+                }
+            } else {
+                if ( decoded!=null ) result.add( decoded.toString() );
+            }
+        }
+        if ( !hasFileRefs ) return args;
+        return result.toArray( new String[0] );
     }
 
 
@@ -156,6 +196,7 @@ public class ParseArgs {
             * Args can look like "-arg=str" or "arg=true", or for boolean, just "--arg".
         """)+"\n");
         sb.append( "* Argument names can be abbreviated.\n" );
+        sb.append( "* A json file can be referenced with e.g. \"@filename.json\".\n" );
         if (helpFooter!=null) sb.append(helpFooter);
         String s = sb.toString();
         return s;
@@ -340,7 +381,7 @@ public class ParseArgs {
 
 
     @SuppressWarnings("unused")
-    private static boolean _TEST_( boolean findLineNumber ) {
+    private static boolean basic_TEST_( boolean findLineNumber ) {
         if ( findLineNumber ) throw new RuntimeException();
         {
             String[] args = new String[]{ "-a=10", "-b", "--ccc=a", "-dd=2.3", "e=A", "-ee=B", "--EEE=C" };
@@ -359,6 +400,42 @@ public class ParseArgs {
             Lib.asrtEQ( bbb, true );
             Lib.asrtEQ( ccc, "a" );
             Lib.asrtEQ( ddd, 2.3f );
+        }
+        return true;
+    }
+    @SuppressWarnings("unused")
+    private static boolean expandFromFiles_TEST_( boolean findLineNumber ) throws Exception {
+        if ( findLineNumber ) throw new RuntimeException();
+        try ( Lib.TmpDir tmpDir = new Lib.TmpDir() ) {
+            File mapFile = new File( tmpDir.dir, "map.json" );
+            File listFile = new File( tmpDir.dir, "list.json" );
+            File stringFile = new File( tmpDir.dir, "string.json" );
+            Lib.string2file( "{\"port\":\"8080\",\"debug\":\"true\"}", mapFile, false );
+            Lib.string2file( "[\"--verbose\",\"--count=5\"]", listFile, false );
+            Lib.string2file( "\"hello world\"", stringFile, false );
+            String[] args1 = { "--start", "@"+mapFile.getPath(), "--end" };
+            String[] result1 = expandFromFiles(args1);
+            Lib.asrtEQ( result1.length, 4 );
+            Lib.asrtEQ( result1[0], "--start" );
+            Lib.asrtEQ( result1[1], "--port=8080" );
+            Lib.asrtEQ( result1[2], "--debug=true" );
+            Lib.asrtEQ( result1[3], "--end" );
+            String[] args2 = { "--begin", "@"+listFile.getPath(), "--finish" };
+            String[] result2 = expandFromFiles(args2);
+            Lib.asrtEQ( result2.length, 4 );
+            Lib.asrtEQ( result2[0], "--begin" );
+            Lib.asrtEQ( result2[1], "--verbose" );
+            Lib.asrtEQ( result2[2], "--count=5" );
+            Lib.asrtEQ( result2[3], "--finish" );
+            String[] args3 = { "--prefix", "@"+stringFile.getPath(), "--suffix" };
+            String[] result3 = expandFromFiles(args3);
+            Lib.asrtEQ( result3.length, 3 );
+            Lib.asrtEQ( result3[0], "--prefix" );
+            Lib.asrtEQ( result3[1], "hello world" );
+            Lib.asrtEQ( result3[2], "--suffix" );
+            String[] args4 = { "--no-files", "--here" };
+            String[] result4 = expandFromFiles(args4);
+            Lib.asrt( result4==args4 );
         }
         return true;
     }

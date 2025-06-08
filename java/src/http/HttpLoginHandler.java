@@ -49,22 +49,25 @@ public class HttpLoginHandler implements HttpHandler {
         Map<?,?> loginCodes = (Map<?,?>) Jsonable.get( persistentMap, List.of("usr",email,"loginCode") );
         if (loginCodes!=null) loginCodes.clear();
         Lib.put( persistentMap, List.of("usr",email,"loginCode",loginCode), Lib.timeStamp() );        
-        try {
-            LibEmail.sendEmail(
-                "admin", email, "Your "+appName+" login code", Lib.unindent(
-                    String.format("""
-                    <html>
-                    <body>
-                        Your login code is: <b>"%s"</b>. <br/>
-                        Enter this code on the login page to access your account.
-                    </body>
-                    </html>
-                    """, loginCode )
-                ), "text/html"
-            );
+        
+        Email emailObj = new Email();
+        Result<Boolean,Exception> result = emailObj.sendEmail(
+            email, "Your "+appName+" login code", Lib.unindent(
+                String.format("""
+                <html>
+                <body>
+                    Your login code is: <b>"%s"</b>. <br/>
+                    Enter this code on the login page to access your account.
+                </body>
+                </html>
+                """, loginCode )
+            ), null, "text/html"
+        );
+        
+        if ( result.isOk() ) {
             return jsonSuccess("Email sent successfully");
-        } catch (Exception e) {
-            return jsonError("Failed to send email: " + e.getMessage());
+        } else {
+            return jsonError("Failed to send email: " + result.err().getMessage());
         }
     }
 

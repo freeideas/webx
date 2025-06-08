@@ -28,9 +28,17 @@ public class Lib {
 
 
     public static ServerSocket createServerSocket(
-        int port, boolean tls, File cert, String keystorePassword
+        int port, boolean tls, File cert, String keystorePassword, String bindAddress
     ) throws IOException {
-        if (!tls) return new ServerSocket(port, 50);
+        InetAddress addr = null;
+        if ( bindAddress!=null ) {
+            try { addr = InetAddress.getByName(bindAddress); }
+            catch ( Exception e ) { addr = null; }
+        }
+        if (!tls) {
+            if ( addr!=null ) return new ServerSocket( port, 50, addr );
+            return new ServerSocket( port, 50 );
+        }
         try {
             SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
             if (cert != null) {
@@ -46,10 +54,32 @@ public class Lib {
                 sslContext.init(null, null, null);
             }
             SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
-            return sslServerSocketFactory.createServerSocket(port, 50);
+            if ( addr!=null ) return sslServerSocketFactory.createServerSocket( port, 50, addr );
+            return sslServerSocketFactory.createServerSocket( port, 50 );
         }
         catch (IOException ioe) { throw ioe; }
         catch (Exception e) { throw new IOException(e); }
+    }
+    @SuppressWarnings("unused")
+    private static boolean createServerSocket_TEST_( boolean findLineNumber ) throws Exception {
+        if (findLineNumber) throw new RuntimeException();
+        // Test null bindAddress (all interfaces)
+        try ( ServerSocket ss = createServerSocket( 19999, false, null, null, null ) ) {
+            asrt( ss.getLocalSocketAddress().toString().contains("0.0.0.0") );
+        }
+        // Test localhost
+        try ( ServerSocket ss = createServerSocket( 19999, false, null, null, "localhost" ) ) {
+            asrt( ss.getLocalSocketAddress().toString().contains("127.0.0.1") );
+        }
+        // Test specific IP
+        try ( ServerSocket ss = createServerSocket( 19999, false, null, null, "127.0.0.1" ) ) {
+            asrt( ss.getLocalSocketAddress().toString().contains("127.0.0.1") );
+        }
+        // Test invalid address (fallback to all interfaces)
+        try ( ServerSocket ss = createServerSocket( 19999, false, null, null, "badaddress" ) ) {
+            asrt( ss.getLocalSocketAddress().toString().contains("0.0.0.0") );
+        }
+        return true;
     }
 
 

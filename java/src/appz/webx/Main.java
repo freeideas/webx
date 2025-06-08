@@ -29,6 +29,7 @@ public class Main {
         p.setDescr( "WebX - Simple Web Application Server" );
         
         int port = p.getInteger( "port", 13102, "listen to which port" );
+        boolean https = p.getBoolean( "https", true, "use HTTPS (true) or HTTP (false)" );
         String staticConfig = p.getString( "static", "www@./datafiles/www", "static files endpoint as path@directory (use 'NONE' to disable)" );
         String proxyConfig = p.getString( "proxy", "proxy@../api-keys.json", "proxy endpoint as path@config-file (use 'NONE' to disable)" );
         String dbConfig = p.getString( "db", "db@jdbc:hsqldb:file:./datafiles/dbf/webx-db", "database endpoint as path@jdbc-url (use 'NONE' to disable)" );
@@ -39,7 +40,7 @@ public class Main {
         
         System.out.print( p.getHelp() );
         System.out.println( "\nCONFIGURATION SUMMARY:" );
-        System.out.println( "  Server will run on port: " + port );
+        System.out.println( "  Server will run on port: " + port + " (" + (https ? "HTTPS" : "HTTP") + ")" );
         
         if ( staticConfig.equalsIgnoreCase("NONE") ) {
             System.out.println( "  Static files: DISABLED" );
@@ -91,7 +92,7 @@ public class Main {
         
         if ( !run ) return;
         
-        HttpServer server = new HttpServer(port);
+        HttpServer server = new HttpServer( port, https );
         if ( shutdownCode!=null ) server.setShutdownCode( shutdownCode );
         
         // Create security guard

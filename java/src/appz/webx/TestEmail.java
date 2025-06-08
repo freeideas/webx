@@ -18,14 +18,16 @@ public class TestEmail {
                       "Timestamp: " + timestamp + "\n\n" +
                       "Best regards,\nClaude AI";
         
-        try {
-            LibEmail.sendEmail( "ai@ironmedia.com", "freeideas@gmail.com", subject, body, "text/plain" );
+        Email email = new Email();
+        Result<Boolean,Exception> result = email.sendEmail( "freeideas@gmail.com", subject, body, "ai@ironmedia.com", "text/plain" );
+        
+        if ( result.isOk() ) {
             System.out.println( "Test email sent successfully to freeideas@gmail.com" );
             System.out.println( "Subject: " + subject );
         }
-        catch ( Exception e ) {
-            System.err.println( "Failed to send email: " + e.getMessage() );
-            e.printStackTrace();
+        else {
+            System.err.println( "Failed to send email: " + result.err().getMessage() );
+            result.err().printStackTrace();
         }
     }
 
