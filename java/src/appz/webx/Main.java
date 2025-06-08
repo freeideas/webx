@@ -30,7 +30,7 @@ public class Main {
         p.setDescr( "WebX - Simple Web Application Server" );
         
         int port = p.getInteger( "port", 13102, "listen to which port" );
-        boolean https = p.getBoolean( "https", true, "use HTTPS (true) or HTTP (false)" );
+        boolean https = p.getBoolean( "https", false, "use HTTPS (true) or HTTP (false)" );
         String basePath = p.getString( "base", "", "base path for all endpoints (e.g., '/app1')" );
         String staticConfig = p.getString( "static", "www@./datafiles/www", "static files endpoint as path@directory (use 'NONE' to disable)" );
         String proxyConfig = p.getString( "proxy", "proxy@../api-keys.json", "proxy endpoint as path@config-file (use 'NONE' to disable)" );
