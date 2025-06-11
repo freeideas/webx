@@ -33,7 +33,6 @@ public boolean processItem( Item item ) {
     }
     return false;
 }
-
 // BETTER: Flat code with early returns
 public boolean processItem( Item item ) {
     if ( item == null ) return false;
@@ -43,6 +42,19 @@ public boolean processItem( Item item ) {
     // Process the item
     return true;
 }
+
+// AVOID: nesting loops inside if
+if ( myList != null ) {
+    for ( Item item:myList ) {
+        // Process the item
+    }
+}
+// BETTER: flat empty loop
+if (myList==null) myList = List.of();
+for ( Item item:myList ) {
+    // Process the item
+}
+
 ```
 
 Similarly for loops:
@@ -114,8 +126,9 @@ The code examples below here are good examples of how to format your code.
 
 ### Blank Lines
 - Use 3 blank lines:
-  - Between methods or function defs
-  - Before the first method and after the last method
+  - Between methods or function defs (MANDATORY: exactly 3 blank lines between each method)
+  - Before the first method in a class (3 blank lines after class declaration or fields)
+  - After the last method in a class (3 blank lines before closing brace)
   - Between imports and class declaration
   - EXCEPTION: anonymous inner classes have no blank lines
   - EXCEPTION: inner classes and private classes have one blank line between methods
@@ -123,7 +136,7 @@ The code examples below here are good examples of how to format your code.
 - Use 0 blank lines:
   - Between closely related methods (same name with different args, getter/setter pairs, constructors)
   - Between a method and its test method
-  - Within method bodies
+  - Within method bodies (MANDATORY: no blank lines inside method implementations)
   - Within inner classes
 
 ### Parentheses

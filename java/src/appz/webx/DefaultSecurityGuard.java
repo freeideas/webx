@@ -2,7 +2,6 @@ package appz.webx;
 import http.*;
 import jLib.*;
 import java.util.*;
-import java.util.regex.Pattern;
 
 
 public class DefaultSecurityGuard extends SecurityGuard {

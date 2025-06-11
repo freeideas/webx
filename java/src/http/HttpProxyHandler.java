@@ -16,36 +16,16 @@ public class HttpProxyHandler implements HttpHandler {
     private static boolean isRestrictedHeader( String headerName ) {
         if (headerName==null) return true;
         String name = headerName.toLowerCase();
-        // Headers that Java HTTP client restricts or manages automatically
-        return name.equals( "connection" ) ||
-               name.equals( "content-length" ) ||
-               name.equals( "date" ) ||
-               name.equals( "expect" ) ||
-               name.equals( "from" ) ||
-               name.equals( "host" ) ||
-               name.equals( "if-modified-since" ) ||
-               name.equals( "if-unmodified-since" ) ||
-               name.equals( "if-match" ) ||
-               name.equals( "if-none-match" ) ||
-               name.equals( "if-range" ) ||
-               name.equals( "origin" ) ||
-               name.equals( "referer" ) ||
-               name.equals( "upgrade" ) ||
-               name.equals( "user-agent" ) ||
-               name.equals( "via" ) ||
-               name.equals( "warning" ) ||
-               name.equals( "keep-alive" ) ||
-               name.equals( "proxy-authorization" ) ||
-               name.equals( "proxy-authenticate" ) ||
-               name.equals( "proxy-connection" ) ||
-               name.equals( "te" ) ||
-               name.equals( "trailer" ) ||
-               name.equals( "transfer-encoding" ) ||
+        return RESTRICTED_HEADERS.contains( name ) ||
                name.startsWith( "x-target-" ) ||  // Our internal headers
                name.startsWith( "x-file-" );     // Our internal headers
     }
-
-
+    private static final LinkedHashSet<String> RESTRICTED_HEADERS = new LinkedHashSet<>(List.of(
+        "connection", "content-length", "date", "expect", "from", "host",
+        "if-modified-since", "if-unmodified-since", "if-match", "if-none-match", "if-range",
+        "origin", "referer", "upgrade", "user-agent", "via", "warning", "keep-alive",
+        "proxy-authorization", "proxy-authenticate", "proxy-connection", "te", "trailer", "transfer-encoding"
+    ));
 
     @Override
     public HttpResponse handle( HttpRequest req ) {

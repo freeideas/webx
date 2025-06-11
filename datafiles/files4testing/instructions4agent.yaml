@@ -1,0 +1,52 @@
+# Instructions for performing a series of actions on a Windows system, including closing Server Manager, opening and using Notepad, and re-opening Server Manager.
+Instructions:
+
+- title: Close Server Manager
+  description: Closes the Server Manager application window.
+  prerequisite: Server Manager is open and displaying a pop-up message.
+  steps:
+  - Click the "X" button in the top-right corner of the Server Manager window.
+  expect: Server Manager is closed
+
+- title: Open Notepad
+  description: Opens the Notepad application using the Windows Start menu search.
+  prerequisite: Desktop is visible.
+  steps:
+  - Click the Windows "Start" button in the bottom-left corner of the screen.
+  - Type "notepad" in the search bar.
+  - Click on the "Notepad" application in the search results to open it.
+  expect: Notepad is open
+
+- title: Type Text in Notepad
+  description: Types "say something" into the Notepad window.
+  prerequisite: Notepad is open.
+  steps:
+  - Type "say something" into the Notepad window.
+  expect: "Notepad contains the text: say something"
+
+- title: Save the Notepad File
+  description: Saves the Notepad file to the Desktop as "something.txt".
+  prerequisite: Notepad contains text.
+  steps:
+  - Click on the "File" menu in Notepad.
+  - Click on "Save As..." in the File menu.
+  - In the "Save As" dialog box, select "Desktop" from the left-hand navigation pane.
+  - Type "something.txt" in the "File name" field.
+  - Click the "Save" button.
+  expect: "File something.txt exists on the Desktop"
+
+- title: Close Notepad
+  description: Closes the Notepad application window.
+  prerequisite: "File something.txt exists on the Desktop"
+  steps:
+  - Click the "X" button in the top-right corner of the Notepad window to close it.
+  expect: Notepad is closed
+
+- title: Re-open Server Manager
+  description: Re-opens the Server Manager application using the Windows Start menu search.
+  prerequisite: Desktop is visible.
+  steps:
+  - Click the Windows "Start" button in the bottom-left corner of the screen.
+  - Type "server manager" in the search bar.
+  - Click on the "Server Manager" application in the search results to open it.
+  expect: Server Manager is open

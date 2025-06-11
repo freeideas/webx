@@ -1,10 +1,7 @@
 package http;
-
 import java.io.*;
-import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.regex.Pattern;
 import jLib.*;
 
 
@@ -29,7 +26,8 @@ public class HttpOsCommandHandler implements HttpHandler {
         this.securityGuard=securityGuard;
         this.defaultTimeout=defaultTimeout;
         this.maxConcurrentCommands=maxConcurrentCommands;
-        this.commandSemaphore=new Semaphore( maxConcurrentCommands );
+        int maxConCom = this.maxConcurrentCommands;
+        this.commandSemaphore=new Semaphore(maxConCom);
     }
     
     

@@ -27,6 +27,245 @@ public class Lib {
 
 
 
+    public static String normalizePath( String path ) {
+        if (path==null) return null;
+        boolean startsWithSlash = path.startsWith("/") || path.startsWith("\\");
+        boolean isURL = path.matches("\\w+://.*");
+        String[] parts = path.split("[/\\\\]");
+        List<String> result = new ArrayList<>();
+        for (String part : parts) {
+            if (part.isEmpty() || part.equals(".")) continue;
+            if ( part.equals("..") && !result.isEmpty() ) {
+                    result.remove(result.size() - 1);
+                    continue;
+            }
+            result.add(part);
+        }
+        String resStr = (startsWithSlash ? "/" : "") + String.join("/", result);
+        if (isURL) resStr = resStr.replaceFirst("^(\\w+):/+", "$1://"); 
+        return resStr;
+    }
+    @SuppressWarnings("unused")
+    private static boolean normalizePath_TEST_( boolean findLineNumber ) {
+        if (findLineNumber) throw new RuntimeException();
+        asrtEQ( normalizePath("a/b/c"), "a/b/c" );
+        asrtEQ( normalizePath("//a/b/c/"), "/a/b/c" );
+        asrtEQ( normalizePath("sftp://a.com/b//c/..//"), "sftp://a.com/b" );
+        asrtEQ( normalizePath(""), "" );
+        asrtEQ( normalizePath(null), null );
+        return true;
+    }
+
+
+
+    public static class Pair<A,B> implements Map.Entry<A,B> {
+        public final A a;
+        public final B b;
+        public Pair( A a, B b ) {
+            this.a = a;
+            this.b = b;
+        }
+        public int hashCode() {
+            return a.hashCode() ^ b.hashCode();
+        }
+        public boolean equals( Object o ) {
+            if ( o == null ) return false;
+            if ( o == this ) return true;
+            if ( o.getClass() != getClass() ) return false;
+            Pair<?,?> p = (Pair<?,?>)o;
+            return a.equals(p.a) && b.equals(p.b);
+        }
+        public String toString() {
+            return "(" + a + "," + b + ")";
+        }
+        @Override
+        public A getKey() { return a; }
+        @Override
+        public B getValue() { return b; }
+        @Override
+        public B setValue(B value) {
+            throw new UnsupportedOperationException("immutable");
+        }
+    }
+    public static <A,B> Pair<A,B> pair( A a, B b ) {
+        return new Pair<A,B>(a,b);
+    }
+    @SuppressWarnings("unused")
+    private static boolean pair_TEST_( boolean findLineNumber ) {
+        if (findLineNumber) throw new RuntimeException();
+        Pair<String,String> p = pair("a","b");
+        return p.a.equals("a") && p.b.equals("b");
+    }
+    public static class Trio<A,B,C> {
+        public final A a;
+        public final B b;
+        public final C c;
+        public Trio( A a, B b, C c ) {
+            this.a = a;
+            this.b = b;
+            this.c = c;
+        }
+        public int hashCode() {
+            return a.hashCode() ^ b.hashCode() ^ c.hashCode();
+        }
+        public boolean equals( Object o ) {
+            if ( o == null ) return false;
+            if ( o == this ) return true;
+            if ( o.getClass() != getClass() ) return false;
+            Trio<?,?,?> p = (Trio<?,?,?>)o;
+            return a.equals(p.a) && b.equals(p.b) && c.equals(p.c);
+        }
+        public String toString() {
+            return "(" + a + "," + b + "," + c + ")";
+        }
+    }
+    @SuppressWarnings("unused")
+    private static boolean trio_TEST_( boolean findLineNumber ) {
+        if (findLineNumber) throw new RuntimeException();
+        Trio<String,String,String> p = new Trio<String,String,String>("a","b","c");
+        return p.a.equals("a") && p.b.equals("b") && p.c.equals("c");
+    }
+
+
+
+    public static String xmlSafeText( Object txt ) {
+        return xmlSafeText(txt,null);
+    }
+    public static String xmlSafeText( Object txt, Boolean encodeAll ) {
+        if (txt==null) txt="";
+        String str = txt.toString();
+        int c, len=str.length();
+        StringBuffer buf = new StringBuffer( len + len<<1 );
+        for (int i=0; i<len; i++) {
+            c = str.charAt(i);
+            if ( encodeAll==Boolean.FALSE && !( c=='<' || c=='&' ) ) {
+                // in this mode, encode only < and &
+                buf.append( (char)c );
+                continue;
+            }
+            if ( encodeAll!=Boolean.TRUE && c=='&' ) {
+                // in these modes, skip already-encoded entities
+                int end = Math.min( i+12, str.length() );
+                if ( str.substring(i,end).matches("^&(([a-zA-Z0-9]+)|(#\\d+));.*$") ) {
+                    while (c!=';') {
+                        buf.append( (char)c );
+                        i+=1; c=str.charAt(i);
+                    }
+                    buf.append( (char)c );
+                    continue;
+                }
+            }
+            boolean foundCode = false;
+            for ( int codeIdx=0; codeIdx<XMLENTITIES.length; codeIdx++ ) {
+                String code = XMLENTITIES[codeIdx][0];
+                String repl = XMLENTITIES[codeIdx][1];
+                if ( c == repl.charAt(0) ) {
+                    buf.append(code);
+                    foundCode = true;
+                }
+            }
+            if (foundCode) continue;
+            switch (c) {
+                case '\'' : buf.append("&#39;"); break;
+                case ']'  : buf.append("&#93;"); break;
+                case '['  : buf.append("&#91;"); break;
+                case '\\' : buf.append("&#92;"); break;
+                default : {
+                    if ( c<32 || c>127 || encodeAll==Boolean.TRUE ) {
+                        buf.append('&');
+                        buf.append('#');
+                        buf.append(c);
+                        buf.append(';');
+                    } else {
+                        buf.append( (char)c );
+                    }
+                } break;
+            }
+        }
+        return buf.toString();
+    }
+    public static String unescapeXML( final String text ) {
+        StringBuilder result = new StringBuilder( text.length() );
+        for ( int txtIdx=0,len=text.length(); txtIdx<len; txtIdx++ ) {
+            char charAt = text.charAt(txtIdx);
+            if ( charAt != '&' ) {
+                result.append(charAt);
+                continue;
+            }
+            if ( text.regionMatches(txtIdx,"&#",0,2) ) {
+                try {
+                    String s = text.substring(
+                        txtIdx, Math.min(text.length(),txtIdx+9)
+                    ).replaceFirst( "^&#(x?\\d+);.*", "$1" );
+                    int n;
+                    if ( s.charAt(0) == 'x' ) {
+                        n = Integer.parseInt( s.substring(1), 16 );
+                    } else {
+                        n = Integer.parseInt(s,10);
+                    }
+                    txtIdx += ( 2 + s.length() );
+                    result.append( (char) n );
+                } catch ( Throwable t ) {
+                    result.append(charAt);
+                }
+                continue;
+            }
+            boolean foundCode = false;
+            for ( int codeIdx=0; codeIdx<XMLENTITIES.length; codeIdx++ ) {
+                String code = XMLENTITIES[codeIdx][0];
+                String repl = XMLENTITIES[codeIdx][1];
+                if (text.regionMatches( true, txtIdx, code, 0, code.length() )) {
+                    result.append(repl);
+                    txtIdx += code.length() - 1;
+                    foundCode = true;
+                    break;
+                }
+            }
+            if (foundCode) continue;
+            result.append(charAt);
+        }
+        return result.toString();
+    }
+    public static final String[][] XMLENTITIES = {
+        { "&lt;",   "<" },
+        { "&gt;",   ">" },
+        { "&amp;",  "&" },
+        { "&apos;", "'" },
+        { "&quot;", "\"" },
+    };
+    @SuppressWarnings("unused")
+    private static boolean unescapeXML_TEST_() {
+        {
+            String s = "~\t\0`!@#$%^&*()_ok123=+{[ }]|\\?/<,>.'\"";
+            String escaped, unescaped;
+            escaped = xmlSafeText(s,null);
+            unescaped = unescapeXML(escaped);
+            Lib.asrt(unescaped.equals(s), "unescapeXML test 1 failed");
+            escaped = xmlSafeText(s,true);
+            Lib.asrt(unescaped.equals(s), "unescapeXML test 2 failed");
+            escaped = xmlSafeText(s,false);
+            Lib.asrt(unescaped.equals(s), "unescapeXML test 3 failed");
+            Lib.asrt(unescapeXML("&#x20;").equals(" "), "unescapeXML test 4 failed");
+            Lib.asrt(unescapeXML("&#92;&#92;").equals("\\\\"), "unescapeXML test 5 failed");
+        }
+        for ( String s : new String[]{"&","&#","&#;","&#0"} ) {
+            // these are not unescape-able
+            Lib.asrt(unescapeXML(s).equals(s), "unescapeXML test 6 failed");
+        }
+        for ( String s : new String[]{
+            "&aMp;", "&#1234;", "He read &#22;War &amp; Peace&QUOT;."
+        } ) {
+            // these are already escaped
+            String escaped = xmlSafeText(s);
+            Lib.asrt(escaped.equals(s), "unescapeXML test 7 failed");
+        }
+        // make sure an html comment is escaped
+        Lib.asrt(! xmlSafeText("-->").equals("-->"), "need safety inside html comments" );
+        return true;
+    }
+
+
+
     public static ServerSocket createServerSocket(
         int port, boolean tls, File cert, String keystorePassword, String bindAddress
     ) throws IOException {
@@ -108,7 +347,7 @@ public class Lib {
         if (findLineNumber) throw new RuntimeException();
         Jsonable creds = loadCreds();
         asrt( creds != null );
-        asrt(! isEmpty( creds.get("ACE/SECRET")) );
+        asrt(! isEmpty( creds.get("SECRET")) );
         return true;
     }
 
@@ -684,25 +923,6 @@ public class Lib {
         asrt( isParentChildPath("a/b/c/../d","a/b/d") );
         asrt(! isParentChildPath("a/b/c","a/b/c/../../d") );
         return true;
-    }
-
-
-
-
-
-    public static String normalizePath( String path ) {
-        boolean startsWithSlash = path.startsWith("/") || path.startsWith("\\");
-        String[] parts = path.split("[/\\\\]");
-        List<String> result = new ArrayList<>();
-        for (String part : parts) {
-            if (part.isEmpty() || part.equals(".")) continue;
-            if ( part.equals("..") && !result.isEmpty() ) {
-                    result.remove(result.size() - 1);
-                    continue;
-            }
-            result.add(part);
-        }
-        return (startsWithSlash ? "/" : "") + String.join("/", result);
     }
 
 

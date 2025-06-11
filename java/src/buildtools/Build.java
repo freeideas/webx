@@ -10,7 +10,7 @@ public class Build {
 
 
     public static final Class<?> ENTRY_POINT = Build.class; // NOTE: Change this to your main class
-    public static final String APP_NAME = "MyApp";
+    public static final String APP_NAME = "WebX";
     public static final String LIB_XML = Lib.unindent("""
         <dependencies>
         </dependencies>
@@ -93,7 +93,7 @@ public class Build {
 
 
     public static final File SRC_DIR = new File( "./java/src" );
-    public static final File CLS_DIR = new File( "./java/class" );
+    public static final File CLS_DIR = new File( "./java/classes" );
     public static final File LIB_DIR = new File( "./java/lib" );
     public static final File DIST_DIR = new File( "./java/dist" );
 
@@ -102,7 +102,7 @@ public class Build {
     public static void main(String[] args) throws Exception {
         //Lib.testClass();
         compile();
-        downloadLibs();
+        // Skip downloadLibs() - manually place JAR dependencies in java/lib/
         File jarFile = buildJar();
         buildExe(jarFile);
     }
@@ -127,8 +127,6 @@ public class Build {
             compileCommand.add(Lib.getCanonicalPath(CLS_DIR));
             compileCommand.add("--release");
             compileCommand.add("22");
-            compileCommand.add("-classpath");
-            compileCommand.add(Lib.getCanonicalPath(LIB_DIR)+"/*");
             compileCommand.add(Lib.getCanonicalPath(srcFile));
             Lib.log("Executing compilation command");
             Process process = Lib.osCmd(compileCommand, null, null);
@@ -169,8 +167,6 @@ public class Build {
             writer.write(pomContent);
         }
         List<String> cmd = new ArrayList<>();
-        cmd.add("cmd");
-        cmd.add("/c");
         cmd.add("mvn");
         cmd.add("-f");
         cmd.add( tempPomFile.getPath() );
@@ -232,7 +228,7 @@ public class Build {
     public static File buildExe( File jarFile ) throws Exception {
         String timestamp = Lib.timeStamp("yyyy-MM-dd'_'HH-mm-ss");
         DIST_DIR.mkdirs();
-        String exeFilename = APP_NAME + "_" + timestamp + ".exe";
+        String exeFilename = APP_NAME + "_" + timestamp;
         File exeFile = new File(DIST_DIR, exeFilename);
         if (jarFile == null || !jarFile.exists()) {
             Lib.log("Failed to build JAR file");
@@ -240,19 +236,14 @@ public class Build {
         }
         Lib.log("Creating native executable: " + Lib.getCanonicalPath(exeFile));
         List<String> nativeImageCommand = new ArrayList<>();
-        nativeImageCommand.add("C:\\acex\\appz\\jdk\\lib\\svm\\bin\\native-image.exe");
-        { // Optimization flags for small executable size
+        nativeImageCommand.add("native-image");
+        { // Optimization flags for standalone executable
             nativeImageCommand.add("-Os");  // Optimize for size
             nativeImageCommand.add("--no-fallback");
-            // "--static" flag is only supported on Linux, removed for Windows
         }
         nativeImageCommand.add("-jar");
         nativeImageCommand.add(Lib.getCanonicalPath(jarFile));
-        { // Output executable file (without .exe extension - GraalVM adds it automatically)
-            nativeImageCommand.add(
-                Lib.getCanonicalPath(exeFile).substring(0, Lib.getCanonicalPath(exeFile).length() - 4)
-            );
-        }
+        nativeImageCommand.add(Lib.getCanonicalPath(exeFile));
         Process process = Lib.osCmd(nativeImageCommand, null, null);
         File logFile = new File(Lib.backupFilespec("./log/native_image_out.txt"));
         int result = Lib.OSProcIO(process, null, new java.io.PrintStream(logFile), System.err);
@@ -261,7 +252,7 @@ public class Build {
             Lib.log("Check the log file for details: " + Lib.getCanonicalPath(logFile));
             throw new Exception("Failed to create native executable");
         } else {
-            File destFile = new File( DIST_DIR, APP_NAME+".exe" );
+            File destFile = new File( DIST_DIR, APP_NAME );
             Lib.cp(exeFile,destFile);
             exeFile = destFile;
             Lib.log("Native executable creation successful: " + Lib.getCanonicalPath(exeFile));

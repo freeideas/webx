@@ -12,7 +12,7 @@ public class AuthToken implements JsonSerializable {
 
     public static final long MAX_AGE_SECONDS = 30*24*60*60; // 30 days
     public static Pattern jsonPattern = Pattern.compile( Lib.nw( """
-        "\\{"email":".+@.+","created":20.+,"sig":".+"\\}"
+        \\{"email":".+@.+","created":"20.+","sig":".+"\\}
     """ ) );
 
 
@@ -47,9 +47,13 @@ public class AuthToken implements JsonSerializable {
 
     public static AuthToken fromJson( CharSequence json ) {
         Map<?,?> map = JsonDecoder.decodeMap(json);
+        Object created = map.get("created");
+        long createTimeMicros = created instanceof String ? 
+            Lib.microsSinceEpoch((String)created) : 
+            ((Number)created).longValue();
         return new AuthToken(
             (String) map.get("email"),
-            Lib.toLong( map.get("created") ),
+            createTimeMicros,
             (String) map.get("sig")
         );
     }

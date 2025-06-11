@@ -145,6 +145,14 @@ This is a multi-language project with both Java and Python components, organized
 - Most classes already have `main` methods that run `Lib.testClass()` - use them
 - For integration testing, modify existing test classes or add new `_TEST_` methods
 
+### Temporary Java Files
+**CRITICAL**: All temporary Java files MUST be placed in the `tmp` package (`java/src/tmp/`).
+- NEVER create temporary Java files in the root of `java/src/`
+- NEVER create temporary Java files in other packages
+- Always use package declaration: `package tmp;`
+- Example path: `java/src/tmp/TestSomething.java`
+- These files should be used for quick testing and can be safely deleted
+
 ### Dependencies
 - Java uses Maven configuration in `java/mvn_config.cfg`
 - Python dependencies managed per-module

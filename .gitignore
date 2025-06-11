@@ -84,7 +84,7 @@ env/
 /log/
 /old/
 /java/class/
-/java/tmp/
+/java/src/tmp/
 /java/lib/*.jar
 /java/dist/
 /datafiles/*.lck

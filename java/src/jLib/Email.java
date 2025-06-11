@@ -3,7 +3,6 @@ import javax.mail.*;
 import javax.mail.internet.*;
 import javax.mail.search.*;
 import java.util.*;
-import java.io.*;
 
 
 
@@ -33,13 +32,13 @@ public class Email {
 
     public Email() {
         Jsonable creds = Lib.loadCreds();
-        this.smtpHost = (String) creds.get( "ACE", "SMTP", "HOST" );
-        this.smtpPort = ((Number) creds.get( "ACE", "SMTP", "PORT" )).intValue();
-        this.imapHost = (String) creds.get( "ACE", "IMAP", "HOST" );
-        this.imapPort = ((Number) creds.get( "ACE", "IMAP", "PORT" )).intValue();
-        this.username = (String) creds.get( "ACE", "SMTP", "USERNAME" );
-        this.password = (String) creds.get( "ACE", "SMTP", "PASSWORD" );
-        this.defaultFrom = (String) creds.get( "ACE", "SMTP", "FROM" );
+        this.smtpHost = (String) creds.get( "SMTP/HOST" );
+        this.smtpPort = ((Number) creds.get( "SMTP/PORT" )).intValue();
+        this.imapHost = (String) creds.get( "IMAP/HOST" );
+        this.imapPort = ((Number) creds.get( "IMAP/PORT" )).intValue();
+        this.username = (String) creds.get( "SMTP/USERNAME" );
+        this.password = (String) creds.get( "SMTP/PASSWORD" );
+        this.defaultFrom = (String) creds.get( "SMTP/FROM" );
     }
 
 

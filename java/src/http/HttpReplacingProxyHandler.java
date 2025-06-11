@@ -13,6 +13,18 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
 
 
+    public HttpReplacingProxyHandler() {
+        Jsonable creds = Lib.loadCreds();
+        Object proxyConfig = creds.get( "PROXY" );
+        if ( proxyConfig instanceof Map ) {
+            this.replacementConfig = new Jsonable( proxyConfig );
+        } else {
+            this.replacementConfig = new Jsonable( new HashMap<>() );
+        }
+    }
+
+
+
     public HttpReplacingProxyHandler( File replacementFile ) {
         if ( replacementFile==null || !replacementFile.exists() ) {
             this.replacementConfig = new Jsonable( new HashMap<>() );
@@ -77,29 +89,29 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
     private String getParentUrl( String url ) {
         if ( url == null ) return null;
-        
+
         // Remove query string if present
         int queryIndex = url.indexOf( '?' );
         if ( queryIndex >= 0 ) {
             url = url.substring( 0, queryIndex );
         }
-        
+
         // Remove fragment if present
         int fragmentIndex = url.indexOf( '#' );
         if ( fragmentIndex >= 0 ) {
             url = url.substring( 0, fragmentIndex );
         }
-        
+
         // Find the last slash after the protocol
         int protocolEnd = url.indexOf( "://" );
         if ( protocolEnd < 0 ) return null;
-        
+
         int domainStart = protocolEnd + 3;
         int lastSlash = url.lastIndexOf( '/' );
-        
+
         // If the last slash is part of the protocol or there's no path, we're done
         if ( lastSlash <= domainStart ) return null;
-        
+
         // Remove the last path segment
         return url.substring( 0, lastSlash );
     }
@@ -110,7 +122,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
     public HttpResponse handle( HttpRequest req ) {
         String targetUrl = req.headerBlock.getHeaderValue( "X-Target-URL" );
         if ( targetUrl==null ) return super.handle( req );
-        
+
         // Try URL with hierarchical fallback
         String urlToTry = targetUrl;
         while ( urlToTry != null ) {
@@ -118,16 +130,23 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             if ( replacementPattern != null ) break;
             urlToTry = getParentUrl( urlToTry );
         }
-        
+
         // If no URL-specific replacements found, try wildcard
         if ( replacementPattern==null ) {
             prepareReplacementsForUrl( "*" );
         }
-        
+
         if ( replacementPattern==null ) return super.handle( req );
+        
+        // Apply replacements to the target URL
+        String modifiedTargetUrl = applyReplacements( targetUrl );
+        
         String headerString = serializeHeaderBlock( req.headerBlock );
         headerString = applyReplacements( headerString );
         HttpHeaderBlock modifiedHeaders = parseHeaderBlock( headerString );
+        
+        // Update the X-Target-URL header with the modified URL
+        modifiedHeaders = modifiedHeaders.withAddHeader( "X-Target-URL", modifiedTargetUrl );
         byte[] modifiedBody = req.body;
         String contentType = modifiedHeaders.getHeaderValue( "Content-Type" );
         if (contentType!=null && isTextContent( contentType ) && req.body.length>0) {
@@ -442,7 +461,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             writer.write( jsonContent );
         }
         HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler( tempFile );
-        
+
         { // test exact match
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/search?key=<%=skey%>", new LinkedHashMap<>() );
             headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://google.com/search" );
@@ -452,12 +471,12 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             String modified = handler.applyReplacements( headerString );
             Lib.asrt( modified.contains( "key=search-specific-key" ), "Should use exact match" );
         }
-        
+
         { // test fallback to parent
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/search/advanced?key=<%=gkey%>", new LinkedHashMap<>() );
             headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://google.com/search/advanced" );
             HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
-            
+
             // Manually test the hierarchical lookup
             String urlToTry = "https://google.com/search/advanced";
             String foundUrl = null;
@@ -470,19 +489,19 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
                 String nextUrl = handler.getParentUrl( urlToTry );
                 urlToTry = nextUrl;
             }
-            
+
             Lib.asrt( foundUrl != null, "Should find a match somewhere in the hierarchy" );
             Lib.asrtEQ( foundUrl, "https://google.com/search", "Should find match at /search level" );
             String headerString = handler.serializeHeaderBlock( req.headerBlock );
             String modified = handler.applyReplacements( headerString );
             Lib.asrt( modified.contains( "key=search-level-gkey" ), "Should use /search level replacement: " + modified );
         }
-        
+
         { // test true fallback to root
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/maps/api?key=<%=gkey%>", new LinkedHashMap<>() );
             headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://google.com/maps/api" );
             HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
-            
+
             // Manually test the hierarchical lookup
             String urlToTry = "https://google.com/maps/api";
             String foundUrl = null;
@@ -494,13 +513,13 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
                 }
                 urlToTry = handler.getParentUrl( urlToTry );
             }
-            
+
             Lib.asrtEQ( foundUrl, "https://google.com", "Should fall back to root domain" );
             String headerString = handler.serializeHeaderBlock( req.headerBlock );
             String modified = handler.applyReplacements( headerString );
             Lib.asrt( modified.contains( "key=google-root-key" ), "Should use root domain replacement" );
         }
-        
+
         { // test no match
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/test?key=<%=nokey%>", new LinkedHashMap<>() );
             headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://unknown.com/path" );
@@ -509,13 +528,13 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             // The request should pass through unchanged since no replacements were found
             Lib.asrt( true, "Should handle unknown URL without error" );
         }
-        
+
         { // test deep path fallback
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/test?key=<%=userkey%>&api=<%=apikey%>", new LinkedHashMap<>() );
             headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://api.example.com/v1/users/123/profile" );
             HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
             String headerString = handler.serializeHeaderBlock( req.headerBlock );
-            
+
             // Manually test the fallback logic
             String urlToTry = "https://api.example.com/v1/users/123/profile";
             while ( urlToTry != null ) {
@@ -523,13 +542,87 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
                 if ( handler.replacementPattern != null ) break;
                 urlToTry = handler.getParentUrl( urlToTry );
             }
-            
+
             String modified = handler.applyReplacements( headerString );
             Lib.asrt( modified.contains( "key=users-key" ), "Should use /v1/users match, not /v1" );
             Lib.asrt( modified.contains( "api=<%=apikey%>" ), "Should not replace apikey (not in /v1/users config): " + modified );
         }
-        
+
         tempFile.delete();
+        return true;
+    }
+
+
+
+    @SuppressWarnings("unused")
+    private static boolean urlReplacement_TEST_( boolean findLineNumber ) throws Exception {
+        if (findLineNumber) throw new RuntimeException();
+        Map<String,Object> replacements = new LinkedHashMap<>();
+        replacements.put( "<%=host%>", "actual-api.example.com" );
+        replacements.put( "<%=version%>", "v2" );
+        replacements.put( "<%=key%>", "secret123" );
+        HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler( replacements );
+        
+        // Test URL replacement
+        HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/test", new LinkedHashMap<>() );
+        headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://<%=host%>/<%=version%>/endpoint?key=<%=key%>" );
+        headerBlock = headerBlock.withAddHeader( "Authorization", "Bearer <%=key%>" );
+        HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
+        
+        // Prepare replacements for wildcard (since we're using deprecated constructor)
+        handler.prepareReplacementsForUrl( "*" );
+        
+        // Get the modified headers
+        String headerString = handler.serializeHeaderBlock( req.headerBlock );
+        String modifiedHeaderString = handler.applyReplacements( headerString );
+        HttpHeaderBlock modifiedHeaders = handler.parseHeaderBlock( modifiedHeaderString );
+        
+        // Apply replacements to URL
+        String targetUrl = req.headerBlock.getHeaderValue( "X-Target-URL" );
+        String modifiedUrl = handler.applyReplacements( targetUrl );
+        
+        // Verify URL was properly replaced
+        Lib.asrtEQ( modifiedUrl, "https://actual-api.example.com/v2/endpoint?key=secret123", "URL should be fully replaced" );
+        
+        // Verify header replacement still works (only first occurrence)
+        Lib.asrt( modifiedHeaderString.contains( "Authorization: Bearer <%=key%>" ), "Should NOT replace second occurrence of key" );
+        
+        return true;
+    }
+
+
+
+    @SuppressWarnings("unused")
+    private static boolean credsBasedReplacement_TEST_( boolean findLineNumber ) throws Exception {
+        if (findLineNumber) throw new RuntimeException();
+        // Test the no-arg constructor that loads from .creds.json
+        HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler();
+
+        // Test replacements from .creds.json PROXY config
+        HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/test?key=<%=apikey%>", new LinkedHashMap<>() );
+        headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://api.example.com" );
+        headerBlock = headerBlock.withAddHeader( "Authorization", "Bearer <%=apikey%>" );
+        String body = "{\"user\":\"<%=user%>\"}";
+        HttpRequest req = new HttpRequest( headerBlock, body.getBytes() );
+
+        // Manually test the replacement logic
+        String headerString = handler.serializeHeaderBlock( req.headerBlock );
+        handler.prepareReplacementsForUrl( "https://api.example.com" );
+        String modifiedHeader = handler.applyReplacements( headerString );
+        String modifiedBody = handler.applyReplacements( body );
+
+        // Debug output
+        if ( !modifiedHeader.contains( "Bearer secret123" ) ) {
+            System.out.println( "Original header:\n" + headerString );
+            System.out.println( "Modified header:\n" + modifiedHeader );
+            System.out.println( "Replacement pattern: " + handler.replacementPattern );
+            System.out.println( "Replacement values: " + handler.replacementValues );
+        }
+
+        Lib.asrt( modifiedHeader.contains( "key=secret123" ), "Should replace apikey in URL" );
+        Lib.asrt( modifiedHeader.contains( "Bearer <%=apikey%>" ), "Should NOT replace second occurrence of apikey" );
+        Lib.asrt( modifiedBody.contains( "\"user\":\"testuser\"" ), "Should replace user in body" );
+
         return true;
     }
 
@@ -537,4 +630,3 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
     public static void main( String[] args ) throws Exception { Lib.testClass(); }
 }
-
