@@ -90,7 +90,9 @@ By default, files are served from `./datafiles/www` at the path `/www`.
 - Support for multiple root directories
 
 **Server-Side JavaScript (`.jss` files):**
-WebX automatically executes `.jss` files as server-side JavaScript instead of serving them as static files. These files can generate dynamic HTML, process form data, or perform server-side logic.
+WebX automatically executes `.jss` files as server-side JavaScript instead of serving them as static files. These files have **full access to the Java ecosystem** including system operations, file I/O, networking, and all Java libraries.
+
+📖 **[See the complete .jss documentation in README_jss.md](README_jss.md)** for advanced features, Java integration, and comprehensive examples.
 
 **Directory Index Handling:**
 When a request is made to a directory (path ending with `/`), WebX follows this priority order:
@@ -98,7 +100,7 @@ When a request is made to a directory (path ending with `/`), WebX follows this 
 2. **`index.html`** - If found, serves the static HTML file
 3. **Auto Directory Listing** - If neither index file exists, generates an HTML page with a clickable directory listing table
 
-**Creating a `.jss` file:**
+**Basic `.jss` Example:**
 ```javascript
 // Example: ./datafiles/www/hello.jss
 function handle(request, database) {
@@ -107,95 +109,21 @@ function handle(request, database) {
     visitorCount++;
     database.put("visitorCount", visitorCount);
     
-    // Store visitor info
-    database.put("lastVisitor", {
-        time: new Date().toISOString(),
-        userAgent: request.headers["User-Agent"] || "Unknown",
-        ip: request.headers["X-Forwarded-For"] || "Unknown"
-    });
-    
     return {
         status: 200,
         headers: {"Content-Type": "text/html"},
-        body: `
-            <html>
-                <body>
-                    <h1>Hello from Server-Side JavaScript!</h1>
-                    <p>Request method: ${request.method}</p>
-                    <p>Request URL: ${request.url}</p>
-                    <p>Current time: ${new Date().toISOString()}</p>
-                    <p>Visitor count: ${visitorCount}</p>
-                </body>
-            </html>
-        `
+        body: `<h1>Hello! Visitor #${visitorCount}</h1>`
     };
 }
 ```
 
-**Function Parameters:**
+**Key .jss Capabilities:**
+- **Database Integration** - Built-in access to WebX's persistent database
+- **Java Class Loading** - Full access via `Class.forName()` to any Java class
+- **System Operations** - Execute shell commands, access file system, make network calls
+- **No Sandboxing** - Complete freedom to use any Java API or system resource
 
-The `handle()` function receives two parameters:
-
-1. **`request`** - HTTP request information:
-   - `request.method` - HTTP method (GET, POST, etc.)
-   - `request.url` - Full request URL including query parameters
-   - `request.headers` - Object containing all HTTP headers
-   - `request.body` - Raw request body content (string or bytes)
-   - `request.parsedBody` - Automatically parsed body content (JSON objects, form data, etc.)
-   - `request.params` - Combined parameters from cookies, parsed body, and query string (query string takes precedence)
-
-2. **`database`** - Persistent database (shared with `/db` endpoint):
-   - `database.get(key)` - Retrieve a value by key
-   - `database.put(key, value)` - Store a value (supports nested objects/arrays)
-   - `database.containsKey(key)` - Check if a key exists
-   - `database.remove(key)` - Delete a key and its value
-   - `database.size()` - Get number of top-level keys
-   - `database.clear()` - Remove all data
-   - All data is automatically persisted and shared with the `/db` HTTP endpoint
-
-**Response Object Format:**
-- `status` - HTTP status code (200, 404, etc.)
-- `headers` - Object with response headers
-- `body` - Response content (string or bytes)
-
-**Advanced Database Example:**
-```javascript
-// Example: ./datafiles/www/api/users.jss
-function handle(request, database) {
-    if (request.method === "GET") {
-        // Return all users
-        var users = database.get("users") || {};
-        return {
-            status: 200,
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(users)
-        };
-    }
-    
-    if (request.method === "POST") {
-        // Add a new user
-        var userData = request.parsedBody;
-        var users = database.get("users") || {};
-        var userId = "user_" + Date.now();
-        
-        users[userId] = {
-            name: userData.name,
-            email: userData.email,
-            created: new Date().toISOString()
-        };
-        
-        database.put("users", users);
-        
-        return {
-            status: 201,
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({success: true, userId: userId})
-        };
-    }
-    
-    return {status: 405, body: "Method Not Allowed"};
-}
-```
+For detailed examples including file operations, network requests, system commands, email integration, and complete web applications, see **[README_jss.md](README_jss.md)**.
 
 **Directory Examples:**
 ```bash

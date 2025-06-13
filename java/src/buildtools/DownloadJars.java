@@ -9,7 +9,7 @@ public class DownloadJars {
         new File("./log").mkdirs();
         // Build the Maven command
         List<String> cmd;
-        String outputDir = new File("./java/lib").getAbsolutePath();
+        String outputDir = "java/lib";
         if (System.getProperty("os.name").toLowerCase().contains("windows")) {
             cmd = List.of(
                 "cmd", "/c",
