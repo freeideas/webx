@@ -85,12 +85,18 @@ Any endpoint can be disabled by setting it to `NONE` (case-insensitive):
 By default, files are served from `./datafiles/www` at the path `/www`. 
 
 **Static Files:**
-- Automatic directory listings
+- Intelligent directory handling with index file support
 - MIME type detection
 - Support for multiple root directories
 
 **Server-Side JavaScript (`.jss` files):**
 WebX automatically executes `.jss` files as server-side JavaScript instead of serving them as static files. These files can generate dynamic HTML, process form data, or perform server-side logic.
+
+**Directory Index Handling:**
+When a request is made to a directory (path ending with `/`), WebX follows this priority order:
+1. **`index.jss`** - If found, executes the server-side JavaScript file to generate the response
+2. **`index.html`** - If found, serves the static HTML file
+3. **Auto Directory Listing** - If neither index file exists, generates an HTML page with a clickable directory listing table
 
 **Creating a `.jss` file:**
 ```javascript
@@ -126,15 +132,28 @@ function handle(request) {
 - `headers` - Object with response headers
 - `body` - Response content (string or bytes)
 
-Examples:
+**Directory Examples:**
 ```bash
-# Serve your web app from a custom directory (will be available at /www)
-./java/java.sh appz.webx.Main --static=www@/home/user/mywebapp
+# Basic usage - visit http://localhost:13102/www/ to see directory listing
+./java/java.sh appz.webx.Main --run
 
-# Use a custom path for static files
-./java/java.sh appz.webx.Main --static=app@./my-web-app
-# Files will be available at http://localhost:13102/app/
-# .jss files in the directory will be executed server-side
+# Custom directory with index.jss for dynamic home page
+./java/java.sh appz.webx.Main --static=app@./my-web-app --run
+# http://localhost:13102/app/ will execute index.jss if present
+# Otherwise falls back to index.html or directory listing
+```
+
+**Directory Structure Example:**
+```
+datafiles/www/
+├── index.jss          # Dynamic home page (executed for /www/)
+├── about/
+│   └── index.html     # Static about page (served for /www/about/)
+├── products/          # No index files (shows directory listing for /www/products/)
+│   ├── item1.html
+│   └── item2.html
+└── api/
+    └── users.jss      # API endpoint at /www/api/users.jss
 ```
 
 ### 2. API Proxy (`/proxy`)

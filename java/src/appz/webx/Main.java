@@ -36,7 +36,6 @@ public class Main {
         String proxyConfig = p.getString( "proxy", "proxy@../api-keys.json", "proxy endpoint as path@config-file (use 'NONE' to disable)" );
         String dbConfig = p.getString( "db", "db@jdbc:hsqldb:file:./datafiles/dbf/webx-db", "database endpoint as path@jdbc-url (use 'NONE' to disable)" );
         String loginConfig = p.getString( "login", "login@WebX", "login endpoint as path@app-name (use 'NONE' to disable)" );
-        String oscmdConfig = p.getString( "oscmd", "NONE", "OS command endpoint as path (use 'NONE' to disable)" );
         String shutdownCode = p.getString( "shutdown", null, "shutdown code - if provided, server will exit when this code appears in the first line of any request" );
         boolean run = p.getBoolean( "run", false, "start the server" );
         
@@ -91,12 +90,6 @@ public class Main {
             System.out.println( "  " + basePath + loginPath + " provides email authentication for '" + appName + "'" );
         }
         
-        if ( oscmdConfig.equalsIgnoreCase("NONE") ) {
-            System.out.println( "  OS Command: DISABLED" );
-        } else {
-            String oscmdPath = oscmdConfig.startsWith("/") ? oscmdConfig : "/" + oscmdConfig;
-            System.out.println( "  " + basePath + oscmdPath + " executes OS commands (protected by security guard)" );
-        }
         System.out.println( "  run is " + run + ", so " + (run ? "service will start now" : "exiting") );
         
         if ( !run ) return;
@@ -156,13 +149,6 @@ public class Main {
             Lib.log( "Login handler configured at " + fullLoginPath + " for app: " + appName );
         }
         
-        if ( !oscmdConfig.equalsIgnoreCase("NONE") ) {
-            String oscmdPath = oscmdConfig.startsWith("/") ? oscmdConfig : "/" + oscmdConfig;
-            String fullOscmdPath = basePath + oscmdPath;
-            HttpOsCommandHandler oscmdHandler = new HttpOsCommandHandler( securityGuard );
-            server.handlers.put( fullOscmdPath, oscmdHandler );
-            Lib.log( "OS command handler configured at " + fullOscmdPath + " (protected by security guard)" );
-        }
         
         if ( !dbConfig.equalsIgnoreCase("NONE") ) {
             String[] dbParts = dbConfig.split("@", 2);
@@ -193,10 +179,6 @@ public class Main {
                     if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
                     endpoints.append(basePath).append(loginPath).append(" (login), ");
                 }
-                if ( !oscmdConfig.equalsIgnoreCase("NONE") ) {
-                    String oscmdPath = oscmdConfig.startsWith("/") ? oscmdConfig : "/" + oscmdConfig;
-                    endpoints.append(basePath).append(oscmdPath).append(" (OS commands), ");
-                }
                 endpoints.append(basePath).append(dbPath).append(" (JSON database)");
                 Lib.log( endpoints.toString() );
                 server.start();
@@ -222,10 +204,6 @@ public class Main {
                 String loginPath = loginConfig.split("@", 2)[0];
                 if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
                 endpoints.append(loginPath).append(" (login), ");
-            }
-            if ( !oscmdConfig.equalsIgnoreCase("NONE") ) {
-                String oscmdPath = oscmdConfig.startsWith("/") ? oscmdConfig : "/" + oscmdConfig;
-                endpoints.append(oscmdPath).append(" (OS commands), ");
             }
             String endpointsStr = endpoints.toString();
             if ( endpointsStr.endsWith(", ") ) endpointsStr = endpointsStr.substring(0, endpointsStr.length()-2);
