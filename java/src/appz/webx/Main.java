@@ -101,6 +101,16 @@ public class Main {
         DefaultSecurityGuard securityGuard = new DefaultSecurityGuard();
         server.requestFilter = securityGuard;
         
+        // Initialize database if enabled
+        PersistentMap dbStorage = null;
+        PersistentData pd = null;
+        if ( !dbConfig.equalsIgnoreCase("NONE") ) {
+            String[] dbParts = dbConfig.split("@", 2);
+            String jdbcUrl = dbParts.length>1 ? dbParts[1] : "jdbc:hsqldb:file:./datafiles/dbf/webx-db";
+            pd = new PersistentData( jdbcUrl, "webx_data" );
+            dbStorage = pd.getRootMap();
+        }
+        
         if ( !staticConfig.equalsIgnoreCase("NONE") ) {
             String[] staticParts = staticConfig.split("@", 2);
             String staticPath = staticParts.length>0 ? staticParts[0] : "www";
@@ -112,7 +122,7 @@ public class Main {
                 Lib.log( "ERROR: " + staticDir + " does not exist" );
             } else {
                 server.handlers.put( fullStaticPath, new FileExtensionHandler()
-                    .addExtensionHandler( ".jss", new ServerSideJavaScriptHandler( fullStaticPath, wwwDir ) )
+                    .addExtensionHandler( ".jss", new HttpJssHandler( fullStaticPath, wwwDir, dbStorage ) )
                     .setDefaultHandler( new HttpFileHandler( fullStaticPath, wwwDir ) ) );
                 Lib.log( "Static files configured at " + fullStaticPath + " from " + wwwDir.getAbsolutePath() );
             }
@@ -153,12 +163,13 @@ public class Main {
         if ( !dbConfig.equalsIgnoreCase("NONE") ) {
             String[] dbParts = dbConfig.split("@", 2);
             String dbPath = dbParts.length>0 ? dbParts[0] : "db";
-            String jdbcUrl = dbParts.length>1 ? dbParts[1] : "jdbc:hsqldb:file:./datafiles/dbf/webx-db";
             if ( !dbPath.startsWith("/") ) dbPath = "/" + dbPath;
             String fullDbPath = basePath + dbPath;
-            try( PersistentData pd = new PersistentData( jdbcUrl, "webx_data" ) ) {
-                PersistentMap dbStorage = pd.getRootMap();
-                server.handlers.put( fullDbPath, new HttpJsonHandler(dbStorage) );
+            server.handlers.put( fullDbPath, new HttpJsonHandler(dbStorage) );
+        }
+        
+        if ( pd != null ) {
+            try ( PersistentData pdResource = pd ) {
                 Lib.log( "WebX server listening on port "+port );
                 StringBuilder endpoints = new StringBuilder("Endpoints: ");
                 if ( !staticConfig.equalsIgnoreCase("NONE") ) {
@@ -179,7 +190,12 @@ public class Main {
                     if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
                     endpoints.append(basePath).append(loginPath).append(" (login), ");
                 }
-                endpoints.append(basePath).append(dbPath).append(" (JSON database)");
+                if ( !dbConfig.equalsIgnoreCase("NONE") ) {
+                    String[] dbParts = dbConfig.split("@", 2);
+                    String dbPath = dbParts.length>0 ? dbParts[0] : "db";
+                    if ( !dbPath.startsWith("/") ) dbPath = "/" + dbPath;
+                    endpoints.append(basePath).append(dbPath).append(" (JSON database)");
+                }
                 Lib.log( endpoints.toString() );
                 server.start();
                 Lib.log( "WebX server stopped" );

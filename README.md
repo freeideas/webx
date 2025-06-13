@@ -101,7 +101,19 @@ When a request is made to a directory (path ending with `/`), WebX follows this 
 **Creating a `.jss` file:**
 ```javascript
 // Example: ./datafiles/www/hello.jss
-function handle(request) {
+function handle(request, database) {
+    // Access the persistent database (shared with /db endpoint)
+    var visitorCount = database.get("visitorCount") || 0;
+    visitorCount++;
+    database.put("visitorCount", visitorCount);
+    
+    // Store visitor info
+    database.put("lastVisitor", {
+        time: new Date().toISOString(),
+        userAgent: request.headers["User-Agent"] || "Unknown",
+        ip: request.headers["X-Forwarded-For"] || "Unknown"
+    });
+    
     return {
         status: 200,
         headers: {"Content-Type": "text/html"},
@@ -112,6 +124,7 @@ function handle(request) {
                     <p>Request method: ${request.method}</p>
                     <p>Request URL: ${request.url}</p>
                     <p>Current time: ${new Date().toISOString()}</p>
+                    <p>Visitor count: ${visitorCount}</p>
                 </body>
             </html>
         `
@@ -119,18 +132,70 @@ function handle(request) {
 }
 ```
 
-**Request Object Properties:**
-- `request.method` - HTTP method (GET, POST, etc.)
-- `request.url` - Full request URL including query parameters
-- `request.headers` - Object containing all HTTP headers
-- `request.body` - Raw request body content (string or bytes)
-- `request.parsedBody` - Automatically parsed body content (JSON objects, form data, etc.)
-- `request.params` - Combined parameters from cookies, parsed body, and query string (query string takes precedence)
+**Function Parameters:**
+
+The `handle()` function receives two parameters:
+
+1. **`request`** - HTTP request information:
+   - `request.method` - HTTP method (GET, POST, etc.)
+   - `request.url` - Full request URL including query parameters
+   - `request.headers` - Object containing all HTTP headers
+   - `request.body` - Raw request body content (string or bytes)
+   - `request.parsedBody` - Automatically parsed body content (JSON objects, form data, etc.)
+   - `request.params` - Combined parameters from cookies, parsed body, and query string (query string takes precedence)
+
+2. **`database`** - Persistent database (shared with `/db` endpoint):
+   - `database.get(key)` - Retrieve a value by key
+   - `database.put(key, value)` - Store a value (supports nested objects/arrays)
+   - `database.containsKey(key)` - Check if a key exists
+   - `database.remove(key)` - Delete a key and its value
+   - `database.size()` - Get number of top-level keys
+   - `database.clear()` - Remove all data
+   - All data is automatically persisted and shared with the `/db` HTTP endpoint
 
 **Response Object Format:**
 - `status` - HTTP status code (200, 404, etc.)
 - `headers` - Object with response headers
 - `body` - Response content (string or bytes)
+
+**Advanced Database Example:**
+```javascript
+// Example: ./datafiles/www/api/users.jss
+function handle(request, database) {
+    if (request.method === "GET") {
+        // Return all users
+        var users = database.get("users") || {};
+        return {
+            status: 200,
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(users)
+        };
+    }
+    
+    if (request.method === "POST") {
+        // Add a new user
+        var userData = request.parsedBody;
+        var users = database.get("users") || {};
+        var userId = "user_" + Date.now();
+        
+        users[userId] = {
+            name: userData.name,
+            email: userData.email,
+            created: new Date().toISOString()
+        };
+        
+        database.put("users", users);
+        
+        return {
+            status: 201,
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({success: true, userId: userId})
+        };
+    }
+    
+    return {status: 405, body: "Method Not Allowed"};
+}
+```
 
 **Directory Examples:**
 ```bash
@@ -181,7 +246,7 @@ Features:
 
 ### 3. JSON Database (`/db`)
 
-A simple but powerful persistent JSON storage system. Send POST or PUT requests with JSON data, and it will be merged into the persistent store.
+A simple but powerful persistent JSON storage system. Send POST or PUT requests with JSON data, and it will be merged into the persistent store. **This same database is also available to all `.jss` files via the `database` parameter**, enabling seamless data sharing between client-side requests and server-side JavaScript.
 
 **Note:** The `/db` handler needs to be configured with a persistent data store. Here's an example of how to set it up:
 
@@ -226,6 +291,7 @@ Features:
 - Deep merging of nested objects
 - Persistent storage across server restarts
 - Simple POST/PUT interface
+- **Shared with .jss files** - Data stored via `/db` endpoint is immediately available to server-side JavaScript, and vice versa
 
 ### 4. Email Authentication (`/login`)
 
