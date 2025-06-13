@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.net.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import jLib.*;
 
 
@@ -113,17 +114,15 @@ public class HttpServer {
         OutputStream rawSockOut = null;
         InputStream sockInp = null;
         OutputStream sockOut = null;
-        FileOutputStream logStream = null;
         String remoteAddr = "(unknown)";
         try {
             remoteAddr = Lib.getRemoteAddr(clientSocket).replaceAll( "[^a-zA-Z0-9]", "-" );
-            Lib.log( "connection from "+remoteAddr );
             rawSockInp = clientSocket.getInputStream();
             rawSockOut = clientSocket.getOutputStream();
-            logStream = new FileOutputStream( Lib.backupFilespec( "./log/"+remoteAddr+".log" ) );
-            sockInp = Lib.multicast(rawSockInp,logStream);
-            sockOut = Lib.multicast(rawSockOut,logStream);
+            sockInp = rawSockInp;
+            sockOut = rawSockOut;
             while (! clientSocket.isClosed() ) {
+                String requestId = Lib.timeStamp().replaceAll( "[^0-9]", "" );
                 Result<HttpHeaderBlock,Exception> headerResult = HttpHeaderBlock.readFrom(sockInp);
                 if (! headerResult.isOk() ) return;
                 HttpHeaderBlock headerBlock = headerResult.ok();
@@ -135,11 +134,13 @@ public class HttpServer {
                         new HttpHeaderBlock( "HTTP/1.1 200 OK", new LinkedHashMap<>() ),
                         "Server shutting down".getBytes()
                     );
+                    logResponse( requestId, shutdownResponse );
                     shutdownResponse.write(sockOut);
                     return;
                 } else if ( shutdownCode != null && headerBlock.firstLine != null && headerBlock.firstLine.contains(shutdownCode) ) {
                     // Shutdown code detected but timestamp validation failed
                     HttpResponse response = new HttpErrorResponse( 403, "Invalid shutdown request" );
+                    logResponse( requestId, response );
                     response.write(sockOut);
                     return;
                 }
@@ -151,12 +152,16 @@ public class HttpServer {
                     return;
                 }
                 HttpRequest req = HttpRequest.newHttpRequest( msgResult.ok() );
+                Lib.log( requestId + " " + remoteAddr + " " + headerBlock.firstLine );
+                logRequest( requestId, req );
                 if ( requestFilter != null && ! requestFilter.test(req) ) {
                     HttpResponse response = new HttpErrorResponse( 403, "Forbidden" );
+                    logResponse( requestId, response );
                     response.write(sockOut);
                     return;
                 }
                 HttpResponse response = foundHandler.handle(req);
+                logResponse( requestId, response );
                 Result<Long,Exception> writeResult = response.write(sockOut);
                 if (! writeResult.isOk() ) {
                     Lib.log( writeResult.err() );
@@ -169,11 +174,51 @@ public class HttpServer {
         } finally {
             try{ rawSockInp.close(); }catch(Throwable ignore){}
             try{ rawSockOut.close(); }catch(Throwable ignore){}
-            try{ sockInp.close(); }catch(Throwable ignore){}
-            try{ sockOut.close(); }catch(Throwable ignore){}
             try{ clientSocket.close(); }catch(Throwable ignore){}
-            try{ logStream.close(); }catch(Throwable ignore){}
-            Lib.log( "socket closed: "+remoteAddr );
+        }
+    }
+
+
+
+    private void logRequest( String requestId, HttpRequest request ) {
+        try {
+            String filename = "./log/" + requestId + ".log";
+            StringBuilder content = new StringBuilder();
+            content.append( "=== REQUEST ===\n" );
+            content.append( "Time: " ).append( Lib.timeStamp() ).append( "\n" );
+            content.append( request.headerBlock.firstLine ).append( "\n" );
+            for ( Map.Entry<String,String> header : request.headerBlock.headers.entrySet() ) {
+                content.append( header.getKey() ).append( ": " ).append( header.getValue() ).append( "\n" );
+            }
+            content.append( "\n" );
+            if ( request.body!=null && request.body.length>0 ) {
+                content.append( new String( request.body, StandardCharsets.UTF_8 ) );
+            }
+            Lib.string2file( content.toString(), new File(filename), false );
+        } catch ( Exception e ) {
+            Lib.log( "Failed to log request: " + e.getMessage() );
+        }
+    }
+
+
+
+    private void logResponse( String requestId, HttpResponse response ) {
+        try {
+            String filename = "./log/" + requestId + ".log";
+            StringBuilder content = new StringBuilder();
+            content.append( "\n\n=== RESPONSE ===\n" );
+            content.append( "Time: " ).append( Lib.timeStamp() ).append( "\n" );
+            content.append( response.headerBlock.firstLine ).append( "\n" );
+            for ( Map.Entry<String,String> header : response.headerBlock.headers.entrySet() ) {
+                content.append( header.getKey() ).append( ": " ).append( header.getValue() ).append( "\n" );
+            }
+            content.append( "\n" );
+            if ( response.body!=null && response.body.length>0 ) {
+                content.append( new String( response.body, StandardCharsets.UTF_8 ) );
+            }
+            Lib.string2file( content.toString(), new File(filename), true );
+        } catch ( Exception e ) {
+            Lib.log( "Failed to log response: " + e.getMessage() );
         }
     }
 
@@ -249,6 +294,47 @@ public class HttpServer {
         // Test no shutdown code
         HttpHeaderBlock noCodeHeader = new HttpHeaderBlock("GET /normal-request HTTP/1.1", headers);
         Lib.asrt( !server.shouldShutDown(noCodeHeader), "Should not shutdown without shutdown code" );
+        
+        return true;
+    }
+
+    public static boolean requestLogging_TEST_() throws Exception {
+        // Test request/response logging functionality
+        HttpServer server = new HttpServer(8080);
+        
+        // Create test request
+        Map<String,String> headers = new HashMap<>();
+        headers.put( "Host", "example.com" );
+        headers.put( "User-Agent", "TestClient/1.0" );
+        HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET /test HTTP/1.1", headers );
+        HttpMessage message = new HttpMessage( headerBlock, "Test body".getBytes() );
+        HttpRequest request = HttpRequest.newHttpRequest( message );
+        
+        // Create test response
+        HttpHeaderBlock respHeaders = new HttpHeaderBlock( "HTTP/1.1 200 OK", new HashMap<>() );
+        HttpResponse response = new HttpResponse( respHeaders, "Response body".getBytes() );
+        
+        // Generate request ID and log
+        String requestId = Lib.timeStamp().replaceAll( "[^0-9]", "" );
+        server.logRequest( requestId, request );
+        server.logResponse( requestId, response );
+        
+        // Verify log file exists and contains expected content
+        File logFile = new File( "./log/" + requestId + ".log" );
+        Lib.asrt( logFile.exists(), "Log file should exist" );
+        
+        String logContent = Lib.file2string( logFile );
+        Lib.asrt( logContent.contains( "=== REQUEST ===" ), "Should contain request header" );
+        Lib.asrt( logContent.contains( "GET /test HTTP/1.1" ), "Should contain request line" );
+        Lib.asrt( logContent.contains( "Host: example.com" ), "Should contain Host header" );
+        Lib.asrt( logContent.contains( "Test body" ), "Should contain request body" );
+        
+        Lib.asrt( logContent.contains( "=== RESPONSE ===" ), "Should contain response header" );
+        Lib.asrt( logContent.contains( "HTTP/1.1 200 OK" ), "Should contain response line" );
+        Lib.asrt( logContent.contains( "Response body" ), "Should contain response body" );
+        
+        // Clean up
+        logFile.delete();
         
         return true;
     }
