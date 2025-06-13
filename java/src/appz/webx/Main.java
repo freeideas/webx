@@ -118,7 +118,9 @@ public class Main {
             if ( !wwwDir.exists() ) {
                 Lib.log( "ERROR: " + staticDir + " does not exist" );
             } else {
-                server.handlers.put( fullStaticPath, new HttpFileHandler(fullStaticPath, wwwDir) );
+                server.handlers.put( fullStaticPath, new FileExtensionHandler()
+                    .addExtensionHandler( ".jss", new ServerSideJavaScriptHandler( fullStaticPath, wwwDir ) )
+                    .setDefaultHandler( new HttpFileHandler( fullStaticPath, wwwDir ) ) );
                 Lib.log( "Static files configured at " + fullStaticPath + " from " + wwwDir.getAbsolutePath() );
             }
         }

@@ -6,14 +6,15 @@ A lightweight, feature-rich web server that provides everything needed to build 
 
 ## Overview
 
-WebX is a simple yet powerful web server that provides four core services out of the box:
+WebX is a simple yet powerful web server that provides five core services out of the box:
 
 - **Static File Serving** (`/www`) - Serve your HTML, CSS, JS, and other static assets
+- **Server-Side JavaScript** (`.jss` files) - Execute JavaScript on the server to generate dynamic content
 - **API Proxy** (`/proxy`) - Allow web pages to access any external API, bypassing CORS restrictions
 - **JSON Database** (`/db`) - A persistent JSON data store that accepts POST/PUT requests and merges data into a persistent structure
 - **Email Authentication** (`/login`) - JSON API for email-based login with 6-digit codes and JWT tokens
 
-With these four services, you can build fully-functional web applications without any backend code. Your HTML/CSS/JS pages have everything they need to store data, access external APIs, authenticate users, and serve content.
+With these five services, you can build fully-functional web applications with minimal backend code. Your HTML/CSS/JS pages have everything they need to store data, access external APIs, authenticate users, and serve content, plus server-side JavaScript for dynamic page generation.
 
 ## Quick Start
 
@@ -79,13 +80,51 @@ Any endpoint can be disabled by setting it to `NONE` (case-insensitive):
 
 ## Core Features
 
-### 1. Static File Server
+### 1. Static File Server & Server-Side JavaScript
 
 By default, files are served from `./datafiles/www` at the path `/www`. 
 
+**Static Files:**
 - Automatic directory listings
 - MIME type detection
 - Support for multiple root directories
+
+**Server-Side JavaScript (`.jss` files):**
+WebX automatically executes `.jss` files as server-side JavaScript instead of serving them as static files. These files can generate dynamic HTML, process form data, or perform server-side logic.
+
+**Creating a `.jss` file:**
+```javascript
+// Example: ./datafiles/www/hello.jss
+function handle(request) {
+    return {
+        status: 200,
+        headers: {"Content-Type": "text/html"},
+        body: `
+            <html>
+                <body>
+                    <h1>Hello from Server-Side JavaScript!</h1>
+                    <p>Request method: ${request.method}</p>
+                    <p>Request URL: ${request.url}</p>
+                    <p>Current time: ${new Date().toISOString()}</p>
+                </body>
+            </html>
+        `
+    };
+}
+```
+
+**Request Object Properties:**
+- `request.method` - HTTP method (GET, POST, etc.)
+- `request.url` - Full request URL including query parameters
+- `request.headers` - Object containing all HTTP headers
+- `request.body` - Raw request body content (string or bytes)
+- `request.parsedBody` - Automatically parsed body content (JSON objects, form data, etc.)
+- `request.params` - Combined parameters from cookies, parsed body, and query string (query string takes precedence)
+
+**Response Object Format:**
+- `status` - HTTP status code (200, 404, etc.)
+- `headers` - Object with response headers
+- `body` - Response content (string or bytes)
 
 Examples:
 ```bash
@@ -95,6 +134,7 @@ Examples:
 # Use a custom path for static files
 ./java/java.sh appz.webx.Main --static=app@./my-web-app
 # Files will be available at http://localhost:13102/app/
+# .jss files in the directory will be executed server-side
 ```
 
 ### 2. API Proxy (`/proxy`)
