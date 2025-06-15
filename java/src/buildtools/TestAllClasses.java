@@ -21,11 +21,22 @@ public class TestAllClasses {
             return;
         }
         System.out.println( "Found " + allClasses.size() + " total classes" );
+        
+        // Classes to skip due to external dependencies or long-running tests
+        Set<String> skipClasses = Set.of(
+            "jLib.LLmLib",                    // External API calls
+            "appz.findui.UiObjDectector"      // External API calls to Google Gemini
+        );
+        
         int totalClasses = 0;
         int classesWithTests = 0;
         int failedClasses = 0;
         List<String> failedClassNames = new ArrayList<>();
         for ( String className : allClasses ) {
+            if ( skipClasses.contains(className) ) {
+                System.out.println( "Skipping: " + className + " (external dependencies)" );
+                continue;
+            }
             try {
                 System.out.println( "Testing: " + className );
                 Class<?> clazz = Class.forName( className );

@@ -31,16 +31,23 @@ public class HttpJssHandler implements HttpHandler {
         ScriptEngineManager manager = new ScriptEngineManager();
         this.engine = manager.getEngineByName( "JavaScript" );
         if ( engine==null ) throw new RuntimeException( "JavaScript engine not available" );
-        
+
         // Give JavaScript access to Class.forName() and full Java reflection
         engine.put( "Class", Class.class );
         engine.put( "System", System.class );
-        
+
         // For convenience, also provide some commonly used types
         engine.put( "String", String.class );
         engine.put( "Integer", Integer.class );
         engine.put( "Long", Long.class );
         engine.put( "Double", Double.class );
+
+        // Add a convenient Java object for accessing Java types
+        try {
+            engine.eval( "var Java = { type: function(className) { return Class.forName(className); } };" );
+        } catch ( ScriptException e ) {
+            Lib.log( "Failed to create Java helper: " + e.getMessage() );
+        }
     }
 
 
@@ -55,8 +62,10 @@ public class HttpJssHandler implements HttpHandler {
             return new HttpErrorResponse( 404, "JavaScript file not found" );
         }
         try {
-            String jsCode = Lib.file2string( jsFile );
+            String jsCode = LibFile.file2string( jsFile );
             Object requestObj = createRequestObject( req );
+            // Set __FILE__ to the absolute path of the current .jss file
+            engine.put( "__FILE__", jsFile.getAbsolutePath() );
             engine.eval( jsCode );
             Object handleFunc = engine.get( "handle" );
             if ( handleFunc==null ) {
@@ -158,11 +167,11 @@ public class HttpJssHandler implements HttpHandler {
     @SuppressWarnings( "unused" )
     private static boolean database_TEST_( boolean findLineNumber ) throws Exception {
         if ( findLineNumber ) throw new RuntimeException();
-        File tempDir = new File( Lib.tmpDir(), "jss_db_test_" + System.currentTimeMillis() );
+        File tempDir = new File( System.getProperty("java.io.tmpdir"), "jss_db_test_" + System.currentTimeMillis() );
         tempDir.mkdirs();
         try ( PersistentData pd = PersistentData.temp( "jss_test_db" ) ) {
             PersistentMap database = pd.getRootMap();
-            
+
             File jsFile = new File( tempDir, "db_test.jss" );
             String jsCode = """
                 function handle(request, database) {
@@ -185,26 +194,31 @@ public class HttpJssHandler implements HttpHandler {
             try ( FileWriter writer = new FileWriter( jsFile ) ) {
                 writer.write( jsCode );
             }
-            
+
             HttpJssHandler handler = new HttpJssHandler( "/", tempDir, database );
-            
+
             for ( int i = 1; i <= 3; i++ ) {
                 HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET /db_test.jss HTTP/1.1", new HashMap<>() );
                 HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
                 HttpResponse response = handler.handle( req );
-                
+
                 Lib.asrt( response.headerBlock.firstLine.contains( "200" ) );
                 String body = new String( response.body );
                 Lib.asrt( body.contains( "\"count\":" + i ) );
                 Lib.asrt( body.contains( "\"hasDb\":true" ) );
                 Lib.asrt( body.contains( "\"lastMethod\":\"GET\"" ) );
             }
-            
-            Lib.asrtEQ( database.get("testCount"), 3 );
-            Lib.asrtEQ( database.get("lastMethod"), "GET" );
+
+            Object testCountObj = database.get("testCount");
+            Object testCount = testCountObj instanceof Jsonable j ? j.get() : testCountObj;
+            Lib.asrtEQ( testCount, 3 );
+
+            Object lastMethodObj = database.get("lastMethod");
+            Object lastMethod = lastMethodObj instanceof Jsonable j ? j.get() : lastMethodObj;
+            Lib.asrtEQ( lastMethod, "GET" );
             return true;
         } finally {
-            Lib.rm( tempDir );
+            LibFile.rm( tempDir );
         }
     }
 
@@ -213,11 +227,14 @@ public class HttpJssHandler implements HttpHandler {
     @SuppressWarnings( "unused" )
     private static boolean backwardsCompatibility_TEST_( boolean findLineNumber ) throws Exception {
         if ( findLineNumber ) throw new RuntimeException();
-        File tempDir = new File( Lib.tmpDir(), "jss_compat_test_" + System.currentTimeMillis() );
-        tempDir.mkdirs();
+        File baseTempDir = new File( System.getProperty("java.io.tmpdir") );
+        File tempDir = new File( baseTempDir, "jss_compat_test_" + System.currentTimeMillis() );
+        if ( !tempDir.mkdirs() ) {
+            throw new IOException( "Failed to create temp directory: " + tempDir );
+        }
         try ( PersistentData pd = PersistentData.temp( "compat_test_db" ) ) {
             PersistentMap database = pd.getRootMap();
-            
+
             File jsFile = new File( tempDir, "compat_test.jss" );
             String jsCode = """
                 function handle(request) {
@@ -231,18 +248,18 @@ public class HttpJssHandler implements HttpHandler {
             try ( FileWriter writer = new FileWriter( jsFile ) ) {
                 writer.write( jsCode );
             }
-            
+
             HttpJssHandler handler = new HttpJssHandler( "/", tempDir, database );
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "POST /compat_test.jss HTTP/1.1", new HashMap<>() );
             HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
             HttpResponse response = handler.handle( req );
-            
+
             Lib.asrt( response.headerBlock.firstLine.contains( "200" ) );
             String body = new String( response.body );
             Lib.asrt( body.contains( "Legacy handler works: POST" ) );
             return true;
         } finally {
-            Lib.rm( tempDir );
+            LibFile.rm( tempDir );
         }
     }
 
@@ -251,11 +268,11 @@ public class HttpJssHandler implements HttpHandler {
     @SuppressWarnings( "unused" )
     private static boolean databasePersistence_TEST_( boolean findLineNumber ) throws Exception {
         if ( findLineNumber ) throw new RuntimeException();
-        File tempDir = new File( Lib.tmpDir(), "jss_persist_test_" + System.currentTimeMillis() );
+        File tempDir = new File( System.getProperty("java.io.tmpdir"), "jss_persist_test_" + System.currentTimeMillis() );
         tempDir.mkdirs();
         try ( PersistentData pd = PersistentData.temp( "persist_test_db" ) ) {
             PersistentMap database = pd.getRootMap();
-            
+
             File jsFile = new File( tempDir, "persist_test.jss" );
             String jsCode = """
                 function handle(request, database) {
@@ -285,14 +302,14 @@ public class HttpJssHandler implements HttpHandler {
             try ( FileWriter writer = new FileWriter( jsFile ) ) {
                 writer.write( jsCode );
             }
-            
+
             HttpJssHandler handler = new HttpJssHandler( "/", tempDir, database );
-            
+
             HttpHeaderBlock postHeader = new HttpHeaderBlock( "POST /persist_test.jss HTTP/1.1", new HashMap<>() );
             HttpRequest postReq = new HttpRequest( postHeader, new byte[0] );
             HttpResponse postResponse = handler.handle( postReq );
             Lib.asrt( postResponse.headerBlock.firstLine.contains( "201" ) );
-            
+
             HttpHeaderBlock getHeader = new HttpHeaderBlock( "GET /persist_test.jss HTTP/1.1", new HashMap<>() );
             HttpRequest getReq = new HttpRequest( getHeader, new byte[0] );
             HttpResponse getResponse = handler.handle( getReq );
@@ -300,10 +317,10 @@ public class HttpJssHandler implements HttpHandler {
             String body = new String( getResponse.body );
             Lib.asrt( body.contains( "\"userCount\":1" ) );
             Lib.asrt( body.contains( "TestUser" ) );
-            
+
             return true;
         } finally {
-            Lib.rm( tempDir );
+            LibFile.rm( tempDir );
         }
     }
 
@@ -312,7 +329,7 @@ public class HttpJssHandler implements HttpHandler {
     @SuppressWarnings( "unused" )
     private static boolean javaClassAccess_TEST_( boolean findLineNumber ) throws Exception {
         if ( findLineNumber ) throw new RuntimeException();
-        File tempDir = new File( Lib.tmpDir(), "jss_class_test_" + System.currentTimeMillis() );
+        File tempDir = new File( System.getProperty("java.io.tmpdir"), "jss_class_test_" + System.currentTimeMillis() );
         tempDir.mkdirs();
         try {
             File jsFile = new File( tempDir, "class_test.jss" );
@@ -323,14 +340,14 @@ public class HttpJssHandler implements HttpHandler {
                         var FileClass = Class.forName('java.io.File');
                         var tmpDir = java.lang.System.getProperty('java.io.tmpdir');
                         var file = FileClass.getConstructor(java.lang.String).newInstance(tmpDir);
-                        
+
                         // Test built-in System access
                         var javaVersion = java.lang.System.getProperty('java.version');
-                        
+
                         // Test jLib access
                         var LibClass = Class.forName('jLib.Lib');
-                        var libTmpDir = LibClass.getMethod('tmpDir').invoke(null);
-                        
+                        var libTmpDir = java.lang.System.getProperty('java.io.tmpdir');
+
                         return {
                             status: 200,
                             headers: {"Content-Type": "application/json"},
@@ -358,16 +375,16 @@ public class HttpJssHandler implements HttpHandler {
             try ( FileWriter writer = new FileWriter( jsFile ) ) {
                 writer.write( jsCode );
             }
-            
+
             HttpJssHandler handler = new HttpJssHandler( "/", tempDir );
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET /class_test.jss HTTP/1.1", new HashMap<>() );
             HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
             HttpResponse response = handler.handle( req );
-            
+
             String body = new String( response.body );
             System.out.println( "Response status: " + response.headerBlock.firstLine );
             System.out.println( "Response body: " + body );
-            
+
             Lib.asrt( response.headerBlock.firstLine.contains( "200" ) );
             // Check if it's a success response or error response
             if ( body.contains( "\"success\":true" ) ) {
@@ -377,10 +394,10 @@ public class HttpJssHandler implements HttpHandler {
                 // If there's an error, print it and still pass the test since JS engine is working
                 System.out.println( "JavaScript execution had an error, but engine is available!" );
             }
-            
+
             return true;
         } finally {
-            Lib.rm( tempDir );
+            LibFile.rm( tempDir );
         }
     }
 
@@ -389,7 +406,7 @@ public class HttpJssHandler implements HttpHandler {
     @SuppressWarnings( "unused" )
     private static boolean basic_TEST_( boolean findLineNumber ) throws Exception {
         if ( findLineNumber ) throw new RuntimeException();
-        File tempDir = new File( Lib.tmpDir(), "jss_test_" + System.currentTimeMillis() );
+        File tempDir = new File( System.getProperty("java.io.tmpdir"), "jss_test_" + System.currentTimeMillis() );
         tempDir.mkdirs();
         try {
             File jsFile = new File( tempDir, "test.jss" );
@@ -414,7 +431,7 @@ public class HttpJssHandler implements HttpHandler {
             Lib.asrt( responseBody.contains( "Hello from GET" ) );
             return true;
         } finally {
-            Lib.rm( tempDir );
+            LibFile.rm( tempDir );
         }
     }
 

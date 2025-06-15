@@ -1,0 +1,13 @@
+{
+  "username": "ace",
+  "workingDirectory": "/home/ace",
+  "environment": {
+    "HOME": "/home/ace",
+    "USER": "ace",
+    "XDG_CONFIG_HOME": "/home/ace/.config",
+    "PATH": "/home/ace/miniconda3/bin:/home/ace/.npm-global/bin:/usr/local/bin:/usr/bin:/bin"
+  },
+  "commandTimeout": 1800000,
+  "logRetentionHours": 24,
+  "maxOutputSize": 10485760
+}

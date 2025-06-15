@@ -5,6 +5,21 @@ import jLib.*;
 
 
 
+/**
+ * Build system for creating WebX JAR and native executables.
+ *
+ * IMPORTANT: Directory Structure
+ * - ./java/tmp/     - Temporary class files used by javac.sh and IDE (can be replaced anytime)
+ * - ./java/classes/ - Production class files compiled by this Build tool
+ * - ./java/lib/     - External JAR dependencies
+ * - ./java/dist/    - Final JAR and executable output
+ *
+ * This Build tool compiles to ./java/classes/ (not ./java/tmp/) to ensure:
+ * 1. Full control over compilation flags and process
+ * 2. Clean separation from IDE/development builds
+ * 3. All library JARs can be extracted to the same location before JAR creation
+ * 4. Consistent and reproducible builds
+ */
 public class Build {
 
 
@@ -22,7 +37,7 @@ public class Build {
         Lib.testClass();
         compile();
         File jarFile = buildJar();
-        buildExe( jarFile );
+        // buildExe( jarFile );  // Disabled for now - native binary creation is slow
     }
 
 
@@ -31,11 +46,11 @@ public class Build {
         Lib.archiveLogFiles();
         {
             Lib.log( "removing all class files" );
-            Lib.rm(CLS_DIR);
+            LibFile.rm( CLS_DIR );
             CLS_DIR.mkdirs();
         }
         {
-            Lib.log("compiling");
+            Lib.log("compiling from entry point");
             File srcFile = srcFile(ENTRY_POINT);
             List<String> compileCommand = new ArrayList<>();
             compileCommand.add("javac");
@@ -43,6 +58,8 @@ public class Build {
             compileCommand.add(Lib.getCanonicalPath(SRC_DIR));
             compileCommand.add("-d");
             compileCommand.add(Lib.getCanonicalPath(CLS_DIR));
+            compileCommand.add("-cp");
+            compileCommand.add(Lib.getCanonicalPath(LIB_DIR) + "/*");
             compileCommand.add("--release");
             compileCommand.add("22");
             compileCommand.add(Lib.getCanonicalPath(srcFile));
@@ -51,6 +68,7 @@ public class Build {
             int result = Lib.OSProcIO(process, null, System.out, System.err);
             if (result != 0) {
                 Lib.log("Compilation failed with error code: " + result);
+                throw new Exception("Compilation failed");
             } else {
                 Lib.log("Compilation successful");
             }
@@ -71,7 +89,7 @@ public class Build {
                 if ( !file.getName().endsWith( ".jar" ) ) continue;
                 try {
                     Lib.log( "Extracting: " + file.getName() );
-                    Lib.unzip( file, CLS_DIR, null, null );
+                    LibFile.unzip( file, CLS_DIR, null, null );
                 } catch ( IOException e ) {
                     Lib.log( "Error extracting " + file.getName() + ": " + e.getMessage() );
                 }
@@ -95,7 +113,7 @@ public class Build {
             throw new Exception("Failed to create JAR file");
         } else {
             File destFile = new File( DIST_DIR, APP_NAME+".jar" );
-            Lib.cp(jarFile,destFile);
+            LibFile.cp( jarFile, destFile );
             jarFile = destFile;
             Lib.log("JAR creation successful: " + Lib.getCanonicalPath(jarFile));
         }
@@ -124,7 +142,7 @@ public class Build {
         nativeImageCommand.add(Lib.getCanonicalPath(jarFile));
         nativeImageCommand.add(Lib.getCanonicalPath(exeFile));
         Process process = Lib.osCmd(nativeImageCommand, null, null);
-        File logFile = new File(Lib.backupFilespec("./log/native_image_out.txt"));
+        File logFile = new File( LibFile.backupFilespec( "./log/native_image_out.txt" ) );
         int result = Lib.OSProcIO(process, null, new java.io.PrintStream(logFile), System.err);
         if (result != 0) {
             Lib.log("Native image creation failed with error code: " + result);
@@ -132,7 +150,7 @@ public class Build {
             throw new Exception("Failed to create native executable");
         } else {
             File destFile = new File( DIST_DIR, APP_NAME );
-            Lib.cp(exeFile,destFile);
+            LibFile.cp( exeFile, destFile );
             exeFile = destFile;
             Lib.log("Native executable creation successful: " + Lib.getCanonicalPath(exeFile));
         }
@@ -154,6 +172,9 @@ public class Build {
         Lib.asrt( srcFile(Build.class).isFile(), "srcFile() should return a valid file" );
         return true;
     }
+
+
+
 
 
 

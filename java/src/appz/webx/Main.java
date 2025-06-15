@@ -28,28 +28,28 @@ public class Main {
         ParseArgs p = new ParseArgs(args);
         p.setAppName( Lib.getAppName() );
         p.setDescr( "WebX - Simple Web Application Server" );
-        
+
         int port = p.getInteger( "port", 13102, "listen to which port" );
         boolean https = p.getBoolean( "https", false, "use HTTPS (true) or HTTP (false)" );
-        String basePath = p.getString( "base", "", "base path for all endpoints (e.g., '/app1')" );
+        String basePath = p.getString( "base", "webx", "base path for all endpoints (e.g., '/app001')" );
         String staticConfig = p.getString( "static", "www@./datafiles/www", "static files endpoint as path@directory (use 'NONE' to disable)" );
         String proxyConfig = p.getString( "proxy", "proxy@../api-keys.json", "proxy endpoint as path@config-file (use 'NONE' to disable)" );
         String dbConfig = p.getString( "db", "db@jdbc:hsqldb:file:./datafiles/dbf/webx-db", "database endpoint as path@jdbc-url (use 'NONE' to disable)" );
         String loginConfig = p.getString( "login", "login@WebX", "login endpoint as path@app-name (use 'NONE' to disable)" );
         String shutdownCode = p.getString( "shutdown", null, "shutdown code - if provided, server will exit when this code appears in the first line of any request" );
         boolean run = p.getBoolean( "run", false, "start the server" );
-        
+
         // Normalize base path
         if ( basePath!=null && !basePath.isEmpty() ) {
             basePath = Lib.normalizePath( basePath );
             if ( !basePath.startsWith("/") ) basePath = "/" + basePath;
         }
-        
+
         System.out.print( p.getHelp() );
         System.out.println( "\nCONFIGURATION SUMMARY:" );
         System.out.println( "  Server will run on port: " + port + " (" + (https ? "HTTPS" : "HTTP") + ")" );
         if ( basePath!=null && !basePath.isEmpty() ) System.out.println( "  Base path: " + basePath );
-        
+
         if ( staticConfig.equalsIgnoreCase("NONE") ) {
             System.out.println( "  Static files: DISABLED" );
         } else {
@@ -59,7 +59,7 @@ public class Main {
             if ( !staticPath.startsWith("/") ) staticPath = "/" + staticPath;
             System.out.println( "  " + basePath + staticPath + " serves static files from " + staticDir );
         }
-        
+
         if ( proxyConfig.equalsIgnoreCase("NONE") ) {
             System.out.println( "  Proxy endpoint: DISABLED" );
         } else {
@@ -69,7 +69,7 @@ public class Main {
             if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
             System.out.println( "  " + basePath + proxyPath + " proxies external APIs (config: " + proxyConfigFile + ")" );
         }
-        
+
         if ( dbConfig.equalsIgnoreCase("NONE") ) {
             System.out.println( "  Database: DISABLED" );
         } else {
@@ -79,7 +79,7 @@ public class Main {
             if ( !dbPath.startsWith("/") ) dbPath = "/" + dbPath;
             System.out.println( "  " + basePath + dbPath + " provides JSON database storage (" + jdbcUrl + ")" );
         }
-        
+
         if ( loginConfig.equalsIgnoreCase("NONE") ) {
             System.out.println( "  Login: DISABLED" );
         } else {
@@ -89,18 +89,31 @@ public class Main {
             if ( !loginPath.startsWith("/") ) loginPath = "/" + loginPath;
             System.out.println( "  " + basePath + loginPath + " provides email authentication for '" + appName + "'" );
         }
-        
+
         System.out.println( "  run is " + run + ", so " + (run ? "service will start now" : "exiting") );
-        
+
         if ( !run ) return;
-        
+
+        // Check if port is already in use
+        if ( Lib.isPortListening( port ) ) {
+            Lib.log( "ERROR: Port " + port + " is already in use. Another instance may be running." );
+            return;
+        }
+
+        // Check lock file to prevent multiple instances
+        File lockFile = new File( "./log/webx.lock" );
+        if ( Lib.alreadyRunning( lockFile ) ) {
+            Lib.log( "ERROR: Another instance of WebX appears to be running (lock file exists)." );
+            return;
+        }
+
         HttpServer server = new HttpServer( port, https );
         if ( shutdownCode!=null ) server.setShutdownCode( shutdownCode );
-        
+
         // Create security guard
         DefaultSecurityGuard securityGuard = new DefaultSecurityGuard();
         server.requestFilter = securityGuard;
-        
+
         // Initialize database if enabled
         PersistentMap dbStorage = null;
         PersistentData pd = null;
@@ -110,7 +123,7 @@ public class Main {
             pd = new PersistentData( jdbcUrl, "webx_data" );
             dbStorage = pd.getRootMap();
         }
-        
+
         if ( !staticConfig.equalsIgnoreCase("NONE") ) {
             String[] staticParts = staticConfig.split("@", 2);
             String staticPath = staticParts.length>0 ? staticParts[0] : "www";
@@ -127,7 +140,7 @@ public class Main {
                 Lib.log( "Static files configured at " + fullStaticPath + " from " + wwwDir.getAbsolutePath() );
             }
         }
-        
+
         if ( !proxyConfig.equalsIgnoreCase("NONE") ) {
             String[] proxyParts = proxyConfig.split("@", 2);
             String proxyPath = proxyParts.length>0 ? proxyParts[0] : "proxy";
@@ -147,7 +160,7 @@ public class Main {
                 Lib.log( "Proxy handler configured at " + fullProxyPath + " without replacements" );
             }
         }
-        
+
         if ( !loginConfig.equalsIgnoreCase("NONE") ) {
             String[] loginParts = loginConfig.split("@", 2);
             String loginPath = loginParts.length>0 ? loginParts[0] : "login";
@@ -158,8 +171,8 @@ public class Main {
             server.handlers.put( fullLoginPath, new HttpLoginHandler() );
             Lib.log( "Login handler configured at " + fullLoginPath + " for app: " + appName );
         }
-        
-        
+
+
         if ( !dbConfig.equalsIgnoreCase("NONE") ) {
             String[] dbParts = dbConfig.split("@", 2);
             String dbPath = dbParts.length>0 ? dbParts[0] : "db";
@@ -167,7 +180,7 @@ public class Main {
             String fullDbPath = basePath + dbPath;
             server.handlers.put( fullDbPath, new HttpJsonHandler(dbStorage) );
         }
-        
+
         if ( pd != null ) {
             try ( PersistentData pdResource = pd ) {
                 Lib.log( "WebX server listening on port "+port );

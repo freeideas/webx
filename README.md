@@ -28,11 +28,6 @@ With these five services, you can build fully-functional web applications with m
 ./java/java.sh appz.webx.Main
 ```
 
-For Windows PowerShell:
-```powershell
-powershell.exe -File ./java/javac.ps1
-powershell.exe -File ./java/java.ps1 appz.webx.Main
-```
 
 The server will start on `http://localhost:13102` and serve files from `./datafiles/www` at `/www` by default.
 
@@ -338,7 +333,7 @@ webx/
 │   │   └── persist/       # Persistence utilities
 │   ├── class/             # Compiled Java classes
 │   ├── lib/               # External JAR dependencies
-│   └── scripts            # Build scripts (.sh/.ps1)
+│   └── scripts            # Build scripts (.sh)
 ├── datafiles/
 │   └── www/               # Default web root
 └── log/                   # Request logs
@@ -360,3 +355,11 @@ Java tests use a simple convention:
 - Test methods end with `_TEST_`
 - Tests return boolean (true = pass)
 - Run with `Lib.testClass()`
+
+### Logging
+
+WebX uses `Lib.log()` for centralized logging:
+- All log messages go to `./log/yyyy-MM-dd_HH-mm-ss.log`
+- Timestamps are automatically added to each message
+- Thread names are included for debugging concurrent operations
+- Example: `Lib.log("Processing request from " + clientIP)`

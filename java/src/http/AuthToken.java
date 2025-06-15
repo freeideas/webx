@@ -75,7 +75,8 @@ public class AuthToken implements JsonSerializable {
         Lib.put( persistentMap, List.of("usr",email,"tokenz",createTimeMicros), signature );
         try { // garbage-collect any over-old tokens
             @SuppressWarnings("unchecked")
-            Map<Object,Object> tokenzMap = (Map<Object,Object>) Jsonable.get( persistentMap, List.of("usr", email, "tokenz") );
+            Object tokenzObj = Jsonable.get( persistentMap, List.of("usr", email, "tokenz") );
+            Map<Object,Object> tokenzMap = tokenzObj instanceof Jsonable j ? (Map<Object,Object>) j.get() : (Map<Object,Object>) tokenzObj;
             if ( tokenzMap == null ) tokenzMap = Map.of();
             long currentTimeMicros = Lib.currentTimeMicros();
             long maxAgeMicros = MAX_AGE_SECONDS * 1000000;
@@ -111,7 +112,8 @@ public class AuthToken implements JsonSerializable {
 
     public boolean isValid() {
         if ( Lib.currentTimeMicros()-createTimeMicros > MAX_AGE_SECONDS*1000000 ) return false;
-        String validSig = (String) Jsonable.get( persistentMap, List.of("usr",email,"tokenz",createTimeMicros) );
+        Object sigObj = Jsonable.get( persistentMap, List.of("usr",email,"tokenz",createTimeMicros) );
+        String validSig = sigObj instanceof Jsonable j ? (String) j.get() : (String) sigObj;
         return signature.equals(validSig);
     }
 

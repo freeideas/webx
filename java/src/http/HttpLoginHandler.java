@@ -46,7 +46,8 @@ public class HttpLoginHandler implements HttpHandler {
         String email = Lib.nvl(req.allParms.get("email"), "");
         if (Lib.isEmpty(email)) return jsonError("Missing email parameter");
         String loginCode = Lib.randToken( "", 6, true );
-        Map<?,?> loginCodes = (Map<?,?>) Jsonable.get( persistentMap, List.of("usr",email,"loginCode") );
+        Object loginCodesObj = Jsonable.get( persistentMap, List.of("usr",email,"loginCode") );
+        Map<?,?> loginCodes = loginCodesObj instanceof Jsonable j ? (Map<?,?>) j.get() : (Map<?,?>) loginCodesObj;
         if (loginCodes!=null) loginCodes.clear();
         Lib.put( persistentMap, List.of("usr",email,"loginCode",loginCode), Lib.timeStamp() );        
         
@@ -67,6 +68,8 @@ public class HttpLoginHandler implements HttpHandler {
         if ( result.isOk() ) {
             return jsonSuccess("Email sent successfully");
         } else {
+            Lib.log( "Failed to send email to " + email + ": " + result.err().getMessage() );
+            result.err().printStackTrace();
             return jsonError("Failed to send email: " + result.err().getMessage());
         }
     }
@@ -81,10 +84,9 @@ public class HttpLoginHandler implements HttpHandler {
             return jsonError("Missing email or loginCode parameter");
         }
         
-        String stamp = Lib.nvl(
-            Jsonable.get( persistentMap, List.of("usr",email,"loginCode",loginCode) ),
-            "20010101235959999"
-        );
+        Object stampObj = Jsonable.get( persistentMap, List.of("usr",email,"loginCode",loginCode) );
+        Object unwrappedStamp = stampObj instanceof Jsonable j ? j.get() : stampObj;
+        String stamp = Lib.nvl( unwrappedStamp, "20010101235959999" );
         long stampMicros = Lib.microsSinceEpoch(stamp);
         long nowMicros = Lib.currentTimeMicros();
         

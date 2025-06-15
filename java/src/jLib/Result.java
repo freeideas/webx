@@ -70,7 +70,7 @@ public class Result<S,E> {
         if (logFile!=null) {
             String filespec = logFile.toPath().relativize( Paths.get(".") ).toString();
             map.put("logFile",filespec);
-            try { map.put("logData", Lib.file2string(logFile)); }
+            try { map.put( "logData", LibFile.file2string( logFile ) ); }
             catch (IOException e) { Lib.log(e); }
         }
         return map;
@@ -87,7 +87,8 @@ public class Result<S,E> {
             res.logFile = new File(filespec);
             String logData = (String)map.get("logData");
             if (logData!=null) {
-                Lib.string2file(logData, res.logFile, false);
+                res.logFile.delete();
+                Lib.append2file(res.logFile, logData);
             }
         }
         return res;

@@ -442,7 +442,9 @@ public class UiObjDectector {
         g.fillRect( 0, bbox.y + bbox.height, img.getWidth(), img.getHeight() - bbox.y - bbox.height );        
         g.dispose();        
         // Save to log directory
-        File outputFile = new File( "./log/masked_obj" + objectIndex + "_ref" + refinement + ".png" );
+        File logDir = new File( "./log" );
+        if ( !logDir.exists() ) logDir.mkdirs();
+        File outputFile = new File( logDir, "masked_obj" + objectIndex + "_ref" + refinement + ".png" );
         javax.imageio.ImageIO.write( masked, "PNG", outputFile );
         return outputFile;
     }

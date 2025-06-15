@@ -17,7 +17,7 @@ public class Email {
 
 
 
-    public Email( String smtpHost, int smtpPort, String imapHost, int imapPort, 
+    public Email( String smtpHost, int smtpPort, String imapHost, int imapPort,
                   String username, String password, String defaultFrom ) {
         this.smtpHost = smtpHost;
         this.smtpPort = smtpPort;
@@ -32,13 +32,28 @@ public class Email {
 
     public Email() {
         Jsonable creds = Lib.loadCreds();
-        this.smtpHost = (String) creds.get( "SMTP/HOST" );
-        this.smtpPort = ((Number) creds.get( "SMTP/PORT" )).intValue();
-        this.imapHost = (String) creds.get( "IMAP/HOST" );
-        this.imapPort = ((Number) creds.get( "IMAP/PORT" )).intValue();
-        this.username = (String) creds.get( "SMTP/USERNAME" );
-        this.password = (String) creds.get( "SMTP/PASSWORD" );
-        this.defaultFrom = (String) creds.get( "SMTP/FROM" );
+        Object smtpHostObj = creds.get( "SMTP/HOST" );
+        this.smtpHost = smtpHostObj instanceof Jsonable j ? (String) j.get() : (String) smtpHostObj;
+
+        Object smtpPortObj = creds.get( "SMTP/PORT" );
+        Object smtpPortVal = smtpPortObj instanceof Jsonable j ? j.get() : smtpPortObj;
+        this.smtpPort = smtpPortVal instanceof Number n ? n.intValue() : Integer.parseInt(smtpPortVal.toString());
+
+        Object imapHostObj = creds.get( "IMAP/HOST" );
+        this.imapHost = imapHostObj instanceof Jsonable j ? (String) j.get() : (String) imapHostObj;
+
+        Object imapPortObj = creds.get( "IMAP/PORT" );
+        Object imapPortVal = imapPortObj instanceof Jsonable j ? j.get() : imapPortObj;
+        this.imapPort = imapPortVal instanceof Number n ? n.intValue() : Integer.parseInt(imapPortVal.toString());
+
+        Object usernameObj = creds.get( "SMTP/USERNAME" );
+        this.username = usernameObj instanceof Jsonable j ? (String) j.get() : (String) usernameObj;
+
+        Object passwordObj = creds.get( "SMTP/PASSWORD" );
+        this.password = passwordObj instanceof Jsonable j ? (String) j.get() : (String) passwordObj;
+
+        Object defaultFromObj = creds.get( "SMTP/FROM" );
+        this.defaultFrom = defaultFromObj instanceof Jsonable j ? (String) j.get() : (String) defaultFromObj;
     }
 
 
@@ -49,7 +64,7 @@ public class Email {
         if ( body==null ) body = "";
         if ( from==null ) from = defaultFrom;
         if ( contentType==null ) contentType = "text/plain";
-        
+
         try {
             Properties props = new Properties();
             props.put( "mail.smtp.auth", "true" );
@@ -58,19 +73,19 @@ public class Email {
             props.put( "mail.smtp.port", String.valueOf(smtpPort) );
             props.put( "mail.smtp.ssl.enable", "true" );
             props.put( "mail.smtp.ssl.trust", smtpHost );
-            
+
             Session session = Session.getInstance( props, new Authenticator() {
                 protected PasswordAuthentication getPasswordAuthentication() {
                     return new PasswordAuthentication( username, password );
                 }
             });
-            
+
             Message message = new MimeMessage( session );
             message.setFrom( new InternetAddress( from ) );
             message.setRecipients( Message.RecipientType.TO, InternetAddress.parse( to ) );
             message.setSubject( subject );
             message.setContent( body, contentType );
-            
+
             Transport.send( message );
             return Result.ok( true );
         } catch ( Exception e ) {
@@ -89,21 +104,21 @@ public class Email {
     public Result<List<EmailMessage>,Exception> readEmails( String folderName, int maxCount, boolean unreadOnly ) {
         if ( folderName==null ) folderName = "INBOX";
         if ( maxCount<=0 ) maxCount = 10;
-        
+
         try {
             Properties props = new Properties();
             props.put( "mail.store.protocol", "imaps" );
             props.put( "mail.imaps.host", imapHost );
             props.put( "mail.imaps.port", String.valueOf(imapPort) );
             props.put( "mail.imaps.ssl.enable", "true" );
-            
+
             Session session = Session.getInstance( props );
             Store store = session.getStore( "imaps" );
             store.connect( imapHost, username, password );
-            
+
             Folder folder = store.getFolder( folderName );
             folder.open( Folder.READ_ONLY );
-            
+
             Message[] messages;
             if ( unreadOnly ) {
                 messages = folder.search( new FlagTerm( new Flags(Flags.Flag.SEEN), false ) );
@@ -112,7 +127,7 @@ public class Email {
                 int start = Math.max( 1, totalMessages - maxCount + 1 );
                 messages = folder.getMessages( start, totalMessages );
             }
-            
+
             List<EmailMessage> emailList = new ArrayList<>();
             int count = 0;
             for ( int i=messages.length-1; i>=0 && count<maxCount; i-- ) {
@@ -123,7 +138,7 @@ public class Email {
                 email.subject = msg.getSubject();
                 email.date = msg.getSentDate();
                 email.isRead = msg.isSet( Flags.Flag.SEEN );
-                
+
                 // Extract body
                 String body = "";
                 String contentType = "text/plain";
@@ -138,14 +153,14 @@ public class Email {
                 }
                 email.body = body;
                 email.contentType = contentType;
-                
+
                 emailList.add( email );
                 count++;
             }
-            
+
             folder.close( false );
             store.close();
-            
+
             return Result.ok( emailList );
         } catch ( Exception e ) {
             return Result.err( e );
@@ -179,7 +194,7 @@ public class Email {
         public Date date;
         public boolean isRead;
         public String contentType;
-        
+
         public String toString() {
             return "From: " + from + "\n" +
                    "Subject: " + subject + "\n" +
@@ -211,27 +226,27 @@ public class Email {
     private static boolean sendAndReceive_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
         Email email = new Email();
-        
+
         // Send a test email to self
         String testSubject = "Test Email " + System.currentTimeMillis();
         String testBody = "This is a test email sent at " + new Date();
         Result<Boolean,Exception> sendResult = email.sendEmail( email.defaultFrom, testSubject, testBody, null, null );
-        
+
         if ( !sendResult.isOk() ) {
             Lib.log( "Could not send test email: " + sendResult.err() );
             return true; // Skip test if email sending fails
         }
-        
+
         // Wait a bit for email to arrive
         try { Thread.sleep(5000); } catch ( InterruptedException e ) {}
-        
+
         // Try to read the email
         Result<List<EmailMessage>,Exception> readResult = email.readEmails( 20 );
         if ( !readResult.isOk() ) {
             Lib.log( "Could not read emails: " + readResult.err() );
             return true; // Skip test if email reading fails
         }
-        
+
         // Check if we can find the email we just sent
         boolean found = false;
         for ( EmailMessage msg : readResult.ok() ) {
@@ -241,11 +256,11 @@ public class Email {
                 break;
             }
         }
-        
+
         if ( !found ) {
             Lib.log( "Test email not found in inbox (may take time to arrive)" );
         }
-        
+
         return true;
     }
 
@@ -255,7 +270,7 @@ public class Email {
         ParseArgs p = new ParseArgs( args );
         p.setAppName( "Email" );
         p.setDescr( "Email utility for sending and reading emails via SMTP/IMAP" );
-        
+
         // Email server configuration parameters
         String smtpHost = p.getString( "smtp-host", null, "SMTP server hostname" );
         Integer smtpPort = p.getInteger( "smtp-port", 465, "SMTP server port" );
@@ -264,7 +279,7 @@ public class Email {
         String username = p.getString( "username", null, "Email username" );
         String password = p.getString( "password", null, "Email password" );
         String defaultFrom = p.getString( "default-from", null, "Default sender address" );
-        
+
         // Command and operation parameters
         String command = p.getString( "command", "", "Command: send, read, read-unread, or test" );
         String to = p.getString( "to", null, "Recipient email address (send)" );
@@ -274,7 +289,7 @@ public class Email {
         String contentType = p.getString( "content-type", "text/plain", "Content type (send)" );
         Integer maxCount = p.getInteger( "max", 10, "Max emails to read (read/read-unread)" );
         Boolean help = p.getBoolean( "help", false, "Show help" );
-        
+
         if ( help || command.isEmpty() ) {
             System.out.println( p.getHelp() );
             System.out.println( "\nExamples:" );
@@ -284,14 +299,14 @@ public class Email {
             System.out.println( "  Email -command=read -imap-host=mail.example.com -username=user@example.com -password=pass -max=20" );
             System.out.println( "  # Using config file:" );
             System.out.println( "  Email @config.json -command=send -to=user@example.com -subject=\"Hello\"" );
-            System.out.println( "  # Test (uses .creds.json):" );
+            System.out.println( "  # Test (uses loadCreds):" );
             System.out.println( "  Email -command=test" );
             System.exit( 0 );
         }
-        
+
         Email email;
-        
-        // For test command, use the no-arg constructor that loads from .creds.json
+
+        // For test command, use the no-arg constructor that loads from loadCreds()
         if ( command.equals("test") ) {
             email = new Email();
         } else {
@@ -306,10 +321,10 @@ public class Email {
             }
             if ( defaultFrom==null ) defaultFrom = username;
             if ( imapHost==null ) imapHost = smtpHost;
-            
+
             email = new Email( smtpHost, smtpPort, imapHost, imapPort, username, password, defaultFrom );
         }
-        
+
         switch ( command ) {
             case "send":
                 if ( to==null ) {

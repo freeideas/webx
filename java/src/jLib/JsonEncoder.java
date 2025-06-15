@@ -92,7 +92,7 @@ public class JsonEncoder {
             writeMap(m);
         } else if (o instanceof File f) {
             try {
-                writeString(Lib.file2string(f));
+                writeString( LibFile.file2string( f ) );
             } catch (IOException e) {
                 writeString("Error reading file: " + f.getName());
             }

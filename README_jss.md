@@ -65,6 +65,8 @@ WebX .jss files have complete access to Java through `Class.forName()` and built
 - `Class` - For loading any Java class via `Class.forName('fully.qualified.ClassName')`
 - `System` - Direct access to `java.lang.System` for properties, environment, etc.
 - `String`, `Integer`, `Long`, `Double` - Common Java wrapper types for convenience
+- `Java.type('className')` - Convenient helper method for loading Java classes (equivalent to `Class.forName()`)
+- `__FILE__` - The absolute file path of the currently executing .jss file
 
 This means you can load and use any Java class in your classpath:
 
@@ -375,7 +377,8 @@ function handle(request, database) {
 
 ```javascript
 function handle(request, database) {
-    var Email = Class.forName('jLib.Email');
+    // WebX's Email class uses credentials from ../.creds.json automatically
+    var Email = Java.type('jLib.Email');
     
     if (request.method === 'POST') {
         var emailData = request.parsedBody;
@@ -391,38 +394,47 @@ function handle(request, database) {
         }
         
         try {
-            // Use WebX's built-in email functionality
-            var result = Email.getMethod('send', 
-                Class.forName('java.lang.String'),
-                Class.forName('java.lang.String'),
-                Class.forName('java.lang.String'),
-                Class.forName('java.lang.String')
-            ).invoke(null, 
-                'your-smtp-server.com',
+            // Create Email instance - no-arg constructor uses credentials from loadCreds()
+            var email = Email.getDeclaredConstructor().newInstance();
+            
+            // Send email (null parameters use defaults from credentials)
+            var result = email.sendEmail(
                 emailData.to,
                 emailData.subject,
-                emailData.body
+                emailData.body,
+                null,  // from address - uses default from credentials
+                emailData.contentType || null  // content type - defaults to text/plain
             );
             
-            // Log email sending
-            var emailLog = database.get('email_log') || [];
-            emailLog.push({
-                to: emailData.to,
-                subject: emailData.subject,
-                timestamp: new Date().toISOString(),
-                success: true
-            });
-            database.put('email_log', emailLog);
-            
-            return {
-                status: 200,
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    success: true,
-                    message: "Email sent successfully",
-                    timestamp: new Date().toISOString()
-                })
-            };
+            if (result.isOk()) {
+                // Log email sending
+                var emailLog = database.get('email_log') || [];
+                emailLog.push({
+                    to: emailData.to,
+                    subject: emailData.subject,
+                    timestamp: new Date().toISOString(),
+                    success: true
+                });
+                database.put('email_log', emailLog);
+                
+                return {
+                    status: 200,
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        success: true,
+                        message: "Email sent successfully",
+                        timestamp: new Date().toISOString()
+                    })
+                };
+            } else {
+                return {
+                    status: 500,
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        error: "Failed to send email: " + result.err().getMessage()
+                    })
+                };
+            }
         } catch (e) {
             return {
                 status: 500,
@@ -617,6 +629,23 @@ function handle(request, database) {
     }
 }
 ```
+
+## Surprising Aspects & Important Notes
+
+### JavaScript Engine Quirks
+- **No `new` operator for Java classes**: You must use `Class.getDeclaredConstructor().newInstance()` instead of `new JavaClass()`
+- **Java.type() helper**: WebX provides `Java.type('className')` as a convenient alternative to `Class.forName()`
+- **POST body requirements**: Some HTTP handlers may require POST requests to have a body (even empty) with proper Content-Type headers
+
+### File System & Environment
+- **Working directory**: JSS files execute with the project directory as the working directory (`/home/ace/prjx/webx`)
+- **Credentials access**: The `Lib.loadCreds()` method looks for `.creds.json` in the parent directory (`../`) 
+- **Full system access**: Unlike typical JavaScript environments, JSS has unrestricted file system and network access
+
+### Database Integration
+- **Shared persistence**: The `database` parameter shares the same persistent storage as the `/db` endpoint
+- **Jsonable wrapping**: Database values may be wrapped in Jsonable objects - use `instanceof Jsonable` checks when needed
+- **Automatic transactions**: Database operations are automatically persisted without explicit commits
 
 ## Conclusion
 

@@ -234,7 +234,7 @@ public class HttpProxyHandler implements HttpHandler {
             Thread.sleep(3000);
             
             // Make the exact same request as proxyEndpointTest
-            URL url = URI.create("http://localhost:" + testPort + "/proxy").toURL();
+            URL url = URI.create("http://localhost:" + testPort + "/webx/proxy").toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("X-Target-URL", "https://jsonplaceholder.typicode.com/posts");
@@ -294,7 +294,7 @@ public class HttpProxyHandler implements HttpHandler {
                 try {
                     System.out.println("Sending shutdown request to debug server...");
                     String timestamp = HttpServer.shutdownTimestamp();
-                    URL shutdownUrl = URI.create("http://localhost:" + testPort + "/" + shutdownCode + timestamp).toURL();
+                    URL shutdownUrl = URI.create("http://localhost:" + testPort + "/webx/" + shutdownCode + timestamp).toURL();
                     HttpURLConnection conn = (HttpURLConnection) shutdownUrl.openConnection();
                     conn.setConnectTimeout(2000);
                     conn.setReadTimeout(2000);

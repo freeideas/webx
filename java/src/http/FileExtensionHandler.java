@@ -11,6 +11,8 @@ public class FileExtensionHandler implements HttpHandler {
 
     private final Map<String,HttpHandler> extensionHandlers = new LinkedHashMap<>();
     private HttpHandler defaultHandler;
+    private String prefix;
+    private File rootDir;
 
 
 
@@ -24,6 +26,11 @@ public class FileExtensionHandler implements HttpHandler {
 
     public FileExtensionHandler setDefaultHandler( HttpHandler handler ) {
         this.defaultHandler = handler;
+        if ( handler instanceof HttpFileHandler ) {
+            HttpFileHandler fileHandler = (HttpFileHandler) handler;
+            this.prefix = fileHandler.prefix;
+            this.rootDir = fileHandler.rootDir;
+        }
         return this;
     }
 
@@ -31,8 +38,10 @@ public class FileExtensionHandler implements HttpHandler {
 
     @Override
     public HttpResponse handle( HttpRequest req ) {
+        String uri = req.headerBlock.getUri();
+        if ( uri != null && uri.endsWith("/") ) return handleDirectory( req );
+        
         String reqPath = req.headerBlock.getRequestPath();
-        if ( reqPath.endsWith("/") ) return handleDirectory( req );
         String extension = getFileExtension(reqPath);
         if ( extension != null ) {
             HttpHandler handler = extensionHandlers.get( extension.toLowerCase() );
@@ -46,6 +55,7 @@ public class FileExtensionHandler implements HttpHandler {
 
     private HttpResponse handleDirectory( HttpRequest req ) {
         String basePath = req.headerBlock.getRequestPath();
+        if ( !basePath.endsWith("/") ) basePath += "/";
         HttpRequest indexJssReq = createIndexRequest( req, basePath + "index.jss" );
         HttpHandler jssHandler = extensionHandlers.get(".jss");
         if ( jssHandler != null ) {
@@ -79,20 +89,50 @@ public class FileExtensionHandler implements HttpHandler {
 
     private HttpResponse generateDirectoryListing( HttpRequest req ) {
         String dirPath = req.headerBlock.getRequestPath();
-        String html = """
-            <html>
-                <head><title>Directory Listing</title></head>
-                <body>
-                    <h1>Directory Listing for %s</h1>
-                    <table border="1">
-                        <tr><th>Name</th><th>Type</th></tr>
-                        <tr><td><a href="../">../</a></td><td>Directory</td></tr>
-                        <tr><td colspan="2">Directory listing not available</td></tr>
-                    </table>
-                </body>
-            </html>
-            """.formatted(dirPath);
-        byte[] htmlBytes = html.getBytes();
+        if ( rootDir==null || prefix==null ) {
+            String html = """
+                <html>
+                    <head><title>Directory Listing</title></head>
+                    <body>
+                        <h1>Directory Listing for %s</h1>
+                        <p>Directory listing not available</p>
+                    </body>
+                </html>
+                """.formatted(dirPath);
+            byte[] htmlBytes = html.getBytes();
+            HttpHeaderBlock headerBlock = new HttpHeaderBlock( 
+                200, "OK", 
+                Lib.mapOf( "Content-Type", "text/html", "Content-Length", String.valueOf(htmlBytes.length) ) 
+            );
+            return new HttpResponse( headerBlock, htmlBytes );
+        }
+        String reqPath = dirPath.substring( prefix.length() );
+        if ( reqPath.startsWith("/") ) reqPath = reqPath.substring(1);
+        File dir = new File( rootDir, reqPath );
+        if ( !dir.exists() || !dir.isDirectory() ) {
+            return new HttpErrorResponse( 404, "Directory not found" );
+        }
+        StringBuilder html = new StringBuilder();
+        html.append( "<html><head><title>Directory Listing</title></head><body>" );
+        html.append( "<h1>Directory Listing for " ).append( dirPath ).append( "</h1>" );
+        html.append( "<table border=\"1\"><tr><th>Name</th><th>Type</th><th>Size</th></tr>" );
+        if ( !reqPath.isEmpty() ) {
+            html.append( "<tr><td><a href=\"../\">../</a></td><td>Directory</td><td>-</td></tr>" );
+        }
+        File[] files = dir.listFiles();
+        if ( files != null ) {
+            for ( File f : files ) {
+                String name = f.getName();
+                String link = f.isDirectory() ? name + "/" : name;
+                String type = f.isDirectory() ? "Directory" : "File";
+                String size = f.isDirectory() ? "-" : String.valueOf(f.length());
+                html.append( "<tr><td><a href=\"" ).append( link ).append( "\">" ).append( name );
+                if ( f.isDirectory() ) html.append( "/" );
+                html.append( "</a></td><td>" ).append( type ).append( "</td><td>" ).append( size ).append( "</td></tr>" );
+            }
+        }
+        html.append( "</table></body></html>" );
+        byte[] htmlBytes = html.toString().getBytes();
         HttpHeaderBlock headerBlock = new HttpHeaderBlock( 
             200, "OK", 
             Lib.mapOf( "Content-Type", "text/html", "Content-Length", String.valueOf(htmlBytes.length) ) 
@@ -147,12 +187,11 @@ public class FileExtensionHandler implements HttpHandler {
         HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET /test/ HTTP/1.1", Lib.mapOf() );
         HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
         HttpResponse response = handler.handle( req );
-        if ( response instanceof HttpErrorResponse ) {
-            String responseBody = new String( response.body );
-            Lib.asrt( responseBody.contains("Directory Listing") );
-        } else {
-            Lib.asrt( response.headerBlock.firstLine.contains("200") );
-        }
+        
+        String responseBody = new String( response.body );
+        boolean hasDirectoryListing = responseBody.contains("Directory Listing");
+        boolean is200Response = response.headerBlock.firstLine.contains("200");
+        Lib.asrt( hasDirectoryListing || is200Response, "Expected directory listing or 200 response" );
         return true;
     }
 

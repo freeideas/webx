@@ -16,8 +16,9 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
     public HttpReplacingProxyHandler() {
         Jsonable creds = Lib.loadCreds();
         Object proxyConfig = creds.get( "PROXY" );
-        if ( proxyConfig instanceof Map ) {
-            this.replacementConfig = new Jsonable( proxyConfig );
+        Object unwrapped = proxyConfig instanceof Jsonable j ? j.get() : proxyConfig;
+        if ( unwrapped instanceof Map ) {
+            this.replacementConfig = new Jsonable( unwrapped );
         } else {
             this.replacementConfig = new Jsonable( new HashMap<>() );
         }
@@ -60,13 +61,14 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
     private void prepareReplacementsForUrl( String url ) {
         Object urlReplacements = replacementConfig.get( url );
-        if ( !(urlReplacements instanceof Map) ) {
+        Object unwrapped = urlReplacements instanceof Jsonable j ? j.get() : urlReplacements;
+        if ( !(unwrapped instanceof Map) ) {
             this.replacementPattern = null;
             this.replacementValues = null;
             return;
         }
         @SuppressWarnings("unchecked")
-        Map<String,Object> replacements = (Map<String,Object>) urlReplacements;
+        Map<String,Object> replacements = (Map<String,Object>) unwrapped;
         if ( replacements.isEmpty() ) {
             this.replacementPattern = null;
             this.replacementValues = null;
@@ -137,14 +139,14 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         }
 
         if ( replacementPattern==null ) return super.handle( req );
-        
+
         // Apply replacements to the target URL
         String modifiedTargetUrl = applyReplacements( targetUrl );
-        
+
         String headerString = serializeHeaderBlock( req.headerBlock );
         headerString = applyReplacements( headerString );
         HttpHeaderBlock modifiedHeaders = parseHeaderBlock( headerString );
-        
+
         // Update the X-Target-URL header with the modified URL
         modifiedHeaders = modifiedHeaders.withAddHeader( "X-Target-URL", modifiedTargetUrl );
         byte[] modifiedBody = req.body;
@@ -562,31 +564,31 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         replacements.put( "<%=version%>", "v2" );
         replacements.put( "<%=key%>", "secret123" );
         HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler( replacements );
-        
+
         // Test URL replacement
         HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/test", new LinkedHashMap<>() );
         headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://<%=host%>/<%=version%>/endpoint?key=<%=key%>" );
         headerBlock = headerBlock.withAddHeader( "Authorization", "Bearer <%=key%>" );
         HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
-        
+
         // Prepare replacements for wildcard (since we're using deprecated constructor)
         handler.prepareReplacementsForUrl( "*" );
-        
+
         // Get the modified headers
         String headerString = handler.serializeHeaderBlock( req.headerBlock );
         String modifiedHeaderString = handler.applyReplacements( headerString );
         HttpHeaderBlock modifiedHeaders = handler.parseHeaderBlock( modifiedHeaderString );
-        
+
         // Apply replacements to URL
         String targetUrl = req.headerBlock.getHeaderValue( "X-Target-URL" );
         String modifiedUrl = handler.applyReplacements( targetUrl );
-        
+
         // Verify URL was properly replaced
         Lib.asrtEQ( modifiedUrl, "https://actual-api.example.com/v2/endpoint?key=secret123", "URL should be fully replaced" );
-        
+
         // Verify header replacement still works (only first occurrence)
         Lib.asrt( modifiedHeaderString.contains( "Authorization: Bearer <%=key%>" ), "Should NOT replace second occurrence of key" );
-        
+
         return true;
     }
 
@@ -595,10 +597,10 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
     @SuppressWarnings("unused")
     private static boolean credsBasedReplacement_TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
-        // Test the no-arg constructor that loads from .creds.json
+        // Test the no-arg constructor that uses loadCreds()
         HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler();
 
-        // Test replacements from .creds.json PROXY config
+        // Test replacements from loadCreds() PROXY config
         HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/test?key=<%=apikey%>", new LinkedHashMap<>() );
         headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://api.example.com" );
         headerBlock = headerBlock.withAddHeader( "Authorization", "Bearer <%=apikey%>" );

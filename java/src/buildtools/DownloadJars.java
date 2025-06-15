@@ -1,5 +1,6 @@
 package buildtools;
 import jLib.Lib;
+import jLib.LibFile;
 import java.io.File;
 import java.util.List;
 
@@ -9,7 +10,7 @@ public class DownloadJars {
         new File("./log").mkdirs();
         // Build the Maven command
         List<String> cmd;
-        String outputDir = "java/lib";
+        String outputDir = "../lib";
         if (System.getProperty("os.name").toLowerCase().contains("windows")) {
             cmd = List.of(
                 "cmd", "/c",
@@ -25,12 +26,12 @@ public class DownloadJars {
 
         // delete jars from lib
         File libDir = new File("./java/lib");
-        Lib.rm(libDir);
+        LibFile.rm( libDir );
         libDir.mkdirs();
 
         // Execute Maven command and redirect output to log file
         Process process = Lib.osCmd(cmd, null, null);
-        File logFile = new File(Lib.backupFilespec("./log/maven_out.txt"));
+        File logFile = new File( LibFile.backupFilespec( "./log/maven_out.txt" ) );
         int result = Lib.OSProcIO(process, null, new java.io.PrintStream(logFile), System.err);
         if (result == 0) {
             System.out.println("Dependencies downloaded successfully");

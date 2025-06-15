@@ -220,3 +220,24 @@ public void methodName() { // this comment is allowed because it is immediately 
     }
 }
 ```
+
+### Import Strategy
+
+Favor wildcard imports (`import package.*`) over individual class imports to reduce code verbosity and visual noise. For example:
+
+```java
+// PREFERRED: Concise wildcard import
+import java.io.*;
+import java.util.*;
+
+// AVOID: Verbose individual imports
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+```
+
+This approach aligns with our core philosophy of brevity. The compiler handles wildcard imports efficiently, and the reduction in import statements improves readability of the source file header.
+
+Only use explicit individual imports when necessary to resolve class name conflicts between packages. In such cases, import only the specific classes that require disambiguation.

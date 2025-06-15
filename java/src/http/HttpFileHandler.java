@@ -2,6 +2,7 @@ package http;
 import java.io.*;
 
 import jLib.Lib;
+import jLib.LibFile;
 import jLib.Result;
 
 
@@ -69,7 +70,7 @@ class FileResponse extends HttpResponse {
     public FileResponse( File f ) {
         super( new HttpHeaderBlock( "HTTP/1.1 200 OK", Lib.mapOf(
             "Content-Length", ""+f.length(),
-            "Content-Type", Lib.getMimeType(f.getName())
+            "Content-Type", LibFile.getMimeType( f.getName() )
         ) ), null);
         file = f;
     }

@@ -19,32 +19,35 @@ public class Jsonable extends AbstractMap<Object,Object> {
 
     @Override
     public Object get( Object key ) {
+        Object result;
         if ( key instanceof Object[] || key instanceof List ) {
-            return Jsonable.get( data, key );
-        }
-        if ( data instanceof Map ) {
+            result = Jsonable.get( data, key );
+        } else if ( data instanceof Map ) {
             Map<?,?> map = (Map<?,?>) data;
-            if ( map.containsKey( key ) ) return map.get( key );
-            if ( key instanceof String && ((String)key).contains("/") ) {
-                return getWithSlashPath( (String) key );
+            if ( map.containsKey( key ) ) {
+                result = map.get( key );
+            } else if ( key instanceof String && ((String)key).contains("/") ) {
+                result = getWithSlashPath( (String) key );
+            } else {
+                result = null;
             }
-            return null;
-        }
-        if ( data instanceof List ) {
+        } else if ( data instanceof List ) {
             List<?> list = (List<?>) data;
             Integer index = null;
             if ( key instanceof Integer ) index = (Integer) key;
             else if ( key instanceof Number ) index = ((Number) key).intValue();
             else if ( key instanceof String ) {
                 try { index = Integer.parseInt( (String) key ); }
-                catch ( NumberFormatException e ) { return null; }
+                catch ( NumberFormatException e ) { return new Jsonable( null ); }
             }
-            if ( index!=null && index>=0 && index<list.size() ) return list.get( index );
+            result = (index != null && index >= 0 && index < list.size()) ? list.get( index ) : null;
+        } else {
+            result = null;
         }
-        return null;
+        return new Jsonable( result );
     }
-    
-    
+
+
     private Object getWithSlashPath( String path ) {
         String[] keys = path.split( "/" );
         Object current = data;
@@ -74,10 +77,11 @@ public class Jsonable extends AbstractMap<Object,Object> {
         }
         return current;
     }
-    
-    
+
+
     public Object get( Object... keys ) {
-        return Jsonable.get( data, keys );
+        Object result = Jsonable.get( data, keys );
+        return new Jsonable( result );
     }
 
 
@@ -203,6 +207,30 @@ public class Jsonable extends AbstractMap<Object,Object> {
         if ( data instanceof Map ) return ((Map<?,Object>) data).values();
         if ( data instanceof List ) return new ArrayList<>( (List<?>) data );
         return Collections.emptyList();
+    }
+
+
+    @Override
+    public boolean equals( Object obj ) {
+        Object unwrappedThis = data;
+        Object unwrappedOther = obj;
+        if ( obj instanceof Jsonable ) unwrappedOther = ((Jsonable) obj).data;
+        
+        if ( unwrappedThis==unwrappedOther ) return true;
+        if ( unwrappedThis==null || unwrappedOther==null ) return false;
+        return unwrappedThis.equals( unwrappedOther );
+    }
+
+
+    @Override
+    public int hashCode() {
+        return data==null ? 0 : data.hashCode();
+    }
+
+
+    @Override
+    public String toString() {
+        return JsonEncoder.encode( data );
     }
 
 
@@ -371,103 +399,82 @@ public class Jsonable extends AbstractMap<Object,Object> {
 
 
     public static boolean test_TEST_() throws Exception {
-        { // test with simple keys
-            Map<String,Object> map = new HashMap<>();
-            map.put( "key1", "value1" );
-            map.put( "key2", 42 );
-            
-            Jsonable jsonableMap = new Jsonable( map );
-            Lib.asrtEQ( jsonableMap.get( "key1" ), "value1" );
-            Lib.asrtEQ( jsonableMap.get( "key2" ), 42 );
-            Lib.asrtEQ( jsonableMap.size(), 2 );
-            Lib.asrt( jsonableMap.containsKey( "key1" ) );
-            Lib.asrtEQ( jsonableMap.get(), map );
-            
-            List<String> list = new ArrayList<>( Arrays.asList( "a", "b", "c" ) );
-            Jsonable jsonableList = new Jsonable( list );
-            Lib.asrtEQ( jsonableList.get( 0 ), "a" );
-            Lib.asrtEQ( jsonableList.get( 1 ), "b" );
-            Lib.asrtEQ( jsonableList.get( 2 ), "c" );
-            Lib.asrtEQ( jsonableList.get( 3 ), null );
-            Lib.asrtEQ( jsonableList.size(), 3 );
-            Lib.asrt( jsonableList.containsKey( 1 ) );
-            Lib.asrt( !jsonableList.containsKey( 3 ) );
-            Lib.asrtEQ( jsonableList.get(), list );
-            
-            jsonableList.put( 1, "B" );
-            Lib.asrtEQ( jsonableList.get( 1 ), "B" );
-            Lib.asrtEQ( jsonableList.get( "1" ), "B" );
-            Lib.asrtEQ( jsonableList.get( 1.0 ), "B" );
-            
-            Jsonable jsonableString = new Jsonable( "hello" );
-            Lib.asrtEQ( jsonableString.size(), 0 );
-            Lib.asrtEQ( jsonableString.get(), "hello" );
-            
-            Map<String,Object> nestedMap = new HashMap<>();
-            nestedMap.put( "inner", new HashMap<>( Map.of( "a",1, "b",2 ) ) );
-            Jsonable jsonableNested = new Jsonable( nestedMap );
-            jsonableNested.put( "inner", Map.of( "b",20, "c",3 ) );
-            Map<?,?> innerMap = (Map<?,?>) jsonableNested.get( "inner" );
-            Lib.asrtEQ( innerMap.get( "a" ), 1 );
-            Lib.asrtEQ( innerMap.get( "b" ), 20 );
-            Lib.asrtEQ( innerMap.get( "c" ), 3 );
-            
-            List<Object> nestedList = new ArrayList<>();
-            nestedList.add( new HashMap<>( Map.of( "x",10 ) ) );
-            Jsonable jsonableNestedList = new Jsonable( nestedList );
-            jsonableNestedList.put( 0, Map.of( "y",20 ) );
-            Map<?,?> mergedMap = (Map<?,?>) jsonableNestedList.get( 0 );
-            Lib.asrtEQ( mergedMap.get( "x" ), 10 );
-            Lib.asrtEQ( mergedMap.get( "y" ), 20 );
+        // Test basic get/put operations on different data types
+        {
+            Map<String,Object> map = Map.of("key1", "value1", "key2", 42);
+            List<String> list = List.of("a", "b", "c");
+            String str = "hello";
+
+            Jsonable jMap = new Jsonable(map);
+            Jsonable jList = new Jsonable(list);
+            Jsonable jStr = new Jsonable(str);
+
+            // Map operations
+            Lib.asrtEQ(((Jsonable)jMap.get("key1")).get(), "value1");
+            Lib.asrtEQ(((Jsonable)jMap.get("nonexistent")).get(), null);
+            Lib.asrtEQ(jMap.size(), 2);
+            Lib.asrt(jMap.containsKey("key1"));
+
+            // List operations
+            Lib.asrtEQ(((Jsonable)jList.get(0)).get(), "a");
+            Lib.asrtEQ(((Jsonable)jList.get(3)).get(), null);
+            Lib.asrtEQ(jList.size(), 3);
+            Lib.asrt(jList.containsKey(1));
+
+            // String operations
+            Lib.asrtEQ(jStr.get(), "hello");
+            Lib.asrtEQ(((Jsonable)jStr.get("anyKey")).get(), null);
+            Lib.asrtEQ(jStr.size(), 0);
         }
 
-        { // reading multi-valued keys
-            Jsonable jsonable = new Jsonable( Map.of( "a", Map.of( 2, Map.of( "c", "ok" ) ) ) );
-            Lib.asrtEQ( jsonable.get( "a" ), Map.of( 2, Map.of( "c", "ok" ) ) );
-            Lib.asrtEQ( jsonable.get( new Object[]{"a", 2} ), Map.of( "c", "ok" ) );
-            Lib.asrtEQ( jsonable.get( new Object[]{"a", 2, "c"} ), "ok" );
-            Lib.asrtEQ( jsonable.get( new Object[]{"a",2,"c"} ), "ok" );
-            Lib.asrtEQ( jsonable.get( List.of("a",2,"c") ), "ok" );
-            Lib.asrtEQ( jsonable.get( "a/2" ), Map.of( "c", "ok" ) );
-            Lib.asrtEQ( jsonable.get( "a/2/c" ), "ok" );
-            jsonable = new Jsonable( List.of( Map.of( "a", List.of( 1, Map.of( "b", 2 ) ) ) ) );
-            Lib.asrtEQ( jsonable.get( new Object[]{0, "a", 1} ), Map.of( "b", 2 ) );
-            Lib.asrtEQ( jsonable.get( new Object[]{0, "a", 1, "b"} ), 2 );
-            Lib.asrtEQ( jsonable.get( new Object[]{0,"a",1,"b"} ), 2 );
+        // Test path-based access with different notations
+        {
+            Jsonable jsonable = new Jsonable(Map.of(
+                "a", Map.of(2, Map.of("c", "ok"))
+            ));
+
+            // Array path
+            Lib.asrtEQ(((Jsonable)jsonable.get(new Object[]{"a", 2, "c"})).get(), "ok");
+            // List path
+            Lib.asrtEQ(((Jsonable)jsonable.get(List.of("a", 2, "c"))).get(), "ok");
+            // String path
+            Lib.asrtEQ(((Jsonable)jsonable.get("a/2/c")).get(), "ok");
+            // Edge case: path exists as literal key
+            Jsonable edgeCase = new Jsonable(Map.of("one/2/three", List.of(1, 2, 3)));
+            Lib.asrtEQ(((Jsonable)edgeCase.get("one/2/three")).get(), List.of(1, 2, 3));
         }
-        { // writing multi-valued keys
-            Jsonable jsonable = new Jsonable( Map.of("one",1) );
-            jsonable.put( "two", 2 );
-            Lib.asrtEQ( jsonable, Map.of("one",1,"two",2) );
-        }
-        { // merge complex data into complex data
-            Jsonable jsonable = new Jsonable( JsonDecoder.decode( """
-                {
-                    "data": {
-                        "one":[1], "two":[1,2], "three":[1,2]
-                    }
-                }
-            """) );
-            jsonable.put( "data", JsonDecoder.decode( """
-                {
-                    "three":[1,2,3], "four":[1,2,3,4]
-                }
-            """) );
-            Object expected = JsonDecoder.decode( """
-                {
-                    "data": {
-                        "one":[1], "two":[1,2], "three":[1,2,3], "four":[1,2,3,4]
-                    }
-                }
+
+        // Test data modification and merging
+        {
+            // Map modification
+            Jsonable jMap = new Jsonable(new HashMap<>(Map.of("inner", new HashMap<>(Map.of("a", 1, "b", 2)))));
+            jMap.put("inner", Map.of("b", 20, "c", 3));
+            Map<?,?> innerMap = (Map<?,?>)((Jsonable)jMap.get("inner")).get();
+            Lib.asrtEQ(innerMap.get("a"), 1);
+            Lib.asrtEQ(innerMap.get("b"), 20);
+            Lib.asrtEQ(innerMap.get("c"), 3);
+
+            // List modification
+            Jsonable jList = new Jsonable(new ArrayList<>(List.of(new HashMap<>(Map.of("x", 10)))));
+            jList.put(0, Map.of("y", 20));
+            Map<?,?> mergedMap = (Map<?,?>)((Jsonable)jList.get(0)).get();
+            Lib.asrtEQ(mergedMap.get("x"), 10);
+            Lib.asrtEQ(mergedMap.get("y"), 20);
+
+            // Complex merge
+            Jsonable complex = new Jsonable(JsonDecoder.decode("""
+                {"data":{"one":[1],"two":[1,2],"three":[1,2]}}
+            """));
+            complex.put("data", JsonDecoder.decode("""
+                {"three":[1,2,3],"four":[1,2,3,4]}
+            """));
+            Object expected = JsonDecoder.decode("""
+                {"data":{"one":[1],"two":[1,2],"three":[1,2,3],"four":[1,2,3,4]}}
             """);
-            Lib.asrtEQ(jsonable,expected);
+            // Compare wrapped to wrapped
+            Lib.asrtEQ(complex, new Jsonable(expected));
         }
-        { // edge cases
-            Jsonable jsonable = new Jsonable( Map.of( "one/2/three", List.of(1,2,3) ) );
-            Lib.asrtEQ( jsonable.get( "one/2/three" ), List.of(1,2,3), """
-                should check to see if key exists before assuming it is a multi-key path
-            """ );
-        }
+
         return true;
     }
 

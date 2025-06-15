@@ -82,7 +82,7 @@ public class HttpMessage {
 
     public static Result<HttpMessage,Exception> readHttpMessage( HttpHeaderBlock headerBlock, InputStream inp ) {
         Long contentLength = headerBlock.getContentLength();
-        if (contentLength==null) return Result.err( new IllegalArgumentException("no content length") );
+        if ( contentLength==null ) contentLength = 0L;
         if ( contentLength<0 || contentLength>Integer.MAX_VALUE ) {
             return Result.err( new IllegalArgumentException("invalid content length: "+contentLength) );
         }

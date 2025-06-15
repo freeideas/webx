@@ -109,7 +109,7 @@ public class HttpHeaderBlock {
         for (String part : queryStr.split("&")) {
             String[] parts = part.split("=",2);
             if (parts.length<2) continue;
-            map.put(parts[0], parts[1]);
+            map.put( Lib.urlDecode(parts[0]), Lib.urlDecode(parts[1]) );
         }
         return Collections.unmodifiableMap(map);
     }

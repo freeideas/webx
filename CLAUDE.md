@@ -26,9 +26,6 @@ All scripts mentioned below can be run from any directory - they automatically c
 ```bash
 ./java/javac.sh
 ```
-```powershell
-powershell.exe -File ./java/javac.ps1
-```
 
 #### Compile specific file or directory
 ```bash
@@ -38,21 +35,11 @@ powershell.exe -File ./java/javac.ps1
 # Compile a directory
 ./java/javac.sh java/src/appz/sside
 ```
-```powershell
-# Compile a single file
-powershell.exe -File ./java/javac.ps1 java/src/HelloRoot.java
-
-# Compile a directory
-powershell.exe -File ./java/javac.ps1 java/src/appz/sside
-```
 
 #### Run Java applications
 Replace `[ClassName]` with the fully qualified class name (e.g., `appz.sside.http.HttpMessage`):
 ```bash
 ./java/java.sh [ClassName]
-```
-```powershell
-powershell.exe -File ./java/java.ps1 [ClassName]
 ```
 
 #### Examples
@@ -65,23 +52,75 @@ powershell.exe -File ./java/java.ps1 [ClassName]
 ./java/javac.sh java/src/appz/sside
 ./java/java.sh appz.sside.http.HttpMessage
 ```
-```powershell
-# Compile and run HelloRoot
-powershell.exe -File ./java/javac.ps1 java/src/HelloRoot.java
-powershell.exe -File ./java/java.ps1 HelloRoot
-
-# Compile and run a package class
-powershell.exe -File ./java/javac.ps1 java/src/appz/sside
-powershell.exe -File ./java/java.ps1 appz.sside.http.HttpMessage
-```
 
 ### Download Maven dependencies
 ```bash
 ./java/java.sh DownloadJars
 ```
-```powershell
-powershell.exe -File ./java/java.ps1 DownloadJars
+
+### Extract Method Signatures
+Get a quick overview of all public methods in the project:
+```bash
+./java/extract_signatures.sh
 ```
+
+This generates `java/method-signatures.json` containing:
+- All public/protected method signatures (private methods excluded)
+- Only top-level classes (no inner or anonymous classes)
+- Clean signatures without throws clauses
+- Organized by fully qualified class name
+
+Example output:
+```json
+{
+ "jLib.Lib": [
+  "public static void print(java.lang.Object...);",
+  "public static boolean asrt(boolean);",
+  "public static boolean asrtEQ(java.lang.Object, java.lang.Object);"
+ ],
+ "http.HttpServer": [
+  "public HttpServer(int);",
+  "public void start();",
+  "public void stop();"
+ ]
+}
+```
+
+This is particularly useful for:
+- Getting a quick overview of available methods in any class
+- Understanding the public API surface of the project
+- Finding methods across the codebase
+- Checking method signatures without reading full source files
+
+## Running WebX Server
+
+### Start WebX
+The WebX server can be started using:
+```bash
+./run_webx.sh
+```
+
+This script:
+- Changes to the WebX project directory
+- Runs the WebX.jar with all required dependencies on port 13102
+- The application checks if it's already running and won't start multiple instances
+
+### Production Setup
+- **Cron Job**: WebX runs as a cron job every minute to ensure it's always running
+  ```
+  * * * * * /home/ace/prjx/webx/run_webx.sh >> /home/ace/prjx/webx/log/webx_cron.log 2>&1
+  ```
+- **NGINX Reverse Proxy**: NGINX listens on port 80 and forwards all `/webx/*` requests to `http://127.0.0.1:13102/webx/`
+- **External Access**: WebX is accessible at `http://45.79.215.207/webx/`
+- The WebX application itself prevents multiple instances from running simultaneously
+
+### Building WebX
+To build a new JAR file:
+```bash
+./java/javac.sh && ./java/java.sh buildtools.Build
+```
+
+This creates `java/dist/WebX.jar` which includes all dependencies.
 
 ## Project Architecture
 
@@ -133,9 +172,6 @@ This is a multi-language project with both Java and Python components, organized
 - **IMPORTANT**: After modifying any Java file containing `_TEST_` methods and a `main` method with `Lib.testClass()`, always run the class to verify tests still pass. Replace `[ClassName]` with the fully qualified class name:
   ```bash
   ./java/javac.sh && ./java/java.sh [ClassName]
-  ```
-  ```powershell
-  powershell.exe -File ./java/javac.ps1; powershell.exe -File ./java/java.ps1 [ClassName]
   ```
 
 ### Testing Guidelines

@@ -89,6 +89,7 @@ env/
 /java/dist/
 /datafiles/*.lck
 /datafiles/*.tmp/
+CLAUDE.md
 
 # Database files
 *.db

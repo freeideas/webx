@@ -5,7 +5,7 @@ import java.io.File;
 
 /**
  * ParseArgs - A flexible command-line argument parser with intelligent features:
- * 
+ *
  * - Supports multiple argument formats: -arg=value, --arg=value, arg=value
  * - Boolean arguments can be specified as just --arg (implies true)
  * - Argument name abbreviation: -p=8080 matches "port" parameter
@@ -406,13 +406,13 @@ public class ParseArgs {
     @SuppressWarnings("unused")
     private static boolean expandFromFiles_TEST_( boolean findLineNumber ) throws Exception {
         if ( findLineNumber ) throw new RuntimeException();
-        try ( Lib.TmpDir tmpDir = new Lib.TmpDir() ) {
+        try ( LibFile.TmpDir tmpDir = new LibFile.TmpDir() ) {
             File mapFile = new File( tmpDir.dir, "map.json" );
             File listFile = new File( tmpDir.dir, "list.json" );
             File stringFile = new File( tmpDir.dir, "string.json" );
-            Lib.string2file( "{\"port\":\"8080\",\"debug\":\"true\"}", mapFile, false );
-            Lib.string2file( "[\"--verbose\",\"--count=5\"]", listFile, false );
-            Lib.string2file( "\"hello world\"", stringFile, false );
+            LibFile.string2file( "{\"port\":\"8080\",\"debug\":\"true\"}", mapFile, false );
+            LibFile.string2file( "[\"--verbose\",\"--count=5\"]", listFile, false );
+            LibFile.string2file( "\"hello world\"", stringFile, false );
             String[] args1 = { "--start", "@"+mapFile.getPath(), "--end" };
             String[] result1 = expandFromFiles(args1);
             Lib.asrtEQ( result1.length, 4 );

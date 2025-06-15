@@ -85,7 +85,7 @@ public class PersistentData implements AutoCloseable {
 
 
     public static PersistentData temp( String tableName ) {
-        File tmpFile = new File( Lib.tmpDir(), "temp_" + System.currentTimeMillis() );
+        File tmpFile = new File( System.getProperty( "java.io.tmpdir" ), "temp_" + System.currentTimeMillis() );
         String jdbcUrl = null;
         try{ jdbcUrl = "jdbc:hsqldb:mem:"+tmpFile.getName(); }
         catch (Exception e) { jdbcUrl = "jdbc:hsqldb:mem:temp"; }
@@ -770,8 +770,10 @@ public class PersistentData implements AutoCloseable {
                 Lib.asrtEQ( minMaxEntryOrder[1], 6L );
                 actualData = pd.debugDump();
                 Object actual = Jsonable.get( actualData, List.of(3,"entryOrder") );
+                if (actual instanceof Jsonable) actual = ((Jsonable) actual).get();
                 Lib.asrtEQ(actual,5);
                 actual = Jsonable.get( actualData, List.of(2,"entryOrder") );
+                if (actual instanceof Jsonable) actual = ((Jsonable) actual).get();
                 Lib.asrtEQ(actual,2);
             }
             { // remove that gap
@@ -782,10 +784,13 @@ public class PersistentData implements AutoCloseable {
                 pd.createGap( R00T_ID, 2L, 2L );
                 actualData = pd.debugDump();
                 Object actual = Jsonable.get( actualData, List.of(0,"entryOrder") );
+                if (actual instanceof Jsonable) actual = ((Jsonable) actual).get();
                 Lib.asrtEQ(actual,-2);
                 actual = Jsonable.get( actualData, List.of(1,"entryOrder") );
+                if (actual instanceof Jsonable) actual = ((Jsonable) actual).get();
                 Lib.asrtEQ(actual,-1);
                 actual = Jsonable.get( actualData, List.of(2,"entryOrder") );
+                if (actual instanceof Jsonable) actual = ((Jsonable) actual).get();
                 Lib.asrtEQ(actual,2);
             }
             { // remove that gap

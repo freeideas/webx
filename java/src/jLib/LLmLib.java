@@ -86,7 +86,9 @@ public class LLmLib {
         StringBuffer sb = new StringBuffer();
         while ( matcher.find() ) {
             String key = matcher.group();
-            String value = (String) Lib.loadCreds().get(key);
+            Object valueObj = Lib.loadCreds().get(key);
+            if (valueObj instanceof Jsonable) valueObj = ((Jsonable) valueObj).get();
+            String value = valueObj instanceof String ? (String) valueObj : null;
             if (value==null) throw new RuntimeException( "can't find: "+key );
             matcher.appendReplacement(sb, value);
         }
@@ -130,10 +132,10 @@ public class LLmLib {
             for (Object part : promptParts) {
                 if (part instanceof File) {
                     File file = (File) part;
-                    String mimeType = Lib.getMimeType(file);
+                    String mimeType = LibFile.getMimeType(file);
                     // For non-image and non-PDF files, convert file to text
                     if (!mimeType.startsWith("image/") && !mimeType.endsWith("/pdf")) {
-                        String fileText = Lib.file2string(file);
+                        String fileText = LibFile.file2string( file );
                         Map<String, Object> textMap = new LinkedHashMap<>();
                         textMap.put("type", "text");
                         textMap.put("text", formatPrompt(fileText));
@@ -205,10 +207,12 @@ public class LLmLib {
             logLLmCall(logFile, "RESPONSE", responseObj, null);
             // Simplified text response extraction using Lib.get
             StringBuilder textResponse = new StringBuilder();
-            List<?> contentList = (List<?>) Jsonable.get(responseObj, "content");
+            Object contentObj = Jsonable.get(responseObj, "content");
+            List<?> contentList = contentObj instanceof List ? (List<?>) contentObj : null;
             if (contentList != null) {
                 for (Object item : contentList) {
-                    String text = (String) Jsonable.get(item, "text");
+                    Object textObj = Jsonable.get(item, "text");
+                    String text = textObj instanceof String ? (String) textObj : null;
                     if (text==null) continue;
                     if (! textResponse.isEmpty() ) textResponse.append("\n");
                     textResponse.append(text);
@@ -263,8 +267,12 @@ public class LLmLib {
      * @return A Result containing a list of available Anthropic model names
      */
     public Result< List<String>, Exception > listAntropicModels() {
-        String apiKey = (String) Lib.loadCreds().get("ANTHROPIC/API_KEY");
-        String endpoint = (String) Lib.loadCreds().get("ANTHROPIC/ENDPOINT");
+        Object apiKeyObj = Lib.loadCreds().get("ANTHROPIC/API_KEY");
+        if (apiKeyObj instanceof Jsonable) apiKeyObj = ((Jsonable) apiKeyObj).get();
+        String apiKey = apiKeyObj instanceof String ? (String) apiKeyObj : null;
+        Object endpointObj = Lib.loadCreds().get("ANTHROPIC/ENDPOINT");
+        if (endpointObj instanceof Jsonable) endpointObj = ((Jsonable) endpointObj).get();
+        String endpoint = endpointObj instanceof String ? (String) endpointObj : null;
         String url = Lib.normalizePath(endpoint+"/../models");
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("x-api-key", apiKey);
@@ -275,7 +283,8 @@ public class LLmLib {
             Result<HttpRes,HttpRes> httpRes = httpRequest(url, headers, null, "GET");
             if (! httpRes.isOk() ) throw new Exception( httpRes.err().body );
             Map<String,Object> responseObj = JsonDecoder.decodeMap( httpRes.ok().body );
-            List<?> modelsList = (List<?>) Jsonable.get(responseObj, "data");
+            Object modelsObj = Jsonable.get(responseObj, "data");
+            List<?> modelsList = modelsObj instanceof List ? (List<?>) modelsObj : null;
             if (modelsList==null) modelsList = List.of();
             for (Object model : modelsList) {
                 if (model instanceof Map) {
@@ -337,7 +346,7 @@ public class LLmLib {
             );
             if (! res.isOk() ) {
                 Lib.log( "Failed to call model: "+modelKey+" because: "+res.err().getMessage() );
-            }   
+            }
             Lib.asrt(res.isOk(), "Result should be successful");
             Lib.asrt( res.ok().toUpperCase().indexOf("PARIS") >= 0, "Result should contain 'PARIS'" );
         }
@@ -403,7 +412,9 @@ public class LLmLib {
      * @return A list of available Google model names
      */
     public Result<List<String>,Exception> listGoogleModels() {
-        String apiKey = (String) Lib.loadCreds().get("GOOGAI/API_KEY");
+        Object apiKeyObj = Lib.loadCreds().get("GOOGAI/API_KEY");
+        if (apiKeyObj instanceof Jsonable) apiKeyObj = ((Jsonable) apiKeyObj).get();
+        String apiKey = apiKeyObj instanceof String ? (String) apiKeyObj : null;
         String url = "https://generativelanguage.googleapis.com/v1/models";
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("x-goog-api-key", apiKey);
@@ -413,7 +424,8 @@ public class LLmLib {
             Result<HttpRes,HttpRes> httpRes = httpRequest(url, headers, null, "GET");
             if (!httpRes.isOk()) throw new Exception(httpRes.err().body );
             Map<String, Object> responseObj = JsonDecoder.decodeMap(httpRes.ok().body );
-            List<?> modelsList = (List<?>) Jsonable.get(responseObj, "models");
+            Object modelsObj = Jsonable.get(responseObj, "models");
+            List<?> modelsList = modelsObj instanceof List ? (List<?>) modelsObj : null;
             if (modelsList != null) {
                 for (Object model : modelsList) {
                     if (model instanceof Map) {
@@ -450,7 +462,9 @@ public class LLmLib {
      * @return A Result containing a list of available OpenAI model names
      */
     public Result< List<String>, Exception > listOpenAiModels() {
-        String apiKey = (String) Lib.loadCreds().get("OPENAI/API_KEY");
+        Object apiKeyObj = Lib.loadCreds().get("OPENAI/API_KEY");
+        if (apiKeyObj instanceof Jsonable) apiKeyObj = ((Jsonable) apiKeyObj).get();
+        String apiKey = apiKeyObj instanceof String ? (String) apiKeyObj : null;
         String url = "https://api.openai.com/v1/models";
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("Authorization", "Bearer " + apiKey);
@@ -460,7 +474,8 @@ public class LLmLib {
             Result<HttpRes,HttpRes> httpRes = httpRequest(url, headers, null, "GET");
             if (!httpRes.isOk()) return Result.err(new Exception( httpRes.err().body ));
             Map<String, Object> responseObj = JsonDecoder.decodeMap( httpRes.ok().body );
-            List<?> modelsList = (List<?>) Jsonable.get(responseObj, "data");
+            Object modelsObj = Jsonable.get(responseObj, "data");
+            List<?> modelsList = modelsObj instanceof List ? (List<?>) modelsObj : null;
             if (modelsList != null) {
                 for (Object model : modelsList) {
                     if (model instanceof Map) {
@@ -588,7 +603,7 @@ public class LLmLib {
                     File file = (File) part;
                     byte[] fileBytes = java.nio.file.Files.readAllBytes(file.toPath());
                     String base64Data = Base64.getEncoder().encodeToString(fileBytes);
-                    String mimeType = Lib.getMimeType(file);
+                    String mimeType = LibFile.getMimeType(file);
                     Map<String, Object> inlineData = new LinkedHashMap<>();
                     inlineData.put("mimeType", mimeType);
                     inlineData.put("data", base64Data);
@@ -655,7 +670,8 @@ public class LLmLib {
             // Extract the response text.
             StringBuilder resultText = new StringBuilder();
             Object parts = Jsonable.get( responseObj, "candidates/0/content/parts" );
-            if (parts instanceof List lst) {
+            List<?> lst = parts instanceof List ? (List<?>) parts : null;
+            if (lst != null) {
                 for (Object part : lst) {
                     if (part instanceof Map partMap) {
                         Object text = partMap.get("text");
@@ -716,8 +732,10 @@ public class LLmLib {
         try {
             promptString = Lib.evalTemplate(templateFile, vars);
         } catch (IOException e) { throw new RuntimeException(e); }
-        String logFilespec = Lib.backupFilespec( "./log/"+templateFile.getName() );
-        Lib.string2file( promptString, new File(logFilespec), false );
+        String logFilespec = LibFile.backupFilespec( "./log/"+templateFile.getName() );
+        File logFile = new File(logFilespec);
+        logFile.delete();
+        Lib.append2file( logFile, promptString );
         // Find any local files referenced in the template
         String regex = "\\[([^\\]]*)\\]\\((?:(https?|file)://)?([^)]+)\\)";
         Pattern pattern = Pattern.compile(regex);
@@ -1076,7 +1094,9 @@ public class LLmLib {
             Lib.mapOf( "imgFile", imgFile.getPath() ), "google-vision_ocr"
         );
         try {
-            String apiKey = (String) Lib.loadCreds().get("GOOGLE/API_KEY");
+            Object apiKeyObj = Lib.loadCreds().get("GOOGLE/API_KEY");
+            if (apiKeyObj instanceof Jsonable) apiKeyObj = ((Jsonable) apiKeyObj).get();
+            String apiKey = apiKeyObj instanceof String ? (String) apiKeyObj : null;
             String url = "https://vision.googleapis.com/v1/images:annotate?key=" + apiKey;
             byte[] fileBytes = java.nio.file.Files.readAllBytes(imgFile.toPath());
             String base64Data = Base64.getEncoder().encodeToString(fileBytes);
@@ -1114,9 +1134,9 @@ public class LLmLib {
             Map<String, Object> responseObj = JsonDecoder.decodeMap(responseString);
             logLLmCall(logFile, "RESPONSE", responseObj, null);
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> textAnnotations =
-                (List<Map<String, Object>>) Jsonable.get(responseObj, "responses/0/textAnnotations")
-            ;
+            Object textAnnotationsObj = Jsonable.get(responseObj, "responses/0/textAnnotations");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> textAnnotations = textAnnotationsObj instanceof List ? (List<Map<String, Object>>) textAnnotationsObj : null;
             if (textAnnotations == null || textAnnotations.isEmpty()) {
                 throw new Exception("No text annotations found in the response");
             }
@@ -1126,9 +1146,10 @@ public class LLmLib {
                 Map<String, Object> annotation = textAnnotations.get(i);
                 String text = (String) annotation.get("description");
                 @SuppressWarnings("unchecked")
-                List<Map<String, Object>> vertices =
-                    (List<Map<String, Object>>) Jsonable.get(annotation, "boundingPoly/vertices")
-                ;
+                Object verticesObj = Jsonable.get(annotation, "boundingPoly/vertices");
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> vertices = verticesObj instanceof List ? (List<Map<String, Object>>) verticesObj : null;
+                if (vertices == null) continue;
                 int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
                 int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
                 for (Map<String, Object> vertex : vertices) {
@@ -1277,7 +1298,7 @@ public class LLmLib {
                     File file = (File) part;
                     byte[] fileBytes = java.nio.file.Files.readAllBytes(file.toPath());
                     String base64Data = Base64.getEncoder().encodeToString(fileBytes);
-                    String mimeType = Lib.getMimeType(file);
+                    String mimeType = LibFile.getMimeType(file);
                     Map<String, Object> imageBlock = new LinkedHashMap<>();
                     imageBlock.put("type", "image_url");
                     Map<String, Object> urlMap = new LinkedHashMap<>();
@@ -1329,7 +1350,8 @@ public class LLmLib {
             Map<String, Object> responseObj = JsonDecoder.decodeMap(responseString);
             logLLmCall(logFile, "RESPONSE", responseObj, null);
             // Use Lib.get to extract the assistant's reply.
-            String output = (String) Jsonable.get(responseObj, "choices/0/message/content");
+            Object outputObj = Jsonable.get(responseObj, "choices/0/message/content");
+            String output = outputObj instanceof String ? (String) outputObj : null;
             if ( Lib.isEmpty(output) ) throw new Exception("No content in response");
             return Result.<String,Exception>ok(output).setLogFile(logFile);
         } catch (Exception e) {
@@ -1403,8 +1425,8 @@ public class LLmLib {
                     .append(JsonEncoder.encode(params)).append("'");
             }
             String curlCmd = curlCmdBuilder.toString();
-            curlLogFile = new File( Lib.backupFilespec("./log/curl.log") );
-            Lib.append2file( curlLogFile, curlCmd+"\n\n" );
+            curlLogFile = new File( LibFile.backupFilespec("./log/curl.log") );
+            LibFile.append2file( curlLogFile, curlCmd+"\n\n" );
         }
         try {
             HttpClient client = HttpClient.newHttpClient();
@@ -1457,7 +1479,7 @@ public class LLmLib {
                     "responseBody", responseBody,
                     "headers", response.headers().map()
                 );
-                Lib.append2file( curlLogFile, JsonEncoder.encode(logData," ")+"\n\n" );
+                LibFile.append2file( curlLogFile, JsonEncoder.encode(logData," ")+"\n\n" );
             }
             boolean success = (statusCode >= 200 && statusCode < 300);
             if (!success) return Result.err( new HttpRes(statusCode, responseBody, response.headers().map()) );
@@ -1471,7 +1493,7 @@ public class LLmLib {
 
     /**
      * Logs information to a file with a key and body.
-     * If logFile is null, creates a new file using Lib.backupFilespec("./log/LLmCall.log");
+     * If logFile is null, creates a new file using LibFile.backupFilespec("./log/LLmCall.log");
      * If key is null, then "closes" the log file by adding the final "}" and returning null.
      * @param logFile The file to log to, or null to create a new file
      * @param key The key to identify this log entry; if null, then essentially "closes" the log file
@@ -1480,21 +1502,22 @@ public class LLmLib {
      */
     public static File logLLmCall( File logFile, String key, Object body, String callType ) {
         if (key==null) { // "close" the log file by adding the final "}" and returning null
-            Lib.append2file( logFile, "\n}" );
+            LibFile.append2file( logFile, "\n}" );
             return null;
         }
         boolean needComma = logFile!=null && logFile.exists() && logFile.length()>0;
         StringBuilder sb = new StringBuilder();
         if (!needComma) {
-            String filespec = "./log/"+Lib.safeForFilename(callType)+".log";
-            filespec = Lib.backupFilespec(filespec);
+            String filename = callType != null ? LibFile.safeForFilename(callType) : "LLmCall";
+            String filespec = "./log/"+filename+".log";
+            filespec = LibFile.backupFilespec(filespec);
             logFile = new File(filespec);
             File parentDir = logFile.getParentFile();
             if (parentDir != null && !parentDir.exists()) parentDir.mkdirs();
             sb.append( "{\n" );
         }
         sb.append( (needComma?",\n":"")+ key +":\n" + JsonEncoder.encode(body," ") );
-        Lib.append2file( logFile, sb.toString() );
+        LibFile.append2file( logFile, sb.toString() );
         return logFile;
     }
 
