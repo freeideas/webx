@@ -96,7 +96,7 @@ public class BlockingByteBuffer {
     public boolean isClosed() {
         synchronized (lock) {
             boolean ret = isClosing && cbb.isEmpty();
-            //Lib.log("isClosed()="+ret);
+            //Log.log("isClosed()="+ret);
             return ret;
         }
     }
@@ -106,7 +106,7 @@ public class BlockingByteBuffer {
     public boolean isClosing() {
         synchronized (lock) {
             boolean ret = isClosing;
-            //Lib.log("isClosing()="+ret);
+            //Log.log("isClosing()="+ret);
             return ret;
         }
     }
@@ -127,7 +127,7 @@ public class BlockingByteBuffer {
     public boolean isFull() {
         synchronized (lock) {
             boolean ret = cbb!=null && cbb.size() >= maxBufSize;
-            //Lib.log("isFull()="+ret);
+            //Log.log("isFull()="+ret);
             return ret;
         }
     }
@@ -137,7 +137,7 @@ public class BlockingByteBuffer {
     public boolean isEmpty() {
         synchronized (lock) {
             boolean ret = cbb!=null && cbb.isEmpty();
-            //Lib.log("isEmpty()="+ret);
+            //Log.log("isEmpty()="+ret);
             return ret;
         }
     }
@@ -147,7 +147,7 @@ public class BlockingByteBuffer {
     public int size() {
         synchronized (lock) {
             int siz = cbb==null ? -1 : cbb.size();
-            //Lib.log("size()="+siz);
+            //Log.log("size()="+siz);
             return siz;
         }
     }
@@ -156,7 +156,7 @@ public class BlockingByteBuffer {
 
     public void close() {
         synchronized (lock) {
-            //Lib.log("bbb.close()");
+            //Log.log("bbb.close()");
             isClosing = true;
             lock.notifyAll();
         }
@@ -169,7 +169,7 @@ public class BlockingByteBuffer {
         if (len<=0) return;
         while (len>0) {
         synchronized (lock) {
-            //Lib.log( "write(arr,"+off+","+len+"):"+new String(arr,off,len) );
+            //Log.log( "write(arr,"+off+","+len+"):"+new String(arr,off,len) );
             while ( isFull() ) {
                 if (throwIOExceptionWhenFull.get()) throw new IOException( "buffer full" );
                 try { lock.wait(500); }
@@ -195,7 +195,7 @@ public class BlockingByteBuffer {
         synchronized (lock) {
             while ( isEmpty() ) {
                 if (isClosing) {
-                    //Lib.log("read()<0");
+                    //Log.log("read()<0");
                     return -1;
                 }
                 try { lock.wait(500); }
@@ -203,7 +203,7 @@ public class BlockingByteBuffer {
             }
             int readCount = cbb.removeFirst(arr,off,len);
             if (readCount>0) lock.notifyAll();
-            //Lib.log( "read(arr,"+off+","+len+"):"+new String(arr,off,readCount) );
+            //Log.log( "read(arr,"+off+","+len+"):"+new String(arr,off,readCount) );
             return readCount;
         }
     }
@@ -264,9 +264,9 @@ public class BlockingByteBuffer {
             sb.append( new String(arr,0,readCount) );
         }
         writerThread.join();
-        Lib.asrtEQ( sb.toString(), s );
+        LibTest.asrtEQ( sb.toString(), s );
         bbb.getOutputStream().close();
-        Lib.asrt( bbb.getInputStream().read() == -1 );
+        LibTest.asrt( bbb.getInputStream().read() == -1 );
         return ! fail[0];
     }
 

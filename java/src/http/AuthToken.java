@@ -11,7 +11,7 @@ public class AuthToken implements JsonSerializable {
 
 
     public static final long MAX_AGE_SECONDS = 30*24*60*60; // 30 days
-    public static Pattern jsonPattern = Pattern.compile( Lib.nw( """
+    public static Pattern jsonPattern = Pattern.compile( LibString.nw( """
         \\{"email":".+@.+","created":"20.+","sig":".+"\\}
     """ ) );
 
@@ -86,7 +86,7 @@ public class AuthToken implements JsonSerializable {
                 if ( currentTimeMicros - tokenTimeMicros <= maxAgeMicros ) continue;
                 tokenzMap.remove( tokenTimeMicros );
             }
-        } catch ( Exception e ) { Lib.logException(e); }
+        } catch ( Exception e ) { Log.logException(e); }
         return new AuthToken(email,createTimeMicros,signature);
     }
 
@@ -123,13 +123,13 @@ public class AuthToken implements JsonSerializable {
     private static boolean _TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
         AuthToken tok = newAuthToken("user@host.com");
-        Lib.asrt( tok.isValid() );
-        Lib.asrt( tok.invalidateAll() );
-        Lib.asrt(! tok.isValid() );
+        LibTest.asrt( tok.isValid() );
+        LibTest.asrt( tok.invalidateAll() );
+        LibTest.asrt(! tok.isValid() );
         tok = newAuthToken("user@host.com");
-        Lib.asrt( tok.isValid() );
-        Lib.asrt( tok.invalidate() );
-        Lib.asrt(! tok.isValid() );
+        LibTest.asrt( tok.isValid() );
+        LibTest.asrt( tok.invalidate() );
+        LibTest.asrt(! tok.isValid() );
         return true;
     }
 

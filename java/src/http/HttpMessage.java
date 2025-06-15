@@ -2,6 +2,7 @@ package http;
 import java.io.*;
 import java.util.*;
 import jLib.*;
+import jLib.LibString;
 
 
 
@@ -70,10 +71,10 @@ public class HttpMessage {
         if (findLineNumber) throw new RuntimeException();
         String s = "a=1&b=2&c=3";
         Map<String,Object> result = parseUrlEncoded(s);
-        Lib.asrt( result.size() == 3 );
-        Lib.asrt( result.get("a").equals("1") );
-        Lib.asrt( result.get("b").equals("2") );
-        Lib.asrt( result.get("c").equals("3") );
+        LibTest.asrt( result.size() == 3 );
+        LibTest.asrt( result.get("a").equals("1") );
+        LibTest.asrt( result.get("b").equals("2") );
+        LibTest.asrt( result.get("c").equals("3") );
         return true;
     }
 
@@ -124,7 +125,7 @@ public class HttpMessage {
     private static boolean _TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
         {
-            String rawHeader = Lib.unindent("""
+            String rawHeader = LibString.unindent("""
                 HTTP/1.1 200 OK
                 Date: Mon, 27 Jul 2009 12:28:53 GMT
                 Server: Apache/2.2.14 (Win32)
@@ -138,11 +139,11 @@ public class HttpMessage {
             Result<HttpMessage,Exception> result = readHttpMessage( new ByteArrayInputStream(rawHeader.getBytes()) );
             if (! result.isOk() ) throw result.err();
             HttpMessage msg = result.ok();
-            Lib.asrt( msg.body.length == 10 );
-            Lib.asrt( msg.body[0] == (int)'1' );
+            LibTest.asrt( msg.body.length == 10 );
+            LibTest.asrt( msg.body[0] == (int)'1' );
         }
         { // json post
-            String rawHeader = Lib.unindent("""
+            String rawHeader = LibString.unindent("""
                 POST / HTTP/1.1
                 Date: Mon, 27 Jul 2009 12:28:53 GMT
                 Server: Apache/2.2.14 (Win32)
@@ -156,16 +157,16 @@ public class HttpMessage {
             Result<HttpMessage,Exception> result = readHttpMessage( new ByteArrayInputStream(rawHeader.getBytes()) );
             if (! result.isOk() ) throw result.err();
             HttpMessage msg = result.ok();
-            Lib.asrt( msg.parsedBody instanceof Map );
+            LibTest.asrt( msg.parsedBody instanceof Map );
             @SuppressWarnings("unchecked")
             Map<String,Object> parsed = (Map<String,Object>) msg.parsedBody;
-            Lib.asrt( parsed.size() == 3 );
-            Lib.asrt( parsed.get("a").equals(1) );
-            Lib.asrt( parsed.get("b").equals(2) );
-            Lib.asrt( parsed.get("c").equals(3) );
+            LibTest.asrt( parsed.size() == 3 );
+            LibTest.asrt( parsed.get("a").equals(1) );
+            LibTest.asrt( parsed.get("b").equals(2) );
+            LibTest.asrt( parsed.get("c").equals(3) );
         }
         { // urlencoded post
-            String rawHeader = Lib.unindent("""
+            String rawHeader = LibString.unindent("""
                 POST / HTTP/1.1
                 Date: Mon, 27 Jul 2009 12:28:53 GMT
                 Server: Apache/2.2.14 (Win32)
@@ -179,13 +180,13 @@ public class HttpMessage {
             Result<HttpMessage,Exception> result = readHttpMessage( new ByteArrayInputStream(rawHeader.getBytes()) );
             if (! result.isOk() ) throw result.err();
             HttpMessage msg = result.ok();
-            Lib.asrt( msg.parsedBody instanceof Map );
+            LibTest.asrt( msg.parsedBody instanceof Map );
             @SuppressWarnings("unchecked")
             Map<String,Object> parsed = (Map<String,Object>) msg.parsedBody;
-            Lib.asrt( parsed.size() == 3 );
-            Lib.asrt( parsed.get("a").equals("1") );
-            Lib.asrt( parsed.get("b").equals("2") );
-            Lib.asrt( parsed.get("c").equals("3") );
+            LibTest.asrt( parsed.size() == 3 );
+            LibTest.asrt( parsed.get("a").equals("1") );
+            LibTest.asrt( parsed.get("b").equals("2") );
+            LibTest.asrt( parsed.get("c").equals("3") );
         }
         return true;
     }

@@ -29,11 +29,11 @@ public class SecurityGuard implements Predicate<HttpRequest> {
         headers.put("Host", "example.com");
         HttpHeaderBlock headerBlock = new HttpHeaderBlock("GET", "/", headers);
         HttpRequest request = new HttpRequest(headerBlock, new byte[0]);        
-        Lib.asrt( guard.test(request) );
+        LibTest.asrt( guard.test(request) );
         guard.rules.add( req -> req.headerBlock.headers.containsKey("Host") );
-        Lib.asrt( guard.test(request) );
+        LibTest.asrt( guard.test(request) );
         guard.rules.add( req -> req.headerBlock.headers.get("Host").equals("allowed.com") );
-        Lib.asrt( ! guard.test(request) );
+        LibTest.asrt( ! guard.test(request) );
         return true;
     }
 

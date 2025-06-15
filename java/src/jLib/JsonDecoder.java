@@ -470,39 +470,39 @@ public class JsonDecoder {
     private static boolean test_TEST_() throws Exception {
         try { // test decodeNull()
             StringReader sr = new StringReader("null");
-            Lib.asrtEQ( new JsonDecoder(sr).decodeNull(), NULL );
+            LibTest.asrtEQ( new JsonDecoder(sr).decodeNull(), NULL );
             sr = new StringReader( "nulX" );
-            Lib.asrtEQ( new JsonDecoder(sr).decodeNull(), null );
+            LibTest.asrtEQ( new JsonDecoder(sr).decodeNull(), null );
         } catch (IOException ioe) { throw new RuntimeException(ioe); }
         { // test decodeBoolean()
             String input = "true";
-            Lib.asrtEQ(JsonDecoder.decodeBoolean(input), Boolean.TRUE);
+            LibTest.asrtEQ(JsonDecoder.decodeBoolean(input), Boolean.TRUE);
             input = "false";
-            Lib.asrtEQ(JsonDecoder.decodeBoolean(input), Boolean.FALSE);
+            LibTest.asrtEQ(JsonDecoder.decodeBoolean(input), Boolean.FALSE);
             input = "truX";
-            Lib.asrtEQ(JsonDecoder.decodeBoolean(input), null);
+            LibTest.asrtEQ(JsonDecoder.decodeBoolean(input), null);
         }
         { // test decodeString()
             String input, output, expected;
             input = "'He said,\\t\"hello\"'";
             expected = "He said,\t\"hello\"";
             output = JsonDecoder.decodeString(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "\\u0041\\u{0042}\\x43\\uBAD\\u{BAD}\\u{BADBAD}\\x{BA}\\xB\\u00F";
             expected = "ABC" + input.substring(input.indexOf("\\uBAD"));
             //output = JsonDecoder.decodeString(input);
             input = "`backquoted 'string'`";
             expected = "backquoted 'string'";
             output = JsonDecoder.decodeString(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "'\\uD83D\\uDE3A'(unicode cat)";
             expected = "\uD83D\uDE3A";
             output = JsonDecoder.decodeString(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "\"\\uD83D\\uDC36\"(unicode dog)";
             expected = "\uD83D\uDC36";
             output = JsonDecoder.decodeString(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
         }
         { // test decodeNumber()
             String input;
@@ -511,48 +511,48 @@ public class JsonDecoder {
             input = "-1234.5678e-90";
             expected = Double.parseDouble(input);
             output = JsonDecoder.decodeNumber(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input += "e10"; // should be ignored
             output = JsonDecoder.decodeNumber(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "5" + input;
             expected = (double) 5;
             output = JsonDecoder.decodeNumber(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "0x1234";
             expected = (double) 0x1234;
             output = JsonDecoder.decodeNumber(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "0x1234.5678";
             expected = (double) 0x1234;
             output = JsonDecoder.decodeNumber(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "0b1010";
             expected = (double) 0b1010;
             output = JsonDecoder.decodeNumber(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "0o12349";
             expected = (double) 01234;
             output = JsonDecoder.decodeNumber(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "0778";
             expected = (double) 077;
             output = JsonDecoder.decodeNumber(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "-1_234.5678";
             expected = -1_234L;
             output = JsonDecoder.decodeLong(input);
-            Lib.asrtEQ(output, expected);
-            Lib.asrt(expected.getClass() == Long.class);
+            LibTest.asrtEQ(output, expected);
+            LibTest.asrt(expected.getClass() == Long.class);
             // test for NaN and Infinity
             input = "-NaN";
             expected = Double.NaN;
             output = JsonDecoder.decodeNumber(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             input = "-Infinity";
             expected = Double.NEGATIVE_INFINITY;
             output = JsonDecoder.decodeNumber(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
         }
         { // test decodeList()
             String input;
@@ -561,7 +561,7 @@ public class JsonDecoder {
             input = "['ok',true,1234.5678]";
             expected = List.of("ok", true, 1234.5678);
             output = JsonDecoder.decodeList(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
         }
         { // test decodeMap()
             String input;
@@ -579,12 +579,12 @@ public class JsonDecoder {
             m.put("key",null);
             expected = m;
             output = JsonDecoder.decodeMap(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
             // duplicate keys
             input = "{'ok':true,'ok':`false`}";
             expected = Map.of("ok",false);
             output = JsonDecoder.decodeMap(input);
-            Lib.asrtEQ(output, expected);
+            LibTest.asrtEQ(output, expected);
         }
         { // test various tricky stuff
             String input;
@@ -625,7 +625,7 @@ public class JsonDecoder {
                 )
             );
             output = JsonDecoder.decode(input);
-            Lib.asrtEQ(output,expected);
+            LibTest.asrtEQ(output,expected);
             input =
             """
                 { "index": 0, "embedding": [ 0.021137446, 0.0025192886, -0.003262786, -0.033500392 ] }
@@ -637,17 +637,17 @@ public class JsonDecoder {
                     0.021137446, 0.0025192886, -0.003262786, -0.033500392
                 )
             );
-            Lib.asrtEQ(output,expected);
+            LibTest.asrtEQ(output,expected);
             input = "[ {}, [] ]";
             output = JsonDecoder.decode(input);
             expected = List.of( Map.of(), List.of() );
-            Lib.asrtEQ(output,expected);
+            LibTest.asrtEQ(output,expected);
             input = """
                 [ { "group": null, "is_blocking": false } ]
             """;
             output = JsonEncoder.encode( JsonDecoder.decode(input) );
             expected = input.replaceAll( "\\s+", "" );
-            Lib.asrtEQ(output,expected);
+            LibTest.asrtEQ(output,expected);
         }
         if ( System.currentTimeMillis() < 0 ) { // forgive invalid JSON
             String input;
@@ -655,16 +655,16 @@ public class JsonDecoder {
             input = "{'ok':true,'ok':`false`";
             output = JsonDecoder.decode(input);
             expected = JsonDecoder.decode( "{'ok':true,'ok':`false`}" );
-            Lib.asrtEQ(output,expected);
+            LibTest.asrtEQ(output,expected);
             input = """
                 ;{,'ok':true,,,'ok':`false`,null,};
             """;
             output = JsonDecoder.decode(input);
-            Lib.asrtEQ(output,expected);
+            LibTest.asrtEQ(output,expected);
             input = "{ok:true,one:two}";
             expected = Map.of( "ok",true, "one","two" );
             output = JsonDecoder.decode(input);
-            Lib.asrtEQ(output,expected);
+            LibTest.asrtEQ(output,expected);
         }
         return true;
     }

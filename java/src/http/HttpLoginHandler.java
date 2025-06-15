@@ -53,7 +53,7 @@ public class HttpLoginHandler implements HttpHandler {
         
         Email emailObj = new Email();
         Result<Boolean,Exception> result = emailObj.sendEmail(
-            email, "Your "+appName+" login code", Lib.unindent(
+            email, "Your "+appName+" login code", LibString.unindent(
                 String.format("""
                 <html>
                 <body>
@@ -68,7 +68,7 @@ public class HttpLoginHandler implements HttpHandler {
         if ( result.isOk() ) {
             return jsonSuccess("Email sent successfully");
         } else {
-            Lib.log( "Failed to send email to " + email + ": " + result.err().getMessage() );
+            Log.log( "Failed to send email to " + email + ": " + result.err().getMessage() );
             result.err().printStackTrace();
             return jsonError("Failed to send email: " + result.err().getMessage());
         }
@@ -164,15 +164,15 @@ public class HttpLoginHandler implements HttpHandler {
             HttpHeaderBlock headerBlock = new HttpHeaderBlock("POST", "/login?command=validateLoginCode&email=" + testEmail + "&loginCode=" + loginCode, headers);
             HttpRequest validateReq = new HttpRequest(headerBlock, new byte[0]);
             HttpResponse response = handler.handle(validateReq);
-            Lib.asrt(response.headerBlock.firstLine.contains("200"));
+            LibTest.asrt(response.headerBlock.firstLine.contains("200"));
             String responseBody = new String(response.body);
             Map<String,Object> responseData = (Map<String,Object>) JsonDecoder.decode(responseBody);
-            Lib.asrt(responseData.get("success").equals(true));
-            Lib.asrt(responseData.get("email").equals(testEmail));
-            Lib.asrt(responseData.get("authToken") != null);
+            LibTest.asrt(responseData.get("success").equals(true));
+            LibTest.asrt(responseData.get("email").equals(testEmail));
+            LibTest.asrt(responseData.get("authToken") != null);
             String setCookieHeader = response.headerBlock.headers.get("Set-Cookie");
-            Lib.asrt(setCookieHeader != null);
-            Lib.asrt(setCookieHeader.startsWith("Authorization="));
+            LibTest.asrt(setCookieHeader != null);
+            LibTest.asrt(setCookieHeader.startsWith("Authorization="));
             return true;
         } finally {
             HttpLoginHandler.appName = originalAppName;

@@ -52,7 +52,7 @@ public class LruCache<K,V> implements Map<K,V> {
     **/
     protected void autoClose( V value ) {
         if (!( value instanceof AutoCloseable ac )) return;
-        try { ac.close(); } catch (Exception ex) { Lib.log(ex); }
+        try { ac.close(); } catch (Exception ex) { Log.log(ex); }
     }
 
     protected class CacheEntry {
@@ -264,15 +264,15 @@ public class LruCache<K,V> implements Map<K,V> {
         for (int i=0; i<1000; i++) {
             cache.put( "key"+i, "value"+i );
         }
-        Lib.asrtEQ( cache.size(), 1000, cache );
+        LibTest.asrtEQ( cache.size(), 1000, cache );
         cache.put( "key1000", "value1000" ); // pushes first entry out
-        Lib.asrtEQ( cache.size(), 1000, cache );
-        Lib.asrtEQ( cache.get("key0"), null, cache ); // first entry is gone
+        LibTest.asrtEQ( cache.size(), 1000, cache );
+        LibTest.asrtEQ( cache.get("key0"), null, cache ); // first entry is gone
         try{ Thread.sleep(510); } catch (InterruptedException e) {}
-        Lib.asrtEQ( cache.get("key1"), "value1", cache ); // refreshes entry
+        LibTest.asrtEQ( cache.get("key1"), "value1", cache ); // refreshes entry
         try{ Thread.sleep(510); } catch (InterruptedException e) {}
-        Lib.asrtEQ( cache.size(), 1, cache );
-        Lib.asrtEQ( cache.get("key1"), "value1", cache ); // refreshed entry still here
+        LibTest.asrtEQ( cache.size(), 1, cache );
+        LibTest.asrtEQ( cache.get("key1"), "value1", cache ); // refreshed entry still here
         return true;
     }
 

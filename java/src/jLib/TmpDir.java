@@ -75,27 +75,27 @@ public class TmpDir implements AutoCloseable {
         // Test basic creation and cleanup
         File tempFile = null;
         try ( TmpDir tmpDir = new TmpDir() ) {
-            Lib.asrt( tmpDir.dir.exists() );
-            Lib.asrt( tmpDir.dir.isDirectory() );
+            LibTest.asrt( tmpDir.dir.exists() );
+            LibTest.asrt( tmpDir.dir.isDirectory() );
             
             // Test creating a file
             tempFile = tmpDir.newFile("test.txt");
             LibFile.string2file("test content", tempFile, false);
-            Lib.asrt( tempFile.exists() );
+            LibTest.asrt( tempFile.exists() );
             
             // Test creating a subdirectory
             File subDir = tmpDir.newDir("subdir");
-            Lib.asrt( subDir.exists() );
-            Lib.asrt( subDir.isDirectory() );
+            LibTest.asrt( subDir.exists() );
+            LibTest.asrt( subDir.isDirectory() );
             
             // Test file in subdirectory
             File subFile = new File(subDir, "subfile.txt");
             LibFile.string2file("sub content", subFile, false);
-            Lib.asrt( subFile.exists() );
+            LibTest.asrt( subFile.exists() );
         }
         
         // Verify cleanup after close
-        Lib.asrt( !tempFile.exists() );
+        LibTest.asrt( !tempFile.exists() );
         
         return true;
     }

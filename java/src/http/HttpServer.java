@@ -57,16 +57,16 @@ public class HttpServer {
                     Socket clientSocket = serverSocket.accept();
                     new Thread(() -> {
                         try { handleClient(clientSocket); }
-                        catch (IOException e) { Lib.log(e); }
+                        catch (IOException e) { Log.log(e); }
                     }).start();
                 } catch (java.net.SocketTimeoutException e) {
                     // Timeout is expected, just continue to check shutdown flag
                 }
             }
-            Lib.log("Server shutdown requested, stopping...");
+            Log.log("Server shutdown requested, stopping...");
         } catch (IOException e) {
             if (!shouldShutdown) { // Only log if not shutting down intentionally
-                Lib.log(e);
+                Log.log(e);
             }
         }
     }
@@ -101,10 +101,10 @@ public class HttpServer {
         String firstLineDigits = headerBlock.firstLine.replaceAll("[^0-9]", "");
 
         if ( firstLineDigits.contains(currentHourStamp) ) {
-            Lib.log( "Shutdown code and valid timestamp detected: " + shutdownCode + " with hour stamp: " + currentHourStamp );
+            Log.log( "Shutdown code and valid timestamp detected: " + shutdownCode + " with hour stamp: " + currentHourStamp );
             return true;
         } else {
-            Lib.log( "Shutdown code detected but timestamp validation failed. Expected hour stamp: " + currentHourStamp + ", found digits: " + firstLineDigits );
+            Log.log( "Shutdown code detected but timestamp validation failed. Expected hour stamp: " + currentHourStamp + ", found digits: " + firstLineDigits );
             return false;
         }
     }
@@ -148,11 +148,11 @@ public class HttpServer {
                 if (foundHandler==null) foundHandler = new HttpErrorHandler( 404, "no matching handler" );
                 Result<HttpMessage,Exception> msgResult = HttpMessage.readHttpMessage(headerBlock,sockInp);
                 if (! msgResult.isOk() ) {
-                    Lib.log( msgResult.err() );
+                    Log.log( msgResult.err() );
                     return;
                 }
                 HttpRequest req = HttpRequest.newHttpRequest( msgResult.ok() );
-                Lib.log( requestId + " " + remoteAddr + " " + headerBlock.firstLine );
+                Log.log( requestId + " " + remoteAddr + " " + headerBlock.firstLine );
                 logRequest( requestId, req );
                 if ( requestFilter != null && ! requestFilter.test(req) ) {
                     HttpResponse response = new HttpErrorResponse( 403, "Forbidden" );
@@ -164,13 +164,13 @@ public class HttpServer {
                 logResponse( requestId, response );
                 Result<Long,Exception> writeResult = response.write(sockOut);
                 if (! writeResult.isOk() ) {
-                    Lib.log( writeResult.err() );
+                    Log.log( writeResult.err() );
                     return;
                 }
                 if ( "close".equalsIgnoreCase( headerBlock.headers.get("Connection") ) ) break;
             }
         } catch ( Throwable t ) {
-            Lib.log(t);
+            Log.log(t);
         } finally {
             try{ rawSockInp.close(); }catch(Throwable ignore){}
             try{ rawSockOut.close(); }catch(Throwable ignore){}
@@ -198,7 +198,7 @@ public class HttpServer {
             logFile.delete();
             Lib.append2file( logFile, content.toString() );
         } catch ( Exception e ) {
-            Lib.log( "Failed to log request: " + e.getMessage() );
+            Log.log( "Failed to log request: " + e.getMessage() );
         }
     }
 
@@ -220,7 +220,7 @@ public class HttpServer {
             }
             Lib.append2file( new File(filename), content.toString() );
         } catch ( Exception e ) {
-            Lib.log( "Failed to log response: " + e.getMessage() );
+            Log.log( "Failed to log response: " + e.getMessage() );
         }
     }
 
@@ -228,19 +228,19 @@ public class HttpServer {
 
     public static boolean basic_TEST_() {
         HttpServer server = new HttpServer(8080);
-        Lib.asrtEQ( server.port, 8080 );
-        Lib.asrt( server.handlers != null );
-        Lib.asrt( server.handlers.isEmpty() );
-        Lib.asrt( server.requestFilter != null ); // Now defaults to SecurityGuard
-        Lib.asrt( server.shutdownCode == null );
-        Lib.asrt( !server.isShutdown() );
+        LibTest.asrtEQ( server.port, 8080 );
+        LibTest.asrt( server.handlers != null );
+        LibTest.asrt( server.handlers.isEmpty() );
+        LibTest.asrt( server.requestFilter != null ); // Now defaults to SecurityGuard
+        LibTest.asrt( server.shutdownCode == null );
+        LibTest.asrt( !server.isShutdown() );
 
         server.requestFilter = req -> req.headerBlock.headers.containsKey("Authorization");
-        Lib.asrt( server.requestFilter != null );
+        LibTest.asrt( server.requestFilter != null );
 
         server.setShutdownCode( "SHUTDOWN123" );
-        Lib.asrtEQ( server.shutdownCode, "SHUTDOWN123" );
-        Lib.asrt( !server.isShutdown() ); // Should still be false
+        LibTest.asrtEQ( server.shutdownCode, "SHUTDOWN123" );
+        LibTest.asrt( !server.isShutdown() ); // Should still be false
 
         return true;
     }
@@ -252,13 +252,13 @@ public class HttpServer {
         // Test valid shutdown request format
         String validShutdownLine = "GET /SHUTDOWN123" + currentHourStamp + "456 HTTP/1.1";
         String validDigits = validShutdownLine.replaceAll("[^0-9]", "");
-        Lib.asrt( validDigits.contains(currentHourStamp), "Valid shutdown line should contain current hour stamp" );
+        LibTest.asrt( validDigits.contains(currentHourStamp), "Valid shutdown line should contain current hour stamp" );
 
         // Test invalid shutdown request (wrong hour)
         String wrongHour = currentHourStamp.substring(0, 8) + "99"; // Change hour to 99
         String invalidShutdownLine = "GET /SHUTDOWN123" + wrongHour + "456 HTTP/1.1";
         String invalidDigits = invalidShutdownLine.replaceAll("[^0-9]", "");
-        Lib.asrt( !invalidDigits.contains(currentHourStamp), "Invalid shutdown line should not contain current hour stamp" );
+        LibTest.asrt( !invalidDigits.contains(currentHourStamp), "Invalid shutdown line should not contain current hour stamp" );
 
         return true;
     }
@@ -266,13 +266,13 @@ public class HttpServer {
     public static boolean shutdownTimestamp_method_TEST_() {
         // Test the shutdownTimestamp() method
         String timestamp = shutdownTimestamp();
-        Lib.asrt( timestamp != null, "Timestamp should not be null" );
-        Lib.asrt( timestamp.length() == 10, "Timestamp should be 10 characters (YYYYMMDDHH)" );
-        Lib.asrt( timestamp.matches("\\d{10}"), "Timestamp should be all digits" );
+        LibTest.asrt( timestamp != null, "Timestamp should not be null" );
+        LibTest.asrt( timestamp.length() == 10, "Timestamp should be 10 characters (YYYYMMDDHH)" );
+        LibTest.asrt( timestamp.matches("\\d{10}"), "Timestamp should be all digits" );
 
         // Test that it represents current time (roughly)
         String fullTimestamp = Lib.timeStamp().replaceAll("[^0-9]", "");
-        Lib.asrt( fullTimestamp.startsWith(timestamp), "Timestamp should match current time prefix" );
+        LibTest.asrt( fullTimestamp.startsWith(timestamp), "Timestamp should match current time prefix" );
 
         return true;
     }
@@ -286,16 +286,16 @@ public class HttpServer {
         // Test valid shutdown request
         Map<String,String> headers = new HashMap<>();
         HttpHeaderBlock validHeader = new HttpHeaderBlock("GET /SHUTDOWN123" + currentHourStamp + " HTTP/1.1", headers);
-        Lib.asrt( server.shouldShutDown(validHeader), "Should shutdown with valid timestamp" );
+        LibTest.asrt( server.shouldShutDown(validHeader), "Should shutdown with valid timestamp" );
 
         // Test invalid shutdown request (wrong timestamp)
         String wrongHour = currentHourStamp.substring(0, 8) + "99";
         HttpHeaderBlock invalidHeader = new HttpHeaderBlock("GET /SHUTDOWN123" + wrongHour + " HTTP/1.1", headers);
-        Lib.asrt( !server.shouldShutDown(invalidHeader), "Should not shutdown with invalid timestamp" );
+        LibTest.asrt( !server.shouldShutDown(invalidHeader), "Should not shutdown with invalid timestamp" );
 
         // Test no shutdown code
         HttpHeaderBlock noCodeHeader = new HttpHeaderBlock("GET /normal-request HTTP/1.1", headers);
-        Lib.asrt( !server.shouldShutDown(noCodeHeader), "Should not shutdown without shutdown code" );
+        LibTest.asrt( !server.shouldShutDown(noCodeHeader), "Should not shutdown without shutdown code" );
 
         return true;
     }
@@ -323,17 +323,17 @@ public class HttpServer {
 
         // Verify log file exists and contains expected content
         File logFile = new File( "./log/" + requestId + ".log" );
-        Lib.asrt( logFile.exists(), "Log file should exist" );
+        LibTest.asrt( logFile.exists(), "Log file should exist" );
 
         String logContent = LibFile.file2string( logFile );
-        Lib.asrt( logContent.contains( "=== REQUEST ===" ), "Should contain request header" );
-        Lib.asrt( logContent.contains( "GET /test HTTP/1.1" ), "Should contain request line" );
-        Lib.asrt( logContent.contains( "Host: example.com" ), "Should contain Host header" );
-        Lib.asrt( logContent.contains( "Test body" ), "Should contain request body" );
+        LibTest.asrt( logContent.contains( "=== REQUEST ===" ), "Should contain request header" );
+        LibTest.asrt( logContent.contains( "GET /test HTTP/1.1" ), "Should contain request line" );
+        LibTest.asrt( logContent.contains( "Host: example.com" ), "Should contain Host header" );
+        LibTest.asrt( logContent.contains( "Test body" ), "Should contain request body" );
 
-        Lib.asrt( logContent.contains( "=== RESPONSE ===" ), "Should contain response header" );
-        Lib.asrt( logContent.contains( "HTTP/1.1 200 OK" ), "Should contain response line" );
-        Lib.asrt( logContent.contains( "Response body" ), "Should contain response body" );
+        LibTest.asrt( logContent.contains( "=== RESPONSE ===" ), "Should contain response header" );
+        LibTest.asrt( logContent.contains( "HTTP/1.1 200 OK" ), "Should contain response line" );
+        LibTest.asrt( logContent.contains( "Response body" ), "Should contain response body" );
 
         // Clean up
         logFile.delete();

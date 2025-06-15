@@ -275,12 +275,12 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         String jsonBody = "{\"user\":\"<%=user%>\",\"action\":\"<%=action%>\",\"value\":\"<%=value%>\"}";
         HttpRequest req = new HttpRequest( headerBlock, jsonBody.getBytes() );
         HttpResponse resp = handler.handle( req );
-        Lib.asrt( resp.headerBlock.firstLine.contains( "200" ), "Expected 200 response but got: " + resp.headerBlock.firstLine );
+        LibTest.asrt( resp.headerBlock.firstLine.contains( "200" ), "Expected 200 response but got: " + resp.headerBlock.firstLine );
         String responseBody = new String( resp.body );
-        Lib.asrt( responseBody.contains( "\"X-User\": \"john-doe\"" ) || responseBody.contains( "\\\"X-User\\\": \\\"john-doe\\\"" ) || responseBody.contains("john-doe"), "Response should contain replaced user value" );
-        Lib.asrt( responseBody.contains( "\"user\":\"john-doe\"" ) || responseBody.contains( "\\\"user\\\":\\\"john-doe\\\"" ) );
-        Lib.asrt( responseBody.contains( "\"action\":\"update\"" ) || responseBody.contains( "\\\"action\\\":\\\"update\\\"" ) );
-        Lib.asrt( responseBody.contains( "\"value\":\"123\"" ) || responseBody.contains( "\\\"value\\\":\\\"123\\\"" ) );
+        LibTest.asrt( responseBody.contains( "\"X-User\": \"john-doe\"" ) || responseBody.contains( "\\\"X-User\\\": \\\"john-doe\\\"" ) || responseBody.contains("john-doe"), "Response should contain replaced user value" );
+        LibTest.asrt( responseBody.contains( "\"user\":\"john-doe\"" ) || responseBody.contains( "\\\"user\\\":\\\"john-doe\\\"" ) );
+        LibTest.asrt( responseBody.contains( "\"action\":\"update\"" ) || responseBody.contains( "\\\"action\\\":\\\"update\\\"" ) );
+        LibTest.asrt( responseBody.contains( "\"value\":\"123\"" ) || responseBody.contains( "\\\"value\\\":\\\"123\\\"" ) );
         return true;
     }
 
@@ -300,8 +300,8 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         HttpResponse resp = handler.handle( req );
         if (resp.headerBlock.firstLine.contains( "200" )) {
             String body = new String( resp.body );
-            Lib.asrt( body.contains( "query=replaced-value" ) || body.contains( "\"query\": \"replaced-value\"" ) );
-            Lib.asrt( body.contains( "num=42" ) || body.contains( "\"num\": \"42\"" ) );
+            LibTest.asrt( body.contains( "query=replaced-value" ) || body.contains( "\"query\": \"replaced-value\"" ) );
+            LibTest.asrt( body.contains( "num=42" ) || body.contains( "\"num\": \"42\"" ) );
         }
         return true;
     }
@@ -316,7 +316,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler( replacements );
         String testBody = "This is SHORT text";
         String result = handler.applyReplacements( testBody );
-        Lib.asrtEQ( result, "This is LONGER_STRING text" );
+        LibTest.asrtEQ( result, "This is LONGER_STRING text" );
         HttpHeaderBlock headerBlock = new HttpHeaderBlock( "POST", "/test", new LinkedHashMap<>() );
         headerBlock = headerBlock.withAddHeader( "Content-Type", "text/plain" );
         headerBlock = headerBlock.withAddHeader( "Content-Length", "18" );
@@ -326,7 +326,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         HttpHeaderBlock modifiedHeaders = handler.parseHeaderBlock( headerString );
         byte[] modifiedBody = handler.applyReplacements( testBody ).getBytes();
         modifiedHeaders = handler.updateContentLength( modifiedHeaders, modifiedBody.length );
-        Lib.asrtEQ( modifiedHeaders.getHeaderValue( "Content-Length" ), "26" );
+        LibTest.asrtEQ( modifiedHeaders.getHeaderValue( "Content-Length" ), "26" );
         return true;
     }
 
@@ -342,7 +342,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler( replacements );
         String testString = "Price: $price for [item] with code a.b";
         String result = handler.applyReplacements( testString );
-        Lib.asrtEQ( result, "Price: 99.99 for widget with code replaced" );
+        LibTest.asrtEQ( result, "Price: 99.99 for widget with code replaced" );
         return true;
     }
 
@@ -361,7 +361,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         HttpHeaderBlock modified = handler.parseHeaderBlock( handler.serializeHeaderBlock( headerBlock ) );
         byte[] modifiedBody = handler.applyReplacements( body ).getBytes();
         modified = handler.updateContentLength( modified, modifiedBody.length );
-        Lib.asrtEQ( modified.getHeaderValue( "Content-Length" ), "28" );
+        LibTest.asrtEQ( modified.getHeaderValue( "Content-Length" ), "28" );
         return true;
     }
 
@@ -400,12 +400,12 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             handler.prepareReplacementsForUrl( "https://google.com" );
             String modifiedHeader = handler.applyReplacements( headerString );
             String modifiedBody = handler.applyReplacements( new String( req.body ) );
-            Lib.asrt( modifiedHeader.contains( "key=1234" ), "Should replace gkey in URL" );
-            Lib.asrt( modifiedHeader.contains( "q=test search" ), "Should replace query in URL" );
-            Lib.asrt( modifiedHeader.contains( "X-API-Key: <%=gkey%>" ), "Should NOT replace second occurrence of gkey" );
-            Lib.asrt( modifiedBody.contains( "apikey=1234" ), "Should replace gkey in body" );
-            Lib.asrt( modifiedHeader.contains( "<%=gkey%>" ), "Should still contain second occurrence of gkey" );
-            Lib.asrt( !modifiedHeader.contains( "<%=query%>" ), "Should not contain query token (only one occurrence)" );
+            LibTest.asrt( modifiedHeader.contains( "key=1234" ), "Should replace gkey in URL" );
+            LibTest.asrt( modifiedHeader.contains( "q=test search" ), "Should replace query in URL" );
+            LibTest.asrt( modifiedHeader.contains( "X-API-Key: <%=gkey%>" ), "Should NOT replace second occurrence of gkey" );
+            LibTest.asrt( modifiedBody.contains( "apikey=1234" ), "Should replace gkey in body" );
+            LibTest.asrt( modifiedHeader.contains( "<%=gkey%>" ), "Should still contain second occurrence of gkey" );
+            LibTest.asrt( !modifiedHeader.contains( "<%=query%>" ), "Should not contain query token (only one occurrence)" );
         }
         { // test API example replacements
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "POST", "/api/v1/users", new LinkedHashMap<>() );
@@ -416,9 +416,9 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             handler.prepareReplacementsForUrl( "https://api.example.com" );
             String modifiedHeader = handler.applyReplacements( handler.serializeHeaderBlock( req.headerBlock ) );
             String modifiedBody = handler.applyReplacements( new String( req.body ) );
-            Lib.asrt( modifiedHeader.contains( "Bearer secret123" ), "Should replace apikey in header" );
-            Lib.asrt( modifiedBody.contains( "\"user\":\"testuser\"" ), "Should replace user in body" );
-            Lib.asrt( modifiedBody.contains( "\"key\":\"secret123\"" ), "Should replace apikey in body (first occurrence)" );
+            LibTest.asrt( modifiedHeader.contains( "Bearer secret123" ), "Should replace apikey in header" );
+            LibTest.asrt( modifiedBody.contains( "\"user\":\"testuser\"" ), "Should replace user in body" );
+            LibTest.asrt( modifiedBody.contains( "\"key\":\"secret123\"" ), "Should replace apikey in body (first occurrence)" );
         }
         { // test fallback replacements
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/test?default=<%=default%>", new LinkedHashMap<>() );
@@ -426,10 +426,10 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
             handler.prepareReplacementsForUrl( "https://unknown.com" );
             String modifiedHeader = handler.applyReplacements( handler.serializeHeaderBlock( req.headerBlock ) );
-            Lib.asrt( !modifiedHeader.contains( "fallback" ), "Should not use fallback for unknown URL" );
+            LibTest.asrt( !modifiedHeader.contains( "fallback" ), "Should not use fallback for unknown URL" );
             handler.prepareReplacementsForUrl( "*" );
             modifiedHeader = handler.applyReplacements( handler.serializeHeaderBlock( req.headerBlock ) );
-            Lib.asrt( modifiedHeader.contains( "default=fallback" ), "Should use fallback when explicitly requested" );
+            LibTest.asrt( modifiedHeader.contains( "default=fallback" ), "Should use fallback when explicitly requested" );
         }
         { // test single replacement per token
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/test", new LinkedHashMap<>() );
@@ -438,7 +438,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             HttpRequest req = new HttpRequest( headerBlock, body.getBytes() );
             handler.prepareReplacementsForUrl( "https://google.com" );
             String modifiedBody = handler.applyReplacements( new String( req.body ) );
-            Lib.asrtEQ( modifiedBody, "key1=1234&key2=<%=gkey%>&key3=<%=gkey%>", "Should only replace first occurrence" );
+            LibTest.asrtEQ( modifiedBody, "key1=1234&key2=<%=gkey%>&key3=<%=gkey%>", "Should only replace first occurrence" );
         }
         tempFile.delete();
         return true;
@@ -480,7 +480,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             String headerString = handler.serializeHeaderBlock( req.headerBlock );
             handler.prepareReplacementsForUrl( "https://google.com/search" );
             String modified = handler.applyReplacements( headerString );
-            Lib.asrt( modified.contains( "key=search-specific-key" ), "Should use exact match" );
+            LibTest.asrt( modified.contains( "key=search-specific-key" ), "Should use exact match" );
         }
 
         { // test fallback to parent
@@ -501,11 +501,11 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
                 urlToTry = nextUrl;
             }
 
-            Lib.asrt( foundUrl != null, "Should find a match somewhere in the hierarchy" );
-            Lib.asrtEQ( foundUrl, "https://google.com/search", "Should find match at /search level" );
+            LibTest.asrt( foundUrl != null, "Should find a match somewhere in the hierarchy" );
+            LibTest.asrtEQ( foundUrl, "https://google.com/search", "Should find match at /search level" );
             String headerString = handler.serializeHeaderBlock( req.headerBlock );
             String modified = handler.applyReplacements( headerString );
-            Lib.asrt( modified.contains( "key=search-level-gkey" ), "Should use /search level replacement: " + modified );
+            LibTest.asrt( modified.contains( "key=search-level-gkey" ), "Should use /search level replacement: " + modified );
         }
 
         { // test true fallback to root
@@ -525,10 +525,10 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
                 urlToTry = handler.getParentUrl( urlToTry );
             }
 
-            Lib.asrtEQ( foundUrl, "https://google.com", "Should fall back to root domain" );
+            LibTest.asrtEQ( foundUrl, "https://google.com", "Should fall back to root domain" );
             String headerString = handler.serializeHeaderBlock( req.headerBlock );
             String modified = handler.applyReplacements( headerString );
-            Lib.asrt( modified.contains( "key=google-root-key" ), "Should use root domain replacement" );
+            LibTest.asrt( modified.contains( "key=google-root-key" ), "Should use root domain replacement" );
         }
 
         { // test no match
@@ -537,7 +537,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
             HttpResponse resp = handler.handle( req );
             // The request should pass through unchanged since no replacements were found
-            Lib.asrt( true, "Should handle unknown URL without error" );
+            LibTest.asrt( true, "Should handle unknown URL without error" );
         }
 
         { // test deep path fallback
@@ -555,8 +555,8 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
             }
 
             String modified = handler.applyReplacements( headerString );
-            Lib.asrt( modified.contains( "key=users-key" ), "Should use /v1/users match, not /v1" );
-            Lib.asrt( modified.contains( "api=<%=apikey%>" ), "Should not replace apikey (not in /v1/users config): " + modified );
+            LibTest.asrt( modified.contains( "key=users-key" ), "Should use /v1/users match, not /v1" );
+            LibTest.asrt( modified.contains( "api=<%=apikey%>" ), "Should not replace apikey (not in /v1/users config): " + modified );
         }
 
         tempFile.delete();
@@ -593,10 +593,10 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         String modifiedUrl = handler.applyReplacements( targetUrl );
 
         // Verify URL was properly replaced
-        Lib.asrtEQ( modifiedUrl, "https://actual-api.example.com/v2/endpoint?key=secret123", "URL should be fully replaced" );
+        LibTest.asrtEQ( modifiedUrl, "https://actual-api.example.com/v2/endpoint?key=secret123", "URL should be fully replaced" );
 
         // Verify header replacement still works (only first occurrence)
-        Lib.asrt( modifiedHeaderString.contains( "Authorization: Bearer <%=key%>" ), "Should NOT replace second occurrence of key" );
+        LibTest.asrt( modifiedHeaderString.contains( "Authorization: Bearer <%=key%>" ), "Should NOT replace second occurrence of key" );
 
         return true;
     }
@@ -630,9 +630,9 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         String modifiedHeader = handler.applyReplacements( headerString );
         String modifiedBody = handler.applyReplacements( body );
 
-        Lib.asrt( modifiedHeader.contains( "key=secret123" ), "Should replace apikey in URL" );
-        Lib.asrt( modifiedHeader.contains( "Bearer <%=apikey%>" ), "Should NOT replace second occurrence of apikey" );
-        Lib.asrt( modifiedBody.contains( "\"user\":\"testuser\"" ), "Should replace user in body" );
+        LibTest.asrt( modifiedHeader.contains( "key=secret123" ), "Should replace apikey in URL" );
+        LibTest.asrt( modifiedHeader.contains( "Bearer <%=apikey%>" ), "Should NOT replace second occurrence of apikey" );
+        LibTest.asrt( modifiedBody.contains( "\"user\":\"testuser\"" ), "Should replace user in body" );
 
         return true;
     }

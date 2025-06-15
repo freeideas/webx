@@ -99,32 +99,32 @@ public class DefaultSecurityGuard extends SecurityGuard {
         headers.put("Host", "example.com");
         HttpHeaderBlock headerBlock = new HttpHeaderBlock("GET", "/test", headers);
         HttpRequest request = new HttpRequest(headerBlock, new byte[0]);
-        Lib.asrt( guard.test(request) );
+        LibTest.asrt( guard.test(request) );
         
         // Test without Host header
         headers.clear();
         headerBlock = new HttpHeaderBlock("GET", "/test", headers);
         request = new HttpRequest(headerBlock, new byte[0]);
-        Lib.asrt( ! guard.test(request) );
+        LibTest.asrt( ! guard.test(request) );
         
         // Test with suspicious path
         headers.put("Host", "example.com");
         headerBlock = new HttpHeaderBlock("GET", "/../etc/passwd", headers);
         request = new HttpRequest(headerBlock, new byte[0]);
-        Lib.asrt( ! guard.test(request) );
+        LibTest.asrt( ! guard.test(request) );
         
         // Test /oscmd without auth
         headers.clear();
         headers.put("Host", "example.com");
         headerBlock = new HttpHeaderBlock("POST", "/oscmd", headers);
         request = new HttpRequest(headerBlock, new byte[0]);
-        Lib.asrt( ! guard.test(request) );
+        LibTest.asrt( ! guard.test(request) );
         
         // Test /oscmd with invalid auth
         headers.put("Authorization", "Bearer invalid-token");
         headerBlock = new HttpHeaderBlock("POST", "/oscmd", headers);
         request = new HttpRequest(headerBlock, new byte[0]);
-        Lib.asrt( ! guard.test(request) );
+        LibTest.asrt( ! guard.test(request) );
         
         // Test /oscmd with valid auth token in Cookie
         // NOTE: Skipping this test for now as it requires a properly persisted token
@@ -133,7 +133,7 @@ public class DefaultSecurityGuard extends SecurityGuard {
         // headers.put("Cookie", "authToken=\"" + validToken.toJson() + "\"");
         // headerBlock = new HttpHeaderBlock("POST", "/oscmd", headers);
         // request = new HttpRequest(headerBlock, new byte[0]);
-        // Lib.asrt( guard.test(request) );
+        // LibTest.asrt( guard.test(request) );
         
         return true;
     }

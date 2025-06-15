@@ -71,7 +71,7 @@ public class Result<S,E> {
             String filespec = logFile.toPath().relativize( Paths.get(".") ).toString();
             map.put("logFile",filespec);
             try { map.put( "logData", LibFile.file2string( logFile ) ); }
-            catch (IOException e) { Lib.log(e); }
+            catch (IOException e) { Log.log(e); }
         }
         return map;
     }
@@ -100,26 +100,26 @@ public class Result<S,E> {
     private static boolean _TEST_() {
         { // test successful result
             Result<Integer, Exception> result = Result.ok(42);
-            Lib.asrt(result.isOk());
-            Lib.asrt(result.ok() == 42);
+            LibTest.asrt(result.isOk());
+            LibTest.asrt(result.ok() == 42);
             try {
                 result.err();
-                Lib.asrt(false, "Should have thrown an exception");
+                LibTest.asrt(false, "Should have thrown an exception");
             } catch (IllegalStateException expected) {}
         }
         { // test error result
             Result<String, Exception> result = Result.err(new Exception("Test error"));
-            Lib.asrt(!result.isOk());
+            LibTest.asrt(!result.isOk());
             try {
                 result.ok();
-                Lib.asrt(false, "Should have thrown an exception");
+                LibTest.asrt(false, "Should have thrown an exception");
             } catch (IllegalStateException expected) {}
         }
         { // test exception on missing isOk check
             Result<String, Exception> result = Result.err(new Exception("Test error"));
             try {
                 result.ok();
-                Lib.asrt(false, "Should have thrown an exception");
+                LibTest.asrt(false, "Should have thrown an exception");
             } catch (IllegalStateException expected) {}
         }
         return true;

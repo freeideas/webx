@@ -185,7 +185,7 @@ public class HttpHeaderBlock {
     @SuppressWarnings("unused")
     private static boolean _TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
-        String rawHeader = Lib.unindent("""
+        String rawHeader = LibString.unindent("""
             HTTP/1.1 200 OK
             Date: Mon, 27 Jul 2009 12:28:53 GMT
             Server: Apache/2.2.14 (Win32)
@@ -200,8 +200,8 @@ public class HttpHeaderBlock {
         Result<HttpHeaderBlock,Exception> result = readFrom(inp);
         if (! result.isOk() ) throw result.err();
         HttpHeaderBlock headerBlock = result.ok();
-        Lib.asrt( headerBlock.getContentLength() == 10 );
-        Lib.asrt( inp.read() == (int)'1' );
+        LibTest.asrt( headerBlock.getContentLength() == 10 );
+        LibTest.asrt( inp.read() == (int)'1' );
         return true;
     }
 
@@ -238,7 +238,7 @@ public class HttpHeaderBlock {
         );
         String actual = headerBlock.getRequestPath();
         String expected = "/path";
-        Lib.asrtEQ(actual,expected);
+        LibTest.asrtEQ(actual,expected);
         return true;
     }
 

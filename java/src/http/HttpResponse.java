@@ -4,6 +4,7 @@ import java.io.*;
 import jLib.Lib;
 import jLib.Result;
 import jLib.LibTest;
+import jLib.LibString;
 
 
 
@@ -25,7 +26,7 @@ public class HttpResponse extends HttpMessage {
 
     public static HttpResponse redirect( String uri ) {
         HttpHeaderBlock hed = HttpHeaderBlock.redirect(uri);
-        String body = Lib.unindent("""
+        String body = LibString.unindent("""
             <html>
             <head>
                 <meta http-equiv="refresh" content="0;URL='""" + uri + """
@@ -50,7 +51,7 @@ public class HttpResponse extends HttpMessage {
     @SuppressWarnings("unused")
     private static boolean _TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
-        String rawHeader = Lib.unindent("""
+        String rawHeader = LibString.unindent("""
             HTTP/1.1 200 OK
             Date: Mon, 27 Jul 2009 12:28:53 GMT
             Server: Apache/2.2.14 (Win32)
@@ -67,8 +68,8 @@ public class HttpResponse extends HttpMessage {
         if (! msgRes.isOk() ) throw msgRes.err();
         HttpMessage msg = msgRes.ok();
         HttpResponse res = newHttpResponse(msg);
-        Lib.asrt( res.body.length == 10 );
-        Lib.asrt( res.body[0] == (int)'1' );
+        LibTest.asrt( res.body.length == 10 );
+        LibTest.asrt( res.body[0] == (int)'1' );
         return true;
     }
 

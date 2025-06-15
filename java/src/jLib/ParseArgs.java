@@ -126,7 +126,7 @@ public class ParseArgs {
 
 
     public String getHelp() {
-        if ( Lib.isEmpty(appName) ) appName =Lib.nvl( Lib.getMainExeFile(), "(this program)" );
+        if ( Lib.isEmpty(appName) ) appName =Lib.nvl( LibApp.getMainExeFile(), "(this program)" );
         final var LINE_LEN = 78;
         StringBuilder sb = new StringBuilder();
         // print command-line args
@@ -193,7 +193,7 @@ public class ParseArgs {
             }
         }
         sb.append(sepLine);
-        sb.append(Lib.normalSpace("""
+        sb.append(LibString.normalSpace("""
             * Args can look like "-arg=str" or "arg=true", or for boolean, just "--arg".
         """)+"\n");
         sb.append( "* Argument names can be abbreviated.\n" );
@@ -315,10 +315,10 @@ public class ParseArgs {
         if ( findLineNumber ) throw new RuntimeException();
         List<int[]> results = new ArrayList<>();
         for ( int[] comb: Lib.iterable( combinations(5,3) ) ) results.add(comb);
-        Lib.asrt( results.size() == 21 );
+        LibTest.asrt( results.size() == 21 );
         for ( int[] comb: results ) {
-            Lib.asrt( comb.length == 3 );
-            Lib.asrt( comb[0]+comb[1]+comb[2] == 5 );
+            LibTest.asrt( comb.length == 3 );
+            LibTest.asrt( comb[0]+comb[1]+comb[2] == 5 );
         }
         return true;
     }
@@ -397,10 +397,10 @@ public class ParseArgs {
             List<String> eee = p.getMulti( "eee",List.of("e1","e2"),"What are they?" );
             String help = p.getHelp();
             System.out.println(help);
-            Lib.asrtEQ( aaa, 10 );
-            Lib.asrtEQ( bbb, true );
-            Lib.asrtEQ( ccc, "a" );
-            Lib.asrtEQ( ddd, 2.3f );
+            LibTest.asrtEQ( aaa, 10 );
+            LibTest.asrtEQ( bbb, true );
+            LibTest.asrtEQ( ccc, "a" );
+            LibTest.asrtEQ( ddd, 2.3f );
         }
         return true;
     }
@@ -416,27 +416,27 @@ public class ParseArgs {
             LibFile.string2file( "\"hello world\"", stringFile, false );
             String[] args1 = { "--start", "@"+mapFile.getPath(), "--end" };
             String[] result1 = expandFromFiles(args1);
-            Lib.asrtEQ( result1.length, 4 );
-            Lib.asrtEQ( result1[0], "--start" );
-            Lib.asrtEQ( result1[1], "--port=8080" );
-            Lib.asrtEQ( result1[2], "--debug=true" );
-            Lib.asrtEQ( result1[3], "--end" );
+            LibTest.asrtEQ( result1.length, 4 );
+            LibTest.asrtEQ( result1[0], "--start" );
+            LibTest.asrtEQ( result1[1], "--port=8080" );
+            LibTest.asrtEQ( result1[2], "--debug=true" );
+            LibTest.asrtEQ( result1[3], "--end" );
             String[] args2 = { "--begin", "@"+listFile.getPath(), "--finish" };
             String[] result2 = expandFromFiles(args2);
-            Lib.asrtEQ( result2.length, 4 );
-            Lib.asrtEQ( result2[0], "--begin" );
-            Lib.asrtEQ( result2[1], "--verbose" );
-            Lib.asrtEQ( result2[2], "--count=5" );
-            Lib.asrtEQ( result2[3], "--finish" );
+            LibTest.asrtEQ( result2.length, 4 );
+            LibTest.asrtEQ( result2[0], "--begin" );
+            LibTest.asrtEQ( result2[1], "--verbose" );
+            LibTest.asrtEQ( result2[2], "--count=5" );
+            LibTest.asrtEQ( result2[3], "--finish" );
             String[] args3 = { "--prefix", "@"+stringFile.getPath(), "--suffix" };
             String[] result3 = expandFromFiles(args3);
-            Lib.asrtEQ( result3.length, 3 );
-            Lib.asrtEQ( result3[0], "--prefix" );
-            Lib.asrtEQ( result3[1], "hello world" );
-            Lib.asrtEQ( result3[2], "--suffix" );
+            LibTest.asrtEQ( result3.length, 3 );
+            LibTest.asrtEQ( result3[0], "--prefix" );
+            LibTest.asrtEQ( result3[1], "hello world" );
+            LibTest.asrtEQ( result3[2], "--suffix" );
             String[] args4 = { "--no-files", "--here" };
             String[] result4 = expandFromFiles(args4);
-            Lib.asrt( result4==args4 );
+            LibTest.asrt( result4==args4 );
         }
         return true;
     }

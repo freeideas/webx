@@ -271,7 +271,7 @@ public class JsonEncoder {
             input = "strange unicode: \u0004\u0005\u1006\u0207\b\t\n\r\f";
             output = encodeString( input.toString() );
             expected = "\"strange unicode: \\u0004\\u0005\\u1006\\u0207\\b\\t\\n\\r\\f\"";
-            Lib.asrtEQ(output,expected);
+            LibTest.asrtEQ(output,expected);
         }
         {
             input = new java.util.TreeMap<Object,Object>( Map.of(
@@ -298,7 +298,7 @@ public class JsonEncoder {
             output = encode(input,"\t");
             //System.out.println(output);
             output = output.replaceAll("\\s+","");
-            Lib.asrtEQ( output, encode(input,null) );
+            LibTest.asrtEQ( output, encode(input,null) );
             expected = """
             {
                 "a":[1,2,3],
@@ -319,7 +319,7 @@ public class JsonEncoder {
                 output = output.substring(1);
                 expected = expected.substring(1);
             }
-            // Lib.asrtEQ(output,expected); // test fails but probably not really broken
+            // LibTest.asrtEQ(output,expected); // test fails but probably not really broken
         }
         { // test field serialization to Map
             class MyOwnClass {
@@ -352,7 +352,7 @@ public class JsonEncoder {
             """.replaceAll("\\s+","");
             // replace all __class__ entries with nothing
             output = output.replaceAll("\"__class__\":\".*?\",", "");
-            Lib.asrtEQ(output,expected);
+            LibTest.asrtEQ(output,expected);
         }
         { // test integer or boolean as key
             input = Map.of( 123, "abc" );
@@ -365,7 +365,7 @@ public class JsonEncoder {
             expected = """
                 { true: "abc" }
             """.replaceAll("\\s+","");
-            Lib.asrtEQ(output,expected);
+            LibTest.asrtEQ(output,expected);
         }
         return true;
     }

@@ -49,11 +49,11 @@ public class Lib {
     @SuppressWarnings("unused")
     private static boolean normalizePath_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
-        asrtEQ( normalizePath("a/b/c"), "a/b/c" );
-        asrtEQ( normalizePath("//a/b/c/"), "/a/b/c" );
-        asrtEQ( normalizePath("sftp://a.com/b//c/..//"), "sftp://a.com/b" );
-        asrtEQ( normalizePath(""), "" );
-        asrtEQ( normalizePath(null), null );
+        LibTest.asrtEQ( normalizePath("a/b/c"), "a/b/c" );
+        LibTest.asrtEQ( normalizePath("//a/b/c/"), "/a/b/c" );
+        LibTest.asrtEQ( normalizePath("sftp://a.com/b//c/..//"), "sftp://a.com/b" );
+        LibTest.asrtEQ( normalizePath(""), "" );
+        LibTest.asrtEQ( normalizePath(null), null );
         return true;
     }
 
@@ -103,19 +103,19 @@ public class Lib {
         if (findLineNumber) throw new RuntimeException();
         // Test null bindAddress (all interfaces)
         try ( ServerSocket ss = createServerSocket( 19999, false, null, null, null ) ) {
-            asrt( ss.getLocalSocketAddress().toString().contains("0.0.0.0") );
+            LibTest.asrt( ss.getLocalSocketAddress().toString().contains("0.0.0.0") );
         }
         // Test localhost
         try ( ServerSocket ss = createServerSocket( 19999, false, null, null, "localhost" ) ) {
-            asrt( ss.getLocalSocketAddress().toString().contains("127.0.0.1") );
+            LibTest.asrt( ss.getLocalSocketAddress().toString().contains("127.0.0.1") );
         }
         // Test specific IP
         try ( ServerSocket ss = createServerSocket( 19999, false, null, null, "127.0.0.1" ) ) {
-            asrt( ss.getLocalSocketAddress().toString().contains("127.0.0.1") );
+            LibTest.asrt( ss.getLocalSocketAddress().toString().contains("127.0.0.1") );
         }
         // Test invalid address (fallback to all interfaces)
         try ( ServerSocket ss = createServerSocket( 19999, false, null, null, "badaddress" ) ) {
-            asrt( ss.getLocalSocketAddress().toString().contains("0.0.0.0") );
+            LibTest.asrt( ss.getLocalSocketAddress().toString().contains("0.0.0.0") );
         }
         return true;
     }
@@ -190,7 +190,7 @@ public class Lib {
             Map<Object,Object> expected = JsonDecoder.decodeMap("""
                 { "one":1, "two":2, "three":3, "four":4, "five":5 }
             """);
-            asrtEQ(expected,result);
+            LibTest.asrtEQ(expected,result);
         }
         { // simple lists
             Object src = JsonDecoder.decode("""
@@ -203,7 +203,7 @@ public class Lib {
             Object expected = JsonDecoder.decode("""
                 [1,2,3,4]
             """);
-            asrtEQ(expected,result);
+            LibTest.asrtEQ(expected,result);
         }
         { // mixture of lists and maps
             Object src = JsonDecoder.decode("""
@@ -218,7 +218,7 @@ public class Lib {
             """);
             String expStr = JsonEncoder.encode(expected);
             String resStr = JsonEncoder.encode(result);
-            asrtEQ(expStr,resStr);
+            LibTest.asrtEQ(expStr,resStr);
         }
         return true;
     }
@@ -292,7 +292,7 @@ public class Lib {
         long now = System.currentTimeMillis() * 1000 + 1L;
         long micros = microsSinceEpoch( timeStamp(now) );
         long diff = Math.abs(micros - now);
-        asrt(diff==0);
+        LibTest.asrt(diff==0);
         return true;
     }
 
@@ -309,7 +309,7 @@ public class Lib {
         long microsSinceEpoch = toMicrosSinceEpoch(now);
         long expected = millisSinceEpoch * 1000;
         long diff = Math.abs(microsSinceEpoch - expected);
-        asrt( diff < 2000 ); // i.e. within 2 millis
+        LibTest.asrt( diff < 2000 ); // i.e. within 2 millis
         return true;
     }
 
@@ -371,14 +371,14 @@ public class Lib {
     @SuppressWarnings("unused")
     private static boolean isParentChildPath_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
-        asrt( isParentChildPath("a/b/c","a/b/c/d") );
-        asrt( isParentChildPath("a/b\\c/d","a/b//c") );
-        asrt( isParentChildPath("a/b/c","a/b/c") );
-        asrt( isParentChildPath("/a/b/c","\\a/b/c/..") );
-        asrt( isParentChildPath("a/b/./c/..","a/b/c") );
-        asrt(! isParentChildPath("a/b/c","a/b/c/../d") );
-        asrt( isParentChildPath("a/b/c/../d","a/b/d") );
-        asrt(! isParentChildPath("a/b/c","a/b/c/../../d") );
+        LibTest.asrt( isParentChildPath("a/b/c","a/b/c/d") );
+        LibTest.asrt( isParentChildPath("a/b\\c/d","a/b//c") );
+        LibTest.asrt( isParentChildPath("a/b/c","a/b/c") );
+        LibTest.asrt( isParentChildPath("/a/b/c","\\a/b/c/..") );
+        LibTest.asrt( isParentChildPath("a/b/./c/..","a/b/c") );
+        LibTest.asrt(! isParentChildPath("a/b/c","a/b/c/../d") );
+        LibTest.asrt( isParentChildPath("a/b/c/../d","a/b/d") );
+        LibTest.asrt(! isParentChildPath("a/b/c","a/b/c/../../d") );
         return true;
     }
 
@@ -396,115 +396,6 @@ public class Lib {
 
 
 
-    public static class ReaderInputStream extends InputStream {
-        private final Reader r;
-        private Charset cs = StandardCharsets.UTF_8;
-        InputStream saved = new ByteArrayInputStream( new byte[0] );
-
-        public ReaderInputStream( Reader r ) {
-            this.r = r;
-        }
-        public ReaderInputStream( Reader r, Charset cs ) {
-            this.r = r;
-            this.cs = cs;
-        }
-
-        @Override
-        public int read() throws IOException {
-            if ( saved.available() > 0 ) return saved.read();
-            int c = r.read();
-            if (c<0) return -1;
-            String s = ""+(char)c;
-            byte[] bArr = s.getBytes(cs);
-            if ( bArr.length > 1 ) {
-                saved = new ByteArrayInputStream(bArr);
-                return saved.read();
-            }
-            return bArr[0];
-        }
-
-    }
-    @SuppressWarnings("unused")
-    private static boolean readerInputStream_TEST_() throws Exception {
-        String testString = (
-            "0¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ"
-        );
-        Reader r = new StringReader(testString);
-        InputStream inp = new ReaderInputStream(r);
-        byte[] bArr = toBytes(inp,true);
-        String result = new String( bArr, StandardCharsets.UTF_8 );
-        asrtEQ(result,testString);
-        return true;
-    }
-
-
-
-    public static class WriterOutputStream extends OutputStream {
-        private final Writer w;
-        private final Charset cs;
-        ByteArrayOutputStream saved = new ByteArrayOutputStream();
-
-        public WriterOutputStream( Writer w ) {
-            this(w,null);
-        }
-        public WriterOutputStream( Writer writer, Charset cs ) {
-            if (cs==null) cs = StandardCharsets.UTF_8;
-            this.w = writer;
-            this.cs = cs;
-        }
-        @Override
-        public void write(int b) throws IOException {
-            saved.write(b);
-            attemptDecode();
-        }
-        @Override
-        public void flush() throws IOException {
-            w.flush();
-        }
-        @Override
-        public void close() throws IOException {
-            for (byte b : saved.toByteArray() ) w.write(b);
-            w.flush();
-            w.close();
-        }
-        private static char[] decode( byte[] bArr, Charset cs ) {
-            if ( bArr==null || bArr.length==0 ) return new char[0];
-            String s = new String(bArr,cs);
-            if ( s==null || s.length()==0 ) return new char[0]; // probably not possible
-            StringBuilder sb = new StringBuilder();
-            final char invalidChar = '�';
-            // copy all but invalid characters
-            for (int i=0; i<s.length(); i++) {
-                char c = s.charAt(i);
-                if (c==invalidChar) continue;
-                sb.append(c);
-            }
-            return sb.toString().toCharArray();
-        }
-
-        private void attemptDecode() throws IOException {
-            if ( saved.size() <= 0 ) return;
-            byte[] bArr = saved.toByteArray();
-            char[] cArr = decode(bArr,cs);
-            if (cArr.length==0) return;
-            saved.reset();
-            w.write(cArr);
-        }
-    }
-    @SuppressWarnings("unused")
-    private static boolean writerOutputStream_TEST_() throws Exception {
-        String testString = (
-            "0¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ"
-        );
-        StringWriter sw = new StringWriter();
-        OutputStream os = new WriterOutputStream(sw);
-        byte[] testBytes = testString.getBytes(StandardCharsets.UTF_8);
-        for (byte b : testBytes) os.write(b);
-        os.close();
-        String result = sw.toString();
-        asrtEQ(result,testString);
-        return true;
-    }
 
 
 
@@ -520,40 +411,12 @@ public class Lib {
 
 
 
-    public static char[] readFully( Reader r ) {
-        if (r==null) return null;
-        try {
-            StringBuilder sb = new StringBuilder();
-            char[] buf = new char[1024];
-            int len;
-            while ( (len=r.read(buf)) > 0 ) sb.append(buf,0,len);
-            return sb.toString().toCharArray();
-        } catch ( Throwable t ) {
-            log(t);
-            return null;
-        }
-    }
-    public static byte[] readFully( InputStream inp ) {
-        if (inp==null) return null;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            byte[] buf = new byte[1024];
-            int len;
-            while ( (len=inp.read(buf)) > 0 ) baos.write(buf,0,len);
-            return baos.toByteArray();
-        } catch ( Throwable t ) {
-            log(t);
-            return null;
-        }
-    }
 
 
 
-    public static boolean logOnce( Object o ) { return Log.logOnce( o ); }
-    public static boolean logOnce( Object o, long perMillis ) { return Log.logOnce( o, perMillis ); }
-    public static boolean logOnce( String msgID, Object msg, long perMillis ) {
-        return Log.logOnce( msgID, msg, perMillis );
-    }
+
+
+
 
 
 
@@ -590,14 +453,14 @@ public class Lib {
             nanoTimer = System.nanoTime() - nanoTimer;
             if ( count>0 && nanoTimer > count*1000*1000 ) { // more than 1 milli per byte
                 long millis = nanoTimer / (1000*1000);
-                if (millis>1000)logOnce(
+                if (millis>1000)Log.logOnce(
                     "Lib.copy_slowRead", "copy() took "+millis+" millis to read "+count+" bytes", 5000
                 );
             }
             if (count<0) break;
             if (count==0) {
                 try {
-                    logOnce( "copy() read 0 bytes, sleeping" );
+                    Log.logOnce( "copy() read 0 bytes, sleeping" );
                     Thread.sleep(100);
                 } catch ( InterruptedException ie ) {}
                 continue;
@@ -607,7 +470,7 @@ public class Lib {
             nanoTimer = System.nanoTime() - nanoTimer;
             if ( count>0 && nanoTimer > count*1000*1000 ) { // more than 1 milli per byte
                 long millis = nanoTimer / (1000*1000);
-                if (millis>1000)logOnce(
+                if (millis>1000)Log.logOnce(
                     "Lib.copy_slowWrite", "copy() took "+millis+" millis to write "+count+" bytes", 5000
                 );
             }
@@ -620,9 +483,9 @@ public class Lib {
         for (OutputStream out : outs) if(out!=null) out.flush();
         nanoTimer = System.nanoTime() - nanoTimer;
         if ( nanoTimer > 500*1000*1000 ) {
-            if ( logOnce("copy() took > 500 millis to flush") ) {
+            if ( Log.logOnce("copy() took > 500 millis to flush") ) {
                 long millis = nanoTimer / (1000*1000);
-                log( "copy() took "+millis+" millis to flush" );
+                Log.log( "copy() took "+millis+" millis to flush" );
             }
         }
         return totalCount;
@@ -639,9 +502,9 @@ public class Lib {
         for (int i=0; i<bArr.length; i++) bArr[i] = (byte)i;
         InputStream inp = new ByteArrayInputStream(bArr);
         copy(inp,slowOut);
-        asrt(!( // one of these messages should have been logged already
-            logOnce( "", "Lib.copy_slowRead", 5000 ) &&
-            logOnce( "", "Lib.copy_slowWrite", 5000 )
+        LibTest.asrt(!( // one of these messages should have been logged already
+            Log.logOnce( "", "Lib.copy_slowRead", 5000 ) &&
+            Log.logOnce( "", "Lib.copy_slowWrite", 5000 )
         ));
         return true;
     }
@@ -653,7 +516,7 @@ public class Lib {
         if ( o instanceof URL url ) return url.openStream();
         if ( o instanceof byte[] bArr ) return new ByteArrayInputStream(bArr);
         if ( o instanceof InputStream ) return (InputStream)o;
-        if ( o instanceof Reader r ) return new ReaderInputStream(r);
+        if ( o instanceof Reader r ) return LibIO.readerInputStream(r);
         if ( o instanceof File ) {
             File f = (File)o;
             if ( f.isFile() ) return new FileInputStream(f);
@@ -706,8 +569,8 @@ public class Lib {
         if (t!=null) throw new RuntimeException(t);
         t = append2file(f," Goodbye.");
         if (t!=null) throw new RuntimeException(t);
-        // asrtEQ( "Hello, world! Goodbye.", file2string(f,null) ); // file2string removed
-        asrt( f.delete() );
+        // LibTest.asrtEQ( "Hello, world! Goodbye.", file2string(f,null) ); // file2string removed
+        LibTest.asrt( f.delete() );
         return true;
     }
 
@@ -736,48 +599,9 @@ public class Lib {
 
 
 
-    public static String toString( byte[] bArr, int off, int len ) {
-        if (bArr==null) return "";
-        len = Math.min( len, bArr.length-off );
-        byte[] b = new byte[len];
-        System.arraycopy( bArr,off, b,0, len );
-        return JsonEncoder.encode(b);
-    }
-    public static String toString( Object o ) {
-        if (o==null) return "";
-        if ( o instanceof InputStream inp ) {
-            try { inp.mark( Integer.MAX_VALUE ); }catch(Throwable ignore){}
-            try {
-                byte[] bArr = readFully(inp);
-                try { inp.reset(); }catch(Throwable ignore){}
-                return toString(bArr);
-            } catch (Throwable t) {
-                return toString(t);
-            }
-        }
-        try {
-            if ( o instanceof byte[] b ) {
-                if ( isBinary(b) ) return toString(b,0,b.length);
-                o = new String(b);
-            }
-            return JsonEncoder.encode(o," ");
-        } catch (Throwable t) {
-            return ""+o;
-        }
-    }
 
 
 
-    public static Object logException( Object msg ) {
-        RuntimeException re = msg instanceof RuntimeException r ? r : null;
-        String s = msg instanceof String str ? str : toString(msg);
-        try { if (re==null) throw new RuntimeException(s); } catch ( RuntimeException e ) { re = e; }
-        log(re);
-        return msg;
-    }
-    public static Object log( Object o ) {
-        return Log.log(o);
-    }
 
 
 
@@ -790,7 +614,7 @@ public class Lib {
         if (findLineNumber) throw new RuntimeException();
         Iterator<?> it = List.of( "whatev" ).iterator();
         Iterable<?> itbl = asIterable(it);
-        for ( Object o : itbl ) asrtEQ( "whatev", o );
+        for ( Object o : itbl ) LibTest.asrtEQ( "whatev", o );
         return true;
     }
 
@@ -872,112 +696,6 @@ public class Lib {
 
 
 
-    public static String evalUrlTemplate( String template, Map<?,?> vars ) {
-        return evalTemplate(template,"\\$","\\$",vars);
-    }
-    public static String evalTemplate( File templateFile, Map<?,?> vars ) throws IOException {
-        // Read file contents inline since file2string was removed
-        char[] cArr = new char[8192];
-        StringBuilder sb = new StringBuilder();
-        try (FileInputStream fInp = new FileInputStream(templateFile);
-             InputStreamReader rInp = new InputStreamReader(fInp);
-             BufferedReader bInp = new BufferedReader(rInp)) {
-            while (true) {
-                int readCount = bInp.read(cArr);
-                if (readCount<0) break;
-                if (readCount>0) sb.append(cArr, 0, readCount);
-            }
-        }
-        return evalTemplate( sb.toString(), vars );
-    }
-    public static String evalTemplate( String template, Map<?,?> vars ) {
-        return evalTemplate(template,"\\{\\{\\s*","\\s*\\}\\}",vars);
-    }
-    public static String evalTemplate( String template, String openRegex, String closeRegex, Map<?,?> vars ) {
-        if (template==null) return null;
-        if (vars==null) return template;
-        Matcher mat = null;
-        try {
-            mat = Pattern.compile(
-                openRegex +"\\s*(.*?)\\s*"+ closeRegex
-            ).matcher(template);
-        } catch ( PatternSyntaxException e ) {
-            System.err.println( formatException(e) );
-            return template;
-        }
-        ScriptEngineManager manager = null;
-        ScriptEngine engine = null;
-        StringBuffer result = new StringBuffer();
-        Map<String,Object> normalVars = new LinkedHashMap<>();
-        for ( Map.Entry<?,?> entry : vars.entrySet() ) {
-            Object key = entry.getKey();
-            if (key==null) continue;
-            Object val = entry.getValue();
-            normalVars.put( key.toString(), val );
-        }
-        while ( mat.find() ) {
-            //String wholeExpression = mat.group();
-            String varName = mat.group(1);
-            String keyName = findKey(varName,normalVars);
-            Object value = null;
-            if ( keyName!=null && vars.containsKey(keyName) ) {
-                value = vars.get(keyName);
-            } else {
-                if (manager==null) {
-                    manager = new ScriptEngineManager();
-                    engine = manager.getEngineByName("js");
-                    if ( engine==null ) {
-                        List<ScriptEngineFactory> factories = manager.getEngineFactories();
-                        for (ScriptEngineFactory factory : factories) {
-                            engine = factory.getScriptEngine();
-                            break;
-                        }
-                    }
-                    if (engine!=null) {
-                        Bindings bindings = engine.createBindings();
-                        for( Map.Entry<String,Object> entry : normalVars.entrySet() ) {
-                            bindings.put(entry.getKey(), entry.getValue());
-                        }
-                        engine.setBindings( bindings, ScriptContext.ENGINE_SCOPE );
-                    }
-                }
-                try {
-                    value = engine==null ? null : engine.eval(varName);
-                } catch ( ScriptException e ) {
-                    System.err.println( formatException(e) );
-                }
-            }
-            if (value==null) value="";
-            mat.appendReplacement( result, Matcher.quoteReplacement( value.toString() ) );
-        }
-        mat.appendTail(result);
-        return result.toString();
-    }
-    @SuppressWarnings("unused")
-    private static boolean evalTemplate_TEST_( boolean findLineNumber ) {
-        if (findLineNumber) throw new RuntimeException();
-        { // mustache-like
-            String template = "The {{ NOUN }} in {{ COUNTRY }} stays mainly on the {{ pLaCe }}.";
-            Map<String,Object> map = new LinkedHashMap<>();
-            map.put("nOuN","rain");
-            map.put("country","Spain");
-            map.put("place","plain");
-            String result = evalTemplate(template,map);
-            String expected = "The rain in Spain stays mainly on the plain.";
-            Lib.asrt(result.equals(expected), "evalTemplate jsp-like test failed");
-        }
-        { // url-safe
-            String template = "The $NOUN$ in $cOuNtrY$ stays mainly on the $PLACE$.";
-            Map<String,Object> map = new LinkedHashMap<>();
-            map.put("noun","rain");
-            map.put("country","Spain");
-            map.put("PLACE","plain");
-            String result = evalUrlTemplate(template,map);
-            String expected = "The rain in Spain stays mainly on the plain.";
-            Lib.asrt(result.equals(expected), "evalUrlTemplate test failed");
-        }
-        return true;
-    }
 
 
 
@@ -1049,19 +767,19 @@ public class Lib {
             String expected = JsonEncoder.encode( JsonDecoder.decode( """
                 { "a" : [ null, null, {"c":"ok"} ] }
             """ ) );
-            Lib.asrtEQ(result,expected);
+            LibTest.asrtEQ(result,expected);
         }
         { // modify the tree
             Object wasVal = put(
                 tree, List.of("a",2,"c"),
                 new LinkedHashMap<Object,Object>( Map.of("whatev",3) )
             );
-            Lib.asrtEQ( wasVal, "ok" );
+            LibTest.asrtEQ( wasVal, "ok" );
             String result = JsonEncoder.encode(tree);
             String expected = JsonEncoder.encode( JsonDecoder.decode( """
                 { "a" : [ null, null, {"c":{"whatev":3}} ] }
             """ ) );
-            Lib.asrtEQ(result,expected);
+            LibTest.asrtEQ(result,expected);
         }
         return true;
     }
@@ -1180,63 +898,14 @@ public class Lib {
 		long startTime = System.currentTimeMillis();
 		String hashed = hashPassword(password,minStrengthMillis);
 		long elapsedTime = System.currentTimeMillis() - startTime;
-		asrt( elapsedTime >= minStrengthMillis );
-		asrt( verifyPassword(password,hashed) );
+		LibTest.asrt( elapsedTime >= minStrengthMillis );
+		LibTest.asrt( verifyPassword(password,hashed) );
         //System.out.println( "number of iterations: "+ Long.parseLong(hashed.split(":")[0],36) );
 		return true;
 	}
 
 
 
-    /*
-     * 	Removing leading and trailing whitespace,
-     * 	and replaces all other whitespace with a single space.
-     */
-    public static String nw( CharSequence cs ) {
-        return normalSpace(cs);
-    }
-    public static String normalSpace( CharSequence cs ) {
-        String s = cs.toString();
-        s = s.trim().replaceAll( "\\s+", " " );
-        return s;
-    }
-    @SuppressWarnings("unused")
-    private static boolean normalSpace_TEST_() {
-        String s = """
-            part1   part2
-            \n part3 \t \r
-        """;
-        s = normalSpace(s);
-        return s.equals("part1 part2 part3");
-    }
-
-
-
-    public static String onlyAlphaNum( Object o ) {
-        if (o==null) return "";
-        String str = o.toString();
-        int i, len=str.length();
-        StringBuffer buf = new StringBuffer( Math.min(10*1024,len) );
-        for (i=0; i<len; i++) {
-            char c = str.charAt(i);
-            if (
-                ( c>='a' && c<='z' ) ||
-                ( c>='A' && c<='Z' ) ||
-                ( c>='0' && c<='9' )
-            ) {
-                buf.append(c);
-            }
-        }
-        return buf.toString();
-    }
-    @SuppressWarnings("unused")
-    private static boolean onlyAlphaNum_TEST_( boolean findLineNumber ) {
-        if (findLineNumber) throw new RuntimeException();
-        asrtEQ( "abc123", onlyAlphaNum("abc123") );
-        asrtEQ( "abc123", onlyAlphaNum("abc123!") );
-        asrtEQ( "abc123", onlyAlphaNum("abc123!") );
-        return true;
-    }
 
 
 
@@ -1257,7 +926,7 @@ public class Lib {
         int charsToFill = totalLen - buf.length();
         int STAMP_LEN = "YYYYMMDDHHMMSS".length(); // not every possible milli-value is possible on some platforms
         if ( charsToFill > 4+STAMP_LEN ) {
-            String timeStamp = onlyAlphaNum( timeStamp() );
+            String timeStamp = LibString.onlyAlphaNum( timeStamp() );
             if ( timeStamp.length() > STAMP_LEN ) timeStamp = timeStamp.substring(0,STAMP_LEN);
             buf.append(timeStamp);
         }
@@ -1285,8 +954,8 @@ public class Lib {
         Set<String> ids = new HashSet<>();
         for (int i=0; i<100; i++) {
             String id = uniqID(prefix,len);
-            asrtEQ( id.length(), len+1, "length wrong" );
-            asrt(! ids.contains(id), "not unique!" );
+            LibTest.asrtEQ( id.length(), len+1, "length wrong" );
+            LibTest.asrt(! ids.contains(id), "not unique!" );
             ids.add(id);
         }
         return true;
@@ -1308,10 +977,10 @@ public class Lib {
     }
     @SuppressWarnings("unused")
     private static boolean toBase62_TEST_( boolean findLineNumber ) {
-        asrtEQ( toBase62(0), "0" );
-        asrtEQ( toBase62(1), "1" );
-        asrtEQ( toBase62(61), "z" );
-        asrtEQ( toBase62(62), "10" );
+        LibTest.asrtEQ( toBase62(0), "0" );
+        LibTest.asrtEQ( toBase62(1), "1" );
+        LibTest.asrtEQ( toBase62(61), "z" );
+        LibTest.asrtEQ( toBase62(62), "10" );
         return true;
     }
 
@@ -1394,13 +1063,13 @@ public class Lib {
         Integer[] vals = map.values().toArray(new Integer[0]);
         List<String> expectedKeys = listOf("a","b","c",null);
         List<Integer> expectedVals = listOf(1,2,3,null);
-        asrtEQ(keys,expectedKeys);
-        asrtEQ(vals,expectedVals);
+        LibTest.asrtEQ(keys,expectedKeys);
+        LibTest.asrtEQ(vals,expectedVals);
         String expectedStr = "{\"a\":1,\"b\":2,\"c\":3,null:null}";
-        asrtEQ( map.toString(), expectedStr );
+        LibTest.asrtEQ( map.toString(), expectedStr );
         // odd number of args ok as long as last one is null
         map = mapOf( "a",1, "b",2, "c",3, null );
-        asrtEQ( map.size(), 3 );
+        LibTest.asrtEQ( map.size(), 3 );
         try {
             map = mapOf( "a",1, "b",2, "c",3, "d" );
             throw new RuntimeException("should have thrown IllegalArgumentException");
@@ -1427,9 +1096,9 @@ public class Lib {
         List<Integer> list = listOf( 1,2,3,null );
         Integer[] vals = list.toArray(new Integer[0]);
         Integer[] expectedVals = {1,2,3,null};
-        asrtEQ(vals,expectedVals);
+        LibTest.asrtEQ(vals,expectedVals);
         String expectedStr = "[1,2,3,null]";
-        asrtEQ( list.toString(), expectedStr );
+        LibTest.asrtEQ( list.toString(), expectedStr );
         return true;
     }
 
@@ -1459,10 +1128,10 @@ public class Lib {
     private static boolean timeStamp_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
         String stamp = timeStamp();
-        asrt( stamp.matches( "\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-\\d{9}" ) );
+        LibTest.asrt( stamp.matches( "\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}-\\d{9}" ) );
         for (int i=0; i<10; i++) {
             String nextStamp = timeStamp();
-            asrt( nextStamp.compareTo(stamp) > 0 );
+            LibTest.asrt( nextStamp.compareTo(stamp) > 0 );
             stamp = nextStamp;
         }
         return true;
@@ -1574,95 +1243,16 @@ public class Lib {
             long libTime = currentTimeMicros();
             final int MAX_DIFF_MICROS = 3*1000*1000;
             long diff = Math.abs(sysTime-libTime);
-            asrt( diff<MAX_DIFF_MICROS, "time diff:"+(sysTime-libTime)+" micros" );
+            LibTest.asrt( diff<MAX_DIFF_MICROS, "time diff:"+(sysTime-libTime)+" micros" );
         }
         return true;
     }
 
 
 
-    /**
-     * Finds smallest indent of any non-blank line, and removes that indent from all lines.
-    **/
-    public static String unindent( String s ) {
-        String[] lines = s.split( "(?:\\r\\n)|(?:\\n)|(?:\\r)+" );
-        int minIndent = Integer.MAX_VALUE;
-        for (int i=0; i<lines.length; i++) {
-            String line = lines[i];
-            if ( line.isBlank() ) continue;
-            int indent = 0;
-            for (int j=0, len=line.length(); j<len; j++) {
-                if ( line.charAt(j)!=' ' ) break;
-                indent++;
-            }
-            if ( indent < minIndent ) minIndent = indent;
-        }
-        for (int i=0; i<lines.length; i++) {
-            String line = lines[i];
-            if ( line.isBlank() ) {
-                lines[i] = "";
-                continue;
-            }
-            lines[i] = line.substring(minIndent);
-        }
-        return String.join("\n",lines);
-    }
-    @SuppressWarnings("unused")
-    private static boolean unindent_TEST_( boolean findLineNumber ) {
-        if (findLineNumber) throw new RuntimeException();
-        String s = """
-            This is a test of the unindent function.
-            It should remove the smallest indent from all lines.
-             This line should have 1 space indent.
-        """;
-        String s2 = unindent(s);
-        asrt( s2.startsWith("This is a test of the unindent function.") );
-        asrt( s2.contains("\n This line should have 1 space indent.") );
-        return true;
-    }
 
 
 
-    public static String dblQuot( Object o ) { return quot(o,'"'); }
-    public static String quot(Object o, String openQuot, String closeQuot) {
-        String str = ( o == null ? "" : o.toString() );
-        StringBuilder result = new StringBuilder(str.length() + openQuot.length() + closeQuot.length());
-        result.append(openQuot);
-        char escapeChar = closeQuot.charAt(0);
-        for (int i = 0; i < str.length(); i++) {
-            char c = str.charAt(i);
-            if (c == escapeChar) result.append('\\');
-            result.append(c);
-        }
-        result.append(closeQuot);
-        return result.toString();
-    }
-    public static String quot(Object o, String quot) {
-        String str = ( o == null ? "" : o.toString() );
-        String closeQuot;
-        switch (quot.charAt(0)) {
-            case '[': closeQuot = "]"; break;
-            case '{': closeQuot = "}"; break;
-            case '(': closeQuot = ")"; break;
-            default: closeQuot = quot;
-        }
-        return quot(str, quot, closeQuot);
-    }
-    public static String quot(Object o, char quot) {
-        String str = ( o == null ? "" : o.toString() );
-        return quot(str, String.valueOf(quot));
-    }
-    @SuppressWarnings("unused")
-    private static boolean quot_TEST_( boolean findLineNumber ) {
-        if (findLineNumber) throw new RuntimeException();
-        assert quot("Hello World", '"').equals("\"Hello World\"");
-        assert quot("Hello \"World\"", '"').equals("\"Hello \\\"World\\\"\"");
-        assert quot("Hello \"World\"", "[").equals("[Hello \"World\"]");
-        assert quot("Hello ```to the``` World", "```").equals("```Hello \\`\\`\\`to the\\`\\`\\` World```");
-        assert quot("Hello {World}", "{", "}").equals("{Hello \\}World\\}}");
-        assert quot("Test (data)", "(", ")").equals("(Test \\)data\\))");
-        return true;
-    }
 
 
 
@@ -1685,18 +1275,18 @@ public class Lib {
     @SuppressWarnings({"unused"})
     private static boolean isEmpty_TEST_( boolean findLineNumber ) {
         if ( findLineNumber ) throw new RuntimeException();
-        asrt( isEmpty(null), "null should be empty" );
-        asrt( isEmpty(""), "empty string should be empty" );
-        asrt( isEmpty(" \t\n\r"), "whitespace should be empty" );
-        asrt( !isEmpty("x"), "non-empty string should not be empty" );
-        asrt( isEmpty(0), "zero should be empty" );
-        asrt( !isEmpty(1), "non-zero should not be empty" );
-        asrt( isEmpty(new ArrayList<>()), "empty list should be empty" );
-        asrt( !isEmpty(List.of(1)), "non-empty list should not be empty" );
-        asrt( isEmpty(new HashMap<>()), "empty map should be empty" );
-        asrt( !isEmpty(Map.of(1,2)), "non-empty map should not be empty" );
-        asrt( isEmpty(new int[0]), "empty array should be empty" );
-        asrt( !isEmpty(new int[]{1}), "non-empty array should not be empty" );
+        LibTest.asrt( isEmpty(null), "null should be empty" );
+        LibTest.asrt( isEmpty(""), "empty string should be empty" );
+        LibTest.asrt( isEmpty(" \t\n\r"), "whitespace should be empty" );
+        LibTest.asrt( !isEmpty("x"), "non-empty string should not be empty" );
+        LibTest.asrt( isEmpty(0), "zero should be empty" );
+        LibTest.asrt( !isEmpty(1), "non-zero should not be empty" );
+        LibTest.asrt( isEmpty(new ArrayList<>()), "empty list should be empty" );
+        LibTest.asrt( !isEmpty(List.of(1)), "non-empty list should not be empty" );
+        LibTest.asrt( isEmpty(new HashMap<>()), "empty map should be empty" );
+        LibTest.asrt( !isEmpty(Map.of(1,2)), "non-empty map should not be empty" );
+        LibTest.asrt( isEmpty(new int[0]), "empty array should be empty" );
+        LibTest.asrt( !isEmpty(new int[]{1}), "non-empty array should not be empty" );
         return true;
     }
 
@@ -1706,10 +1296,10 @@ public class Lib {
     @SuppressWarnings({"unused"})
     private static boolean notEmpty_TEST_( boolean findLineNumber ) {
         if ( findLineNumber ) throw new RuntimeException();
-        asrt( !notEmpty(null), "null should not be not-empty" );
-        asrt( !notEmpty(""), "empty string should not be not-empty" );
-        asrt( !notEmpty(" \t\n\r"), "whitespace should not be not-empty" );
-        asrt( notEmpty("x"), "non-empty string should be not-empty" );
+        LibTest.asrt( !notEmpty(null), "null should not be not-empty" );
+        LibTest.asrt( !notEmpty(""), "empty string should not be not-empty" );
+        LibTest.asrt( !notEmpty(" \t\n\r"), "whitespace should not be not-empty" );
+        LibTest.asrt( notEmpty("x"), "non-empty string should be not-empty" );
         return true;
     }
 
@@ -1720,11 +1310,11 @@ public class Lib {
     @SuppressWarnings({"unused"})
     private static boolean nvl_TEST_( boolean findLineNumber ) {
         if ( findLineNumber ) throw new RuntimeException();
-        asrtEQ( "default", nvl(null, "default"), "null should return default" );
-        asrtEQ( "value", nvl("value", "default"), "non-null should return value" );
+        LibTest.asrtEQ( "default", nvl(null, "default"), "null should return default" );
+        LibTest.asrtEQ( "value", nvl("value", "default"), "non-null should return value" );
         Integer i = 42;
-        asrtEQ( i, nvl(i, 0), "non-null should return value" );
-        asrtEQ( 0, nvl((Integer)null, 0), "null should return default" );
+        LibTest.asrtEQ( i, nvl(i, 0), "non-null should return value" );
+        LibTest.asrtEQ( 0, nvl((Integer)null, 0), "null should return default" );
         return true;
     }
 
@@ -1756,29 +1346,29 @@ public class Lib {
     @SuppressWarnings({"unused"})
     private static boolean isTrue_TEST_( boolean findLineNumber ) {
         if ( findLineNumber ) throw new RuntimeException();
-        asrt( !isTrue(null), "null should not be true" );
-        asrt( isTrue(true), "true should be true" );
-        asrt( !isTrue(false), "false should not be true" );
-        asrt( isTrue(1), "1 should be true" );
-        asrt( !isTrue(0), "0 should not be true" );
-        asrt( isTrue("true"), "\"true\" should be true" );
-        asrt( isTrue("TRUE"), "\"TRUE\" should be true" );
-        asrt( isTrue("t"), "\"t\" should be true" );
-        asrt( isTrue("yes"), "\"yes\" should be true" );
-        asrt( isTrue("y"), "\"y\" should be true" );
-        asrt( isTrue("on"), "\"on\" should be true" );
-        asrt( !isTrue("false"), "\"false\" should not be true" );
-        asrt( !isTrue("FALSE"), "\"FALSE\" should not be true" );
-        asrt( !isTrue("f"), "\"f\" should not be true" );
-        asrt( !isTrue("no"), "\"no\" should not be true" );
-        asrt( !isTrue("n"), "\"n\" should not be true" );
-        asrt( !isTrue("off"), "\"off\" should not be true" );
-        asrt( !isTrue("none"), "\"none\" should not be true" );
-        asrt( isTrue("1"), "\"1\" should be true" );
-        asrt( isTrue("-1"), "\"-1\" should be true" );
-        asrt( !isTrue("0"), "\"0\" should not be true" );
-        asrt( isTrue(List.of(1)), "non-empty list should be true" );
-        asrt( !isTrue(new ArrayList<>()), "empty list should not be true" );
+        LibTest.asrt( !isTrue(null), "null should not be true" );
+        LibTest.asrt( isTrue(true), "true should be true" );
+        LibTest.asrt( !isTrue(false), "false should not be true" );
+        LibTest.asrt( isTrue(1), "1 should be true" );
+        LibTest.asrt( !isTrue(0), "0 should not be true" );
+        LibTest.asrt( isTrue("true"), "\"true\" should be true" );
+        LibTest.asrt( isTrue("TRUE"), "\"TRUE\" should be true" );
+        LibTest.asrt( isTrue("t"), "\"t\" should be true" );
+        LibTest.asrt( isTrue("yes"), "\"yes\" should be true" );
+        LibTest.asrt( isTrue("y"), "\"y\" should be true" );
+        LibTest.asrt( isTrue("on"), "\"on\" should be true" );
+        LibTest.asrt( !isTrue("false"), "\"false\" should not be true" );
+        LibTest.asrt( !isTrue("FALSE"), "\"FALSE\" should not be true" );
+        LibTest.asrt( !isTrue("f"), "\"f\" should not be true" );
+        LibTest.asrt( !isTrue("no"), "\"no\" should not be true" );
+        LibTest.asrt( !isTrue("n"), "\"n\" should not be true" );
+        LibTest.asrt( !isTrue("off"), "\"off\" should not be true" );
+        LibTest.asrt( !isTrue("none"), "\"none\" should not be true" );
+        LibTest.asrt( isTrue("1"), "\"1\" should be true" );
+        LibTest.asrt( isTrue("-1"), "\"-1\" should be true" );
+        LibTest.asrt( !isTrue("0"), "\"0\" should not be true" );
+        LibTest.asrt( isTrue(List.of(1)), "non-empty list should be true" );
+        LibTest.asrt( !isTrue(new ArrayList<>()), "empty list should not be true" );
         return true;
     }
 
@@ -1803,7 +1393,7 @@ public class Lib {
         Iterable<Integer> itbl = iterable(it);
         List<Integer> result = new ArrayList<>();
         for ( Integer i:itbl ) result.add(i);
-        asrtEQ( List.of(1, 2, 3), result, "iterable should iterate over all elements" );
+        LibTest.asrtEQ( List.of(1, 2, 3), result, "iterable should iterate over all elements" );
         try {
             for ( Integer i:itbl ) { System.err.println("Should not be able to reach here"); return false; }
         } catch ( Exception expected ) {}
@@ -1812,78 +1402,9 @@ public class Lib {
 
 
 
-    /**
-     * Assertion method that throws AssertionError if condition is false
-     */
-    public static Object asrt( Object o, Object... msgs ) {
-        if ( isTrue(o) ) return o;
-        String msg = null;
-        for ( Object m:msgs ) {
-            if ( msg==null ) msg = "" + m;
-            //System.err.println(m);
-        }
-        if ( msg==null ) msg = "" + o;
-        throw new AssertionError("asrt failed: " + msg);
-    }
-    @SuppressWarnings({"unused"})
-    private static boolean asrt_TEST_( boolean findLineNumber ) {
-        if ( findLineNumber ) throw new RuntimeException();
-        try {
-            asrt(true, "This should not fail");
-            asrt(1>0, "This should not fail");
-            try {
-                asrt(false);
-                return false;
-            } catch ( AssertionError e ) {}
-            try {
-                asrt(1==2);
-                return false;
-            } catch ( AssertionError e ) {}
-            return true;
-        } catch ( Throwable t ) {
-            t.printStackTrace();
-            return false;
-        }
-    }
 
 
 
-    /**
-     * Assertion method that checks equality and throws AssertionError if not equal
-     */
-    public static boolean asrtEQ( Object expected, Object actual, Object... msgs ) {
-        if ( isEqual(expected,actual) ) return true;
-        String msg = "expected=" + expected + "; actual=" + actual;
-        //System.err.println(msg);
-        if ( msgs.length==0 ) msgs = new String[]{msg};
-        asrt(false, msgs);
-        return false;
-    }
-    @SuppressWarnings({"unused"})
-    private static boolean asrtEQ_TEST_( boolean findLineNumber ) {
-        if ( findLineNumber ) throw new RuntimeException();
-        try {
-            asrtEQ(1, 1, "This should not fail");
-            asrtEQ("a", "a", "This should not fail");
-            asrtEQ(null, null, "This should not fail");
-            try {
-                asrtEQ(1,2);
-                return false;
-            } catch ( AssertionError e ) {}
-            try {
-                asrtEQ("a", "b", " " );
-                return false;
-            } catch ( AssertionError e ) {}
-            try {
-                asrtEQ(null, "a" );
-                return false;
-            } catch ( AssertionError e ) {}
-            return true;
-        } catch ( Throwable t ) {
-            t.printStackTrace();
-            return false;
-        }
-    }
 
 
 
@@ -1915,10 +1436,10 @@ public class Lib {
     private static boolean asList_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
         List<?> l = asList( List.of(1,2,3).iterator() );
-        asrtEQ( 3, l.size() );
-        asrtEQ( 1, l.get(0) );
-        asrtEQ( 2, l.get(1) );
-        asrtEQ( 3, l.get(2) );
+        LibTest.asrtEQ( 3, l.size() );
+        LibTest.asrtEQ( 1, l.get(0) );
+        LibTest.asrtEQ( 2, l.get(1) );
+        LibTest.asrtEQ( 3, l.get(2) );
         return true;
     }
 
@@ -1969,11 +1490,11 @@ public class Lib {
     private static boolean findKey_TEST_() {
         HashMap<Object,Object> map = new HashMap<>();
         map.put( 123, "456" );
-        asrtEQ( findKey(" 123 ",map), (Object)123 );
+        LibTest.asrtEQ( findKey(" 123 ",map), (Object)123 );
         map.put( " testing \t 123 ", "OK" );
-        asrtEQ( findKey("TESTING 123",map), " testing \t 123 " );
-        asrtEQ( findValue(" ok \r\n",map.values()), "OK" );
-        asrt( findKey(88.8,map) == null );
+        LibTest.asrtEQ( findKey("TESTING 123",map), " testing \t 123 " );
+        LibTest.asrtEQ( findValue(" ok \r\n",map.values()), "OK" );
+        LibTest.asrt( findKey(88.8,map) == null );
         return true;
     }
 
@@ -2030,14 +1551,14 @@ public class Lib {
             int nInt = n.intValue();
             return cInt==nInt;
         }
-        return normalSpace( a.toString() ).equalsIgnoreCase(normalSpace( b.toString() ));
+        return LibString.normalSpace( a.toString() ).equalsIgnoreCase(LibString.normalSpace( b.toString() ));
     }
     @SuppressWarnings("unused")
     private static boolean isEqual_TEST_() {
-        Lib.asrt( isEqual(null,null), "isEqual test 1 failed" );
-        Lib.asrt( !isEqual(null,""), "isEqual test 2 failed" );
-        Lib.asrt( isEqual("oK","Ok"), "isEqual test 3 failed" );
-        Lib.asrt( isEqual(1,"1"), "isEqual test 4 failed" );
+        LibTest.asrt( isEqual(null,null), "isEqual test 1 failed" );
+        LibTest.asrt( !isEqual(null,""), "isEqual test 2 failed" );
+        LibTest.asrt( isEqual("oK","Ok"), "isEqual test 3 failed" );
+        LibTest.asrt( isEqual(1,"1"), "isEqual test 4 failed" );
         return true;
     }
 
@@ -2052,7 +1573,7 @@ public class Lib {
     @SuppressWarnings({"unused"})
     private static boolean getClassName_TEST_( boolean findLineNumber ) {
         if ( findLineNumber ) throw new RuntimeException();
-        asrtEQ( Lib.class.getName(), getClassName(0), "getClassName(0) should return this class" );
+        LibTest.asrtEQ( Lib.class.getName(), getClassName(0), "getClassName(0) should return this class" );
         return true;
     }
 
@@ -2069,59 +1590,15 @@ public class Lib {
     @SuppressWarnings({"unused"})
     private static boolean thisClass_TEST_( boolean findLineNumber ) {
         if ( findLineNumber ) throw new RuntimeException();
-        asrt( thisClass().getName().endsWith("Lib"), "thisClass() should return Lib class" );
+        LibTest.asrt( thisClass().getName().endsWith("Lib"), "thisClass() should return Lib class" );
         return true;
     }
 
 
 
-    /**
-     * Finds the main class that is executing
-     */
-    public static Class<?> findExecutingMainClass() {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        List<String> mainMethodNames = List.of("main", "<clinit>");
-        for ( int i=stackTrace.length-1; i>=0; i-- ) {
-            StackTraceElement element = stackTrace[i];
-            if ( !mainMethodNames.contains(element.getMethodName()) ) continue;
-            try {
-                Class<?> clazz = Class.forName(element.getClassName());
-                Method mainMethod = clazz.getMethod("main", String[].class);
-                if ( mainMethod==null ) continue;
-                int mods = mainMethod.getModifiers();
-                if ( Modifier.isPublic(mods) && Modifier.isStatic(mods) ) return clazz;
-            } catch ( Throwable tryNext ) {}
-        }
-        return null;
-    }
-    @SuppressWarnings({"unused"})
-    private static boolean findExecutingMainClass_TEST_( boolean findLineNumber ) {
-        if ( findLineNumber ) throw new RuntimeException();
-        findExecutingMainClass();
-        return true;
-    }
 
 
 
-    /**
-     * Gets the main executable file
-     */
-    public static File getMainExeFile() {
-        Class<?> mainClass = findExecutingMainClass();
-        if ( mainClass==null ) return null;
-        String path = mainClass.getResource(mainClass.getSimpleName() + ".class").toString();
-        if ( !path.startsWith("jar:") ) return null;
-        String jarPath = path.substring(4, path.lastIndexOf("!"));
-        if ( jarPath.startsWith("file:") ) jarPath = jarPath.substring(5);
-        File f = new File(jarPath);
-        return f.isFile() ? f : null;
-    }
-    @SuppressWarnings({"unused"})
-    private static boolean getMainExeFile_TEST_( boolean findLineNumber ) {
-        if ( findLineNumber ) throw new RuntimeException();
-        getMainExeFile();
-        return true;
-    }
 
 
 

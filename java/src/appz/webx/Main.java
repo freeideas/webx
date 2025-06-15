@@ -96,14 +96,14 @@ public class Main {
 
         // Check if port is already in use
         if ( Lib.isPortListening( port ) ) {
-            Lib.log( "ERROR: Port " + port + " is already in use. Another instance may be running." );
+            Log.log( "ERROR: Port " + port + " is already in use. Another instance may be running." );
             return;
         }
 
         // Check lock file to prevent multiple instances
         File lockFile = new File( "./log/webx.lock" );
         if ( LibApp.alreadyRunning( lockFile ) ) {
-            Lib.log( "ERROR: Another instance of WebX appears to be running (lock file exists)." );
+            Log.log( "ERROR: Another instance of WebX appears to be running (lock file exists)." );
             return;
         }
 
@@ -132,12 +132,12 @@ public class Main {
             String fullStaticPath = basePath + staticPath;
             File wwwDir = new File(staticDir);
             if ( !wwwDir.exists() ) {
-                Lib.log( "ERROR: " + staticDir + " does not exist" );
+                Log.log( "ERROR: " + staticDir + " does not exist" );
             } else {
                 server.handlers.put( fullStaticPath, new FileExtensionHandler()
                     .addExtensionHandler( ".jss", new HttpJssHandler( fullStaticPath, wwwDir, dbStorage ) )
                     .setDefaultHandler( new HttpFileHandler( fullStaticPath, wwwDir ) ) );
-                Lib.log( "Static files configured at " + fullStaticPath + " from " + wwwDir.getAbsolutePath() );
+                Log.log( "Static files configured at " + fullStaticPath + " from " + wwwDir.getAbsolutePath() );
             }
         }
 
@@ -146,7 +146,7 @@ public class Main {
             if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
             String fullProxyPath = basePath + proxyPath;
             server.handlers.put( fullProxyPath, new HttpReplacingProxyHandler() );
-            Lib.log( "Proxy handler configured at " + fullProxyPath + " with replacements from .creds.json" );
+            Log.log( "Proxy handler configured at " + fullProxyPath + " with replacements from .creds.json" );
         }
 
         if ( !loginConfig.equalsIgnoreCase("NONE") ) {
@@ -157,7 +157,7 @@ public class Main {
             String fullLoginPath = basePath + loginPath;
             HttpLoginHandler.appName = appName;
             server.handlers.put( fullLoginPath, new HttpLoginHandler() );
-            Lib.log( "Login handler configured at " + fullLoginPath + " for app: " + appName );
+            Log.log( "Login handler configured at " + fullLoginPath + " for app: " + appName );
         }
 
 
@@ -171,7 +171,7 @@ public class Main {
 
         if ( pd != null ) {
             try ( PersistentData pdResource = pd ) {
-                Lib.log( "WebX server listening on port "+port );
+                Log.log( "WebX server listening on port "+port );
                 StringBuilder endpoints = new StringBuilder("Endpoints: ");
                 if ( !staticConfig.equalsIgnoreCase("NONE") ) {
                     String[] staticParts = staticConfig.split("@", 2);
@@ -197,12 +197,12 @@ public class Main {
                     if ( !dbPath.startsWith("/") ) dbPath = "/" + dbPath;
                     endpoints.append(basePath).append(dbPath).append(" (JSON database)");
                 }
-                Lib.log( endpoints.toString() );
+                Log.log( endpoints.toString() );
                 server.start();
-                Lib.log( "WebX server stopped" );
-            } catch ( Exception e ) { Lib.log(e); }
+                Log.log( "WebX server stopped" );
+            } catch ( Exception e ) { Log.log(e); }
         } else {
-            Lib.log( "WebX server listening on port "+port );
+            Log.log( "WebX server listening on port "+port );
             StringBuilder endpoints = new StringBuilder("Endpoints: ");
             if ( !staticConfig.equalsIgnoreCase("NONE") ) {
                 String[] staticParts = staticConfig.split("@", 2);
@@ -225,9 +225,9 @@ public class Main {
             String endpointsStr = endpoints.toString();
             if ( endpointsStr.endsWith(", ") ) endpointsStr = endpointsStr.substring(0, endpointsStr.length()-2);
             if ( endpointsStr.equals("Endpoints: ") ) endpointsStr = "No endpoints configured";
-            Lib.log( endpointsStr );
+            Log.log( endpointsStr );
             server.start();
-            Lib.log( "WebX server stopped" );
+            Log.log( "WebX server stopped" );
         }
     }
 

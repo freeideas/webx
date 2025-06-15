@@ -3,6 +3,7 @@ import java.io.*;
 
 import jLib.Lib;
 import jLib.LibTest;
+import jLib.LibString;
 import jLib.Result;
 
 
@@ -26,7 +27,7 @@ public class HttpRequest extends HttpMessage {
     @SuppressWarnings("unused")
     private static boolean _TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
-        String rawHeader = Lib.unindent("""
+        String rawHeader = LibString.unindent("""
             GET / HTTP/1.1
             Date: Mon, 27 Jul 2009 12:28:53 GMT
             Server: Apache/2.2.14 (Win32)
@@ -40,8 +41,8 @@ public class HttpRequest extends HttpMessage {
         Result<HttpMessage,Exception> result = HttpMessage.readHttpMessage( new ByteArrayInputStream(rawHeader.getBytes()) );
         if (! result.isOk() ) throw result.err();
         HttpMessage msg = result.ok();
-        Lib.asrt( msg.body.length == 10 );
-        Lib.asrt( msg.body[0] == (int)'1' );
+        LibTest.asrt( msg.body.length == 10 );
+        LibTest.asrt( msg.body[0] == (int)'1' );
         return true;
     }
 

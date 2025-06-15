@@ -159,12 +159,12 @@ public class FileExtensionHandler implements HttpHandler {
     private static boolean extensionParsing_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
         FileExtensionHandler handler = new FileExtensionHandler();
-        Lib.asrtEQ( handler.getFileExtension("/test.jss"), ".jss" );
-        Lib.asrtEQ( handler.getFileExtension("/path/to/file.html"), ".html" );
-        Lib.asrtEQ( handler.getFileExtension("/file.jss?param=value"), ".jss" );
-        Lib.asrtEQ( handler.getFileExtension("/noextension"), null );
-        Lib.asrtEQ( handler.getFileExtension("/path/"), null );
-        Lib.asrtEQ( handler.getFileExtension("/.hidden"), ".hidden" );
+        LibTest.asrtEQ( handler.getFileExtension("/test.jss"), ".jss" );
+        LibTest.asrtEQ( handler.getFileExtension("/path/to/file.html"), ".html" );
+        LibTest.asrtEQ( handler.getFileExtension("/file.jss?param=value"), ".jss" );
+        LibTest.asrtEQ( handler.getFileExtension("/noextension"), null );
+        LibTest.asrtEQ( handler.getFileExtension("/path/"), null );
+        LibTest.asrtEQ( handler.getFileExtension("/.hidden"), ".hidden" );
         return true;
     }
     @SuppressWarnings("unused")
@@ -191,7 +191,7 @@ public class FileExtensionHandler implements HttpHandler {
         String responseBody = new String( response.body );
         boolean hasDirectoryListing = responseBody.contains("Directory Listing");
         boolean is200Response = response.headerBlock.firstLine.contains("200");
-        Lib.asrt( hasDirectoryListing || is200Response, "Expected directory listing or 200 response" );
+        LibTest.asrt( hasDirectoryListing || is200Response, "Expected directory listing or 200 response" );
         return true;
     }
 

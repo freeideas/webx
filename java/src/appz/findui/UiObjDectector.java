@@ -102,7 +102,7 @@ public class UiObjDectector {
     public static String getAnnotationColor( File screenshot ) throws Exception {
         LLmLib llm = LLmLib.newInstance();
         Result<String,Exception> result = llm.llmCall(
-            List.of( screenshot, Lib.nw("""
+            List.of( screenshot, LibString.nw("""
                 What color would be best for annotation overlay?
                 Choose a color that is rarely used in this image and provides good contrast with the existing colors.
                 Return ONLY a hex color code in the format #RRGGBB (e.g., #FF00FF for magenta).
@@ -121,13 +121,13 @@ public class UiObjDectector {
     private static boolean getAnnotationColor_TEST_() throws Exception {
         File screenshot = new File( "./datafiles/files4testing/screenshot.png" );
         String color = getAnnotationColor( screenshot );
-        Lib.asrt( !color.isEmpty(), "Color should not be empty" );
-        Lib.asrt( color.startsWith("#"), "Color should start with #" );
-        Lib.asrt( color.length() == 7, "Color should be #RRGGBB format" );
+        LibTest.asrt( !color.isEmpty(), "Color should not be empty" );
+        LibTest.asrt( color.startsWith("#"), "Color should start with #" );
+        LibTest.asrt( color.length() == 7, "Color should be #RRGGBB format" );
         // Test hex parsing
         java.awt.Color parsed = parseHexColor( color );
-        Lib.asrt( parsed != null, "Should parse color successfully" );
-        Lib.log( "Recommended color: " + color + " -> RGB(" + parsed.getRed() + "," + parsed.getGreen() + "," + parsed.getBlue() + ")" );
+        LibTest.asrt( parsed != null, "Should parse color successfully" );
+        Log.log( "Recommended color: " + color + " -> RGB(" + parsed.getRed() + "," + parsed.getGreen() + "," + parsed.getBlue() + ")" );
         return true;
     }
 
@@ -139,7 +139,7 @@ public class UiObjDectector {
      */
     public static List<UiObject> detectUiObjects( File screenshot ) throws Exception {
         LLmLib llm = LLmLib.newInstance();
-        String detectPrompt = Lib.nw("""
+        String detectPrompt = LibString.nw("""
             List all UI objects in this screenshot. Include ALL visible UI elements.
             Use these standard control types: button, checkbox, radio, textfield, textarea, dropdown, menu, icon, link,
             window-close, window-minimize, window-maximize, other
@@ -191,15 +191,15 @@ public class UiObjDectector {
     private static boolean detectUiObjects_TEST_() throws Exception {
         File screenshot = new File( "./datafiles/files4testing/screenshot.png" );
         List<UiObject> objects = detectUiObjects( screenshot );
-        Lib.asrt( !objects.isEmpty(), "Should detect some UI objects" );
-        Lib.asrt( objects.size() > 5, "Should detect several UI objects" );
+        LibTest.asrt( !objects.isEmpty(), "Should detect some UI objects" );
+        LibTest.asrt( objects.size() > 5, "Should detect several UI objects" );
         
         // Check that we have various types
         boolean hasButton = objects.stream().anyMatch( o -> o.type.equals("button") );
         boolean hasIcon = objects.stream().anyMatch( o -> o.type.equals("icon") );
-        Lib.asrt( hasButton || hasIcon, "Should detect buttons or icons" );
+        LibTest.asrt( hasButton || hasIcon, "Should detect buttons or icons" );
         
-        Lib.log( "Detected " + objects.size() + " UI objects" );
+        Log.log( "Detected " + objects.size() + " UI objects" );
         return true;
     }
 
@@ -282,10 +282,10 @@ public class UiObjDectector {
         int expectedW = img.getWidth()/3;
         int expectedH = img.getHeight()/3;
         
-        Lib.asrtEQ( firstEstimate.x, expectedX, "First estimate X should be 1/3 of width" );
-        Lib.asrtEQ( firstEstimate.y, expectedY, "First estimate Y should be 1/3 of height" );
-        Lib.asrtEQ( firstEstimate.width, expectedW, "First estimate width should be 1/3 of image width" );
-        Lib.asrtEQ( firstEstimate.height, expectedH, "First estimate height should be 1/3 of image height" );
+        LibTest.asrtEQ( firstEstimate.x, expectedX, "First estimate X should be 1/3 of width" );
+        LibTest.asrtEQ( firstEstimate.y, expectedY, "First estimate Y should be 1/3 of height" );
+        LibTest.asrtEQ( firstEstimate.width, expectedW, "First estimate width should be 1/3 of image width" );
+        LibTest.asrtEQ( firstEstimate.height, expectedH, "First estimate height should be 1/3 of image height" );
         
         // Test refinement call with masked image
         File maskedImage = createMaskedImage( screenshot, firstEstimate, "#00FF00", 1, 0 );
@@ -294,17 +294,17 @@ public class UiObjDectector {
             refined = estimateOrRefineBoundingBox( maskedImage, testObj, firstEstimate, "#00FF00" );
         } catch ( Exception e ) {
             // If LLM call fails in test, just use a dummy refined box
-            Lib.log( "LLM call failed in test (expected): " + e.getMessage() );
+            Log.log( "LLM call failed in test (expected): " + e.getMessage() );
             refined = new BoundingBox( 50, 50, 100, 100 );
         }
         
-        Lib.asrt( refined.x >= 0, "Refined X should be non-negative" );
-        Lib.asrt( refined.y >= 0, "Refined Y should be non-negative" );
-        Lib.asrt( refined.width > 0, "Refined width should be positive" );
-        Lib.asrt( refined.height > 0, "Refined height should be positive" );
+        LibTest.asrt( refined.x >= 0, "Refined X should be non-negative" );
+        LibTest.asrt( refined.y >= 0, "Refined Y should be non-negative" );
+        LibTest.asrt( refined.width > 0, "Refined width should be positive" );
+        LibTest.asrt( refined.height > 0, "Refined height should be positive" );
         
-        Lib.log( "First estimate: " + firstEstimate.x + "," + firstEstimate.y + "," + firstEstimate.width + "," + firstEstimate.height );
-        Lib.log( "Refined estimate: " + refined.x + "," + refined.y + "," + refined.width + "," + refined.height );
+        Log.log( "First estimate: " + firstEstimate.x + "," + firstEstimate.y + "," + firstEstimate.width + "," + firstEstimate.height );
+        Log.log( "Refined estimate: " + refined.x + "," + refined.y + "," + refined.width + "," + refined.height );
         return true;
     }
 
@@ -318,14 +318,14 @@ public class UiObjDectector {
      */
     public static void detectAndPrintUiObjects( File screenshot ) throws Exception {
         // Step 1: Color Analysis Phase
-        Lib.log( "Step 1: Analyzing screenshot for best annotation color..." );
+        Log.log( "Step 1: Analyzing screenshot for best annotation color..." );
         String annotationColor = getAnnotationColor( screenshot );
-        Lib.log( "Recommended annotation color: " + annotationColor );
+        Log.log( "Recommended annotation color: " + annotationColor );
         
         // Step 2: Initial Detection Phase
-        Lib.log( "Step 2: Detecting UI objects..." );
+        Log.log( "Step 2: Detecting UI objects..." );
         List<UiObject> uiObjects = detectUiObjects( screenshot );
-        Lib.log( "Found " + uiObjects.size() + " UI objects" );
+        Log.log( "Found " + uiObjects.size() + " UI objects" );
         
         // Step 3-7: Process each UI object
         int objectIndex = 0;
@@ -333,12 +333,12 @@ public class UiObjDectector {
         for ( int i = 0; i < maxObjects; i++ ) {
             UiObject uiObj = uiObjects.get(i);
             objectIndex++;
-            Lib.log( "\nProcessing object " + objectIndex + "/" + uiObjects.size() + ": " + uiObj.type + " - " + uiObj.description );
+            Log.log( "\nProcessing object " + objectIndex + "/" + uiObjects.size() + ": " + uiObj.type + " - " + uiObj.description );
             
             try {
                 // Step 3: Get initial estimate (middle 1/9th)
                 BoundingBox bbox = estimateOrRefineBoundingBox( screenshot, uiObj, null, null );
-                Lib.log( "  Initial estimate (middle 1/9th): x=" + bbox.x + ", y=" + bbox.y + ", width=" + bbox.width + ", height=" + bbox.height );
+                Log.log( "  Initial estimate (middle 1/9th): x=" + bbox.x + ", y=" + bbox.y + ", width=" + bbox.width + ", height=" + bbox.height );
                 
                 // Refinement loop
                 int maxRefinements = 3; // Allow more refinements since we start with a bad estimate
@@ -350,29 +350,29 @@ public class UiObjDectector {
                     
                     // Get refined estimate (or same if already perfect)
                     BoundingBox newBbox = estimateOrRefineBoundingBox( maskedImage, uiObj, bbox, annotationColor );
-                    Lib.log( "  LLM returned: x=" + newBbox.x + ", y=" + newBbox.y + ", width=" + newBbox.width + ", height=" + newBbox.height );
+                    Log.log( "  LLM returned: x=" + newBbox.x + ", y=" + newBbox.y + ", width=" + newBbox.width + ", height=" + newBbox.height );
                     
                     // Check if the bounding box hasn't changed (meaning it's perfect)
                     if ( previousBbox!=null && newBbox.x==previousBbox.x && newBbox.y==previousBbox.y &&
                          newBbox.width==previousBbox.width && newBbox.height==previousBbox.height ) {
                         uiObj.boundingBox = newBbox;
-                        Lib.log( "  Bounding box converged (no change from previous): x=" + newBbox.x + ", y=" + newBbox.y + ", width=" + newBbox.width + ", height=" + newBbox.height );
+                        Log.log( "  Bounding box converged (no change from previous): x=" + newBbox.x + ", y=" + newBbox.y + ", width=" + newBbox.width + ", height=" + newBbox.height );
                         break;
                     }
                     
                     // Update for next iteration
                     previousBbox = bbox;
                     bbox = newBbox;
-                    Lib.log( "  Using for next iteration: x=" + bbox.x + ", y=" + bbox.y + ", width=" + bbox.width + ", height=" + bbox.height );
+                    Log.log( "  Using for next iteration: x=" + bbox.x + ", y=" + bbox.y + ", width=" + bbox.width + ", height=" + bbox.height );
                     
                     // If this is the last iteration, save whatever we have
                     if ( refinement==maxRefinements-1 ) {
                         uiObj.boundingBox = bbox;
-                        Lib.log( "  Final estimate after max refinements: x=" + bbox.x + ", y=" + bbox.y + ", width=" + bbox.width + ", height=" + bbox.height );
+                        Log.log( "  Final estimate after max refinements: x=" + bbox.x + ", y=" + bbox.y + ", width=" + bbox.width + ", height=" + bbox.height );
                     }
                 }
             } catch ( Exception e ) {
-                Lib.log( "  Error processing object: " + e.getMessage() );
+                Log.log( "  Error processing object: " + e.getMessage() );
             }
         }
         
@@ -385,9 +385,9 @@ public class UiObjDectector {
         }
         
         if ( !detectedBoxes.isEmpty() ) {
-            Lib.log( "\nCreating final visualization with all " + detectedBoxes.size() + " bounding boxes..." );
+            Log.log( "\nCreating final visualization with all " + detectedBoxes.size() + " bounding boxes..." );
             File finalViz = createFinalVisualization( screenshot, detectedBoxes, annotationColor );
-            Lib.log( "Final visualization saved to: " + finalViz.getAbsolutePath() );
+            Log.log( "Final visualization saved to: " + finalViz.getAbsolutePath() );
         }
         
         // Step 9: Output results
@@ -456,11 +456,11 @@ public class UiObjDectector {
         File masked1 = createMaskedImage( screenshot, bbox, "#00FF00", 1, 0 );
         File masked2 = createMaskedImage( screenshot, bbox, "#FF00FF", 2, 0 );
         File masked3 = createMaskedImage( screenshot, bbox, "#0000FF", 3, 0 );        
-        Lib.asrt( masked1.exists(), "Masked image 1 should exist" );
-        Lib.asrt( masked2.exists(), "Masked image 2 should exist" );
-        Lib.asrt( masked3.exists(), "Masked image 3 should exist" );
-        Lib.asrt( masked1.length() > 1000, "Masked image should have content" );        
-        Lib.log( "Created masked images successfully" );
+        LibTest.asrt( masked1.exists(), "Masked image 1 should exist" );
+        LibTest.asrt( masked2.exists(), "Masked image 2 should exist" );
+        LibTest.asrt( masked3.exists(), "Masked image 3 should exist" );
+        LibTest.asrt( masked1.length() > 1000, "Masked image should have content" );        
+        Log.log( "Created masked images successfully" );
         return true;
     }
 

@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import jLib.*;
 import jLib.Lib;
+import jLib.LibString;
 
 
 
@@ -54,7 +55,7 @@ public class PersistentData implements AutoCloseable {
             } else if ( jdbcUrl.startsWith("jdbc:sqlite:") ) {
                 conn = DriverManager.getConnection(jdbcUrl);
                 try ( Statement stmt = conn.createStatement() ) {
-                    stmt.execute( Lib.nw( """
+                    stmt.execute( LibString.nw( """
                         pragma journal_mode = WAL;
                         pragma synchronous = normal;
                         pragma temp_store = memory;
@@ -121,7 +122,7 @@ public class PersistentData implements AutoCloseable {
             this(null,parentID,null,keyJson,null,null);
         }
         public Row insert() {
-            String sql = Lib.evalTemplate( Lib.unindent( """
+            String sql = LibString.evalTemplate( LibString.unindent( """
                 INSERT INTO {{tableName}} (
                     id, parent_id, entry_order, key_json, value_json, last_change_time
                 ) VALUES (?,?,?,?,?,?)
@@ -229,7 +230,7 @@ public class PersistentData implements AutoCloseable {
             String sql;
             try {
                 if (id!=null) {
-                    sql = Lib.evalTemplate( Lib.unindent( """
+                    sql = LibString.evalTemplate( LibString.unindent( """
                         SELECT * FROM {{tableName}} WHERE id=?
                     """ ), Map.of( "tableName", tableName ) );
                     pstmt = conn.prepareStatement(sql);
@@ -237,14 +238,14 @@ public class PersistentData implements AutoCloseable {
                 } else if (parentID==null) {
                     throw new IllegalArgumentException("id and parent_id cannot both be null");
                 } else if (entryOrder!=null) {
-                    sql = Lib.evalTemplate( Lib.unindent( """
+                    sql = LibString.evalTemplate( LibString.unindent( """
                         SELECT * FROM {{tableName}} WHERE parent_id=? AND entry_order=?
                     """ ), Map.of( "tableName", tableName ) );
                     pstmt = conn.prepareStatement(sql);
                     pstmt.setLong(1, parentID);
                     pstmt.setLong(2, entryOrder);
                 } else if (keyJson!=null) {
-                    sql = Lib.evalTemplate( Lib.unindent( """
+                    sql = LibString.evalTemplate( LibString.unindent( """
                         SELECT * FROM {{tableName}} WHERE parent_id=? AND key_json=?
                     """ ), Map.of( "tableName", tableName ) );
                     pstmt = conn.prepareStatement(sql);
@@ -270,7 +271,7 @@ public class PersistentData implements AutoCloseable {
             Row deletedRow = select();
             if (deletedRow==null) return null;
             try {
-                String sql = Lib.evalTemplate( Lib.unindent( """
+                String sql = LibString.evalTemplate( LibString.unindent( """
                     DELETE FROM {{tableName}} WHERE id=?
                 """ ), Map.of( "tableName", tableName ) );
                 PreparedStatement stmt = conn.prepareStatement(sql);
@@ -315,7 +316,7 @@ public class PersistentData implements AutoCloseable {
             }
         } catch (SQLException ignore) {}
 
-        String createTable = Lib.evalTemplate( Lib.unindent( """
+        String createTable = LibString.evalTemplate( LibString.unindent( """
             CREATE TABLE IF NOT EXISTS {{tableName}} (
                 id BIGINT NOT NULL,
                 parent_id BIGINT NOT NULL,
@@ -326,11 +327,11 @@ public class PersistentData implements AutoCloseable {
                 PRIMARY KEY (id)
             )
         """ ), Map.of( "tableName", this.tableName, "textType", textType ) );
-        String createIndexA = Lib.evalTemplate( Lib.unindent( """
+        String createIndexA = LibString.evalTemplate( LibString.unindent( """
             CREATE INDEX IF NOT EXISTS {{tableName}}_key_idx
             ON {{tableName}} (parent_id, key_json)
         """ ), Map.of( "tableName", this.tableName ) );
-        String createIndexB = Lib.evalTemplate( Lib.unindent( """
+        String createIndexB = LibString.evalTemplate( LibString.unindent( """
             CREATE INDEX IF NOT EXISTS {{tableName}}_order_idx  -- this would be UNIQUE except it would be
             ON {{tableName}} (parent_id, entry_order)           -- violated temporarily during overlapping updates
         """ ), Map.of( "tableName", this.tableName ) );
@@ -478,7 +479,7 @@ public class PersistentData implements AutoCloseable {
         Row row = row(parentID,entryOrder).select();
         if (row==null) {
             long newID = changeTime;
-            String keyJson = Lib.dblQuot( Lib.uniqID() );
+            String keyJson = LibString.dblQuot( Lib.uniqID() );
             row = new Row(newID,parentID,entryOrder,keyJson,valueJson,changeTime).insert();
         } else {
             row.update(Lib.mapOf( "valueJson",valueJson, "lastChangeTime",changeTime ));
@@ -543,31 +544,31 @@ public class PersistentData implements AutoCloseable {
                 Object actualObject = pd.getRootMap();
                 String expectJson = JsonEncoder.encode(testData);
                 String actualJson = JsonEncoder.encode(actualObject);
-                Lib.asrtEQ(expectJson,actualJson);
-                Lib.asrtEQ( pd.size(R00T_ID), 3 );
+                LibTest.asrtEQ(expectJson,actualJson);
+                LibTest.asrtEQ( pd.size(R00T_ID), 3 );
             }
             { // test replace, even with different type
-                pd.put( R00T_ID, Lib.dblQuot("ZERO"), 0 );
-                pd.put( R00T_ID, Lib.dblQuot("ONE"), List.of(0,1) );
-                pd.put( R00T_ID, Lib.dblQuot("TWO"), List.of(0,1,2) );
-                pd.put( R00T_ID, Lib.dblQuot("THREE"), List.of(0,1,2,3) );
-                pd.put( R00T_ID, Lib.dblQuot("FOUR"), List.of(0,1,2,3,4) );
+                pd.put( R00T_ID, LibString.dblQuot("ZERO"), 0 );
+                pd.put( R00T_ID, LibString.dblQuot("ONE"), List.of(0,1) );
+                pd.put( R00T_ID, LibString.dblQuot("TWO"), List.of(0,1,2) );
+                pd.put( R00T_ID, LibString.dblQuot("THREE"), List.of(0,1,2,3) );
+                pd.put( R00T_ID, LibString.dblQuot("FOUR"), List.of(0,1,2,3,4) );
                 Object actualObject = pd.getRootMap();
                 Object expectObject = JsonDecoder.decode("""
                     {"ZERO":0,"ONE":[0,1],"TWO":[0,1,2],"THREE":[0,1,2,3],"FOUR":[0,1,2,3,4]}
                 """);
-                Lib.asrtEQ(expectObject,actualObject);
-                Lib.asrtEQ( pd.size(R00T_ID), 5 );
+                LibTest.asrtEQ(expectObject,actualObject);
+                LibTest.asrtEQ( pd.size(R00T_ID), 5 );
             }
             { // test delete
-                pd.remove( R00T_ID, Lib.dblQuot("ZERO") );
-                pd.remove( R00T_ID, Lib.dblQuot("FOUR") );
+                pd.remove( R00T_ID, LibString.dblQuot("ZERO") );
+                pd.remove( R00T_ID, LibString.dblQuot("FOUR") );
                 Object actualObject = pd.getRootMap();
                 Object expectObject = JsonDecoder.decode("""
                     {"ONE":[0,1],"TWO":[0,1,2],"THREE":[0,1,2,3]}
                 """);
-                Lib.asrtEQ(expectObject,actualObject);
-                Lib.asrtEQ( pd.size(R00T_ID), 3 );
+                LibTest.asrtEQ(expectObject,actualObject);
+                LibTest.asrtEQ( pd.size(R00T_ID), 3 );
             }
         }
         return true;
@@ -577,12 +578,12 @@ public class PersistentData implements AutoCloseable {
 
     public long[] getMinMaxEntryOrder( long parentID ) {
         /* NOTE: can't use this because SQLITE returns 0,0 on an empty table!
-            String sql = Lib.evalTemplate( Lib.unindent( """
+            String sql = LibString.evalTemplate( LibString.unindent( """
                 SELECT MIN(entry_order) AS min_entry_order, MAX(entry_order) AS max_entry_order
                 FROM {{tableName}} WHERE parent_id=?
             """ ), Map.of( "tableName", this.tableName ) );
         */
-        String sql = Lib.evalTemplate( Lib.unindent( """
+        String sql = LibString.evalTemplate( LibString.unindent( """
             SELECT entry_order FROM {{tableName}} WHERE parent_id=?
             AND entry_order = (SELECT MIN(entry_order) FROM {{tableName}} WHERE parent_id=?)
                 UNION ALL
@@ -637,7 +638,7 @@ public class PersistentData implements AutoCloseable {
      * NOTE: not recursive; can leave orphan rows
      */
     public long clearChildValues( long parentID ) {
-        String sql = Lib.evalTemplate( Lib.unindent( """
+        String sql = LibString.evalTemplate( LibString.unindent( """
             DELETE FROM {{tableName}} WHERE parent_id=?
         """ ), Map.of( "tableName", this.tableName ) );
         try ( PreparedStatement stmt = conn.prepareStatement(sql) ) {
@@ -652,7 +653,7 @@ public class PersistentData implements AutoCloseable {
 
     public long deleteOrphans( int tooYoungAgeToDieSeconds ) {
         long tooYoungMicros = Lib.currentTimeMicros() - tooYoungAgeToDieSeconds * 1000L * 1000L;
-        String sql = Lib.evalTemplate( Lib.unindent( """
+        String sql = LibString.evalTemplate( LibString.unindent( """
             DELETE FROM {{tableName}} WHERE last_change_time < ?
             AND ? NOT IN (id,parent_id)
             AND parent_id NOT IN ( SELECT id FROM {{tableName}} )
@@ -689,12 +690,12 @@ public class PersistentData implements AutoCloseable {
             long maxEntryOrder = insertBeforeEntryOrder - 1;
             distance = -1 * distance;
             movedCount = moveRows(parentID,minEntryOrder,maxEntryOrder,distance);
-            Lib.asrtEQ(movedCount,topRowCount);
+            LibTest.asrtEQ(movedCount,topRowCount);
         } else { // move bottom rows down (i.e. positive distance)
             long minEntryOrder = insertBeforeEntryOrder;
             long maxEntryOrder = minMaxEntryOrder[1];
             movedCount = moveRows(parentID,minEntryOrder,maxEntryOrder,distance);
-            Lib.asrtEQ(movedCount,endRowCount);
+            LibTest.asrtEQ(movedCount,endRowCount);
         }
         return movedCount;
     }
@@ -715,13 +716,13 @@ public class PersistentData implements AutoCloseable {
             long minEntryOrder = minMaxEntryOrder[0];
             long maxEntryOrder = minEntryOrder + topRowCount - 1;
             movedCount = moveRows(parentID,minEntryOrder,maxEntryOrder,distance);
-            Lib.asrtEQ(movedCount,topRowCount);
+            LibTest.asrtEQ(movedCount,topRowCount);
         } else { // move bottom rows up (i.e. negative distance)
             distance = -1 * distance;
             long minEntryOrder = lastGapEntryOrder+1;
             long maxEntryOrder = minMaxEntryOrder[1];
             movedCount = moveRows(parentID,minEntryOrder,maxEntryOrder,distance);
-            Lib.asrtEQ(movedCount,endRowCount);
+            LibTest.asrtEQ(movedCount,endRowCount);
         }
         return movedCount;
     }
@@ -729,7 +730,7 @@ public class PersistentData implements AutoCloseable {
 
 
     private long moveRows( long parentID, long minEntryOrder, long maxEntryOrder, long distance ) {
-        String sql = Lib.evalTemplate( Lib.unindent( """
+        String sql = LibString.evalTemplate( LibString.unindent( """
             UPDATE {{tableName}}
             SET entry_order = entry_order + ?
             WHERE parent_id=? AND entry_order >= ? AND entry_order <= ?
@@ -767,38 +768,38 @@ public class PersistentData implements AutoCloseable {
             { // create a gap near the bottom
                 pd.createGap( R00T_ID, 3L, 2L );
                 long[] minMaxEntryOrder = pd.getMinMaxEntryOrder(R00T_ID);
-                Lib.asrtEQ( minMaxEntryOrder[1], 6L );
+                LibTest.asrtEQ( minMaxEntryOrder[1], 6L );
                 actualData = pd.debugDump();
                 Object actual = Jsonable.get( actualData, List.of(3,"entryOrder") );
                 if (actual instanceof Jsonable) actual = ((Jsonable) actual).get();
-                Lib.asrtEQ(actual,5);
+                LibTest.asrtEQ(actual,5);
                 actual = Jsonable.get( actualData, List.of(2,"entryOrder") );
                 if (actual instanceof Jsonable) actual = ((Jsonable) actual).get();
-                Lib.asrtEQ(actual,2);
+                LibTest.asrtEQ(actual,2);
             }
             { // remove that gap
                 pd.removeGap( R00T_ID, 3L, 4L );
-                Lib.asrt( pd.entryOrderCheck(R00T_ID,true) );
+                LibTest.asrt( pd.entryOrderCheck(R00T_ID,true) );
             }
             { // create a gap near the top
                 pd.createGap( R00T_ID, 2L, 2L );
                 actualData = pd.debugDump();
                 Object actual = Jsonable.get( actualData, List.of(0,"entryOrder") );
                 if (actual instanceof Jsonable) actual = ((Jsonable) actual).get();
-                Lib.asrtEQ(actual,-2);
+                LibTest.asrtEQ(actual,-2);
                 actual = Jsonable.get( actualData, List.of(1,"entryOrder") );
                 if (actual instanceof Jsonable) actual = ((Jsonable) actual).get();
-                Lib.asrtEQ(actual,-1);
+                LibTest.asrtEQ(actual,-1);
                 actual = Jsonable.get( actualData, List.of(2,"entryOrder") );
                 if (actual instanceof Jsonable) actual = ((Jsonable) actual).get();
-                Lib.asrtEQ(actual,2);
+                LibTest.asrtEQ(actual,2);
             }
             { // remove that gap
                 pd.removeGap( R00T_ID, 0L, 1L );
-                Lib.asrt( pd.entryOrderCheck(R00T_ID,true) );
+                LibTest.asrt( pd.entryOrderCheck(R00T_ID,true) );
                 long[] minMaxEntryOrder = pd.getMinMaxEntryOrder(R00T_ID);
-                Lib.asrtEQ( minMaxEntryOrder[0], 0L );
-                Lib.asrtEQ( minMaxEntryOrder[1], 4L );
+                LibTest.asrtEQ( minMaxEntryOrder[0], 0L );
+                LibTest.asrtEQ( minMaxEntryOrder[1], 4L );
             }
         }
         return true;
@@ -809,7 +810,7 @@ public class PersistentData implements AutoCloseable {
     @Override
     public void close() throws Exception {
         while (! beforeClose.isEmpty()) {
-            try{ beforeClose.removeFirst().run(); }catch(Throwable ignore){ Lib.log(ignore); }
+            try{ beforeClose.removeFirst().run(); }catch(Throwable ignore){ Log.log(ignore); }
         }
         try {
             if (!conn.isClosed()) {
@@ -820,9 +821,9 @@ public class PersistentData implements AutoCloseable {
                 }
                 conn.close();
             }
-        }catch(Throwable ignore){ Lib.log(ignore); }
+        }catch(Throwable ignore){ Log.log(ignore); }
         while (! afterClose.isEmpty()) {
-            try{ afterClose.removeFirst().run(); }catch(Throwable ignore){ Lib.log(ignore); }
+            try{ afterClose.removeFirst().run(); }catch(Throwable ignore){ Log.log(ignore); }
         }
     }
 

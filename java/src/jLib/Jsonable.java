@@ -285,7 +285,7 @@ public class Jsonable extends AbstractMap<Object,Object> {
         Object key = new Object[]{ "2", "two", 3 };
         Object result = get(data,key);
         Object expected = "dos";
-        Lib.asrtEQ(result,expected);
+        LibTest.asrtEQ(result,expected);
         return true;
     }
 
@@ -353,7 +353,7 @@ public class Jsonable extends AbstractMap<Object,Object> {
             Map<Object,Object> expected = JsonDecoder.decodeMap("""
                 { "one":1, "two":2, "three":3, "four":4, "five":5 }
             """);
-            Lib.asrtEQ(expected,result);
+            LibTest.asrtEQ(expected,result);
         }
         { // simple lists
             Object src = JsonDecoder.decode("""
@@ -366,7 +366,7 @@ public class Jsonable extends AbstractMap<Object,Object> {
             Object expected = JsonDecoder.decode("""
                 [1,2,3,4]
             """);
-            Lib.asrtEQ(expected,result);
+            LibTest.asrtEQ(expected,result);
         }
         { // mixture of lists and maps
             Object src = JsonDecoder.decode("""
@@ -381,7 +381,7 @@ public class Jsonable extends AbstractMap<Object,Object> {
             """);
             String expStr = JsonEncoder.encode(expected);
             String resStr = JsonEncoder.encode(result);
-            Lib.asrtEQ(expStr,resStr);
+            LibTest.asrtEQ(expStr,resStr);
         }
         return true;
     }
@@ -410,21 +410,21 @@ public class Jsonable extends AbstractMap<Object,Object> {
             Jsonable jStr = new Jsonable(str);
 
             // Map operations
-            Lib.asrtEQ(((Jsonable)jMap.get("key1")).get(), "value1");
-            Lib.asrtEQ(((Jsonable)jMap.get("nonexistent")).get(), null);
-            Lib.asrtEQ(jMap.size(), 2);
-            Lib.asrt(jMap.containsKey("key1"));
+            LibTest.asrtEQ(((Jsonable)jMap.get("key1")).get(), "value1");
+            LibTest.asrtEQ(((Jsonable)jMap.get("nonexistent")).get(), null);
+            LibTest.asrtEQ(jMap.size(), 2);
+            LibTest.asrt(jMap.containsKey("key1"));
 
             // List operations
-            Lib.asrtEQ(((Jsonable)jList.get(0)).get(), "a");
-            Lib.asrtEQ(((Jsonable)jList.get(3)).get(), null);
-            Lib.asrtEQ(jList.size(), 3);
-            Lib.asrt(jList.containsKey(1));
+            LibTest.asrtEQ(((Jsonable)jList.get(0)).get(), "a");
+            LibTest.asrtEQ(((Jsonable)jList.get(3)).get(), null);
+            LibTest.asrtEQ(jList.size(), 3);
+            LibTest.asrt(jList.containsKey(1));
 
             // String operations
-            Lib.asrtEQ(jStr.get(), "hello");
-            Lib.asrtEQ(((Jsonable)jStr.get("anyKey")).get(), null);
-            Lib.asrtEQ(jStr.size(), 0);
+            LibTest.asrtEQ(jStr.get(), "hello");
+            LibTest.asrtEQ(((Jsonable)jStr.get("anyKey")).get(), null);
+            LibTest.asrtEQ(jStr.size(), 0);
         }
 
         // Test path-based access with different notations
@@ -434,14 +434,14 @@ public class Jsonable extends AbstractMap<Object,Object> {
             ));
 
             // Array path
-            Lib.asrtEQ(((Jsonable)jsonable.get(new Object[]{"a", 2, "c"})).get(), "ok");
+            LibTest.asrtEQ(((Jsonable)jsonable.get(new Object[]{"a", 2, "c"})).get(), "ok");
             // List path
-            Lib.asrtEQ(((Jsonable)jsonable.get(List.of("a", 2, "c"))).get(), "ok");
+            LibTest.asrtEQ(((Jsonable)jsonable.get(List.of("a", 2, "c"))).get(), "ok");
             // String path
-            Lib.asrtEQ(((Jsonable)jsonable.get("a/2/c")).get(), "ok");
+            LibTest.asrtEQ(((Jsonable)jsonable.get("a/2/c")).get(), "ok");
             // Edge case: path exists as literal key
             Jsonable edgeCase = new Jsonable(Map.of("one/2/three", List.of(1, 2, 3)));
-            Lib.asrtEQ(((Jsonable)edgeCase.get("one/2/three")).get(), List.of(1, 2, 3));
+            LibTest.asrtEQ(((Jsonable)edgeCase.get("one/2/three")).get(), List.of(1, 2, 3));
         }
 
         // Test data modification and merging
@@ -450,16 +450,16 @@ public class Jsonable extends AbstractMap<Object,Object> {
             Jsonable jMap = new Jsonable(new HashMap<>(Map.of("inner", new HashMap<>(Map.of("a", 1, "b", 2)))));
             jMap.put("inner", Map.of("b", 20, "c", 3));
             Map<?,?> innerMap = (Map<?,?>)((Jsonable)jMap.get("inner")).get();
-            Lib.asrtEQ(innerMap.get("a"), 1);
-            Lib.asrtEQ(innerMap.get("b"), 20);
-            Lib.asrtEQ(innerMap.get("c"), 3);
+            LibTest.asrtEQ(innerMap.get("a"), 1);
+            LibTest.asrtEQ(innerMap.get("b"), 20);
+            LibTest.asrtEQ(innerMap.get("c"), 3);
 
             // List modification
             Jsonable jList = new Jsonable(new ArrayList<>(List.of(new HashMap<>(Map.of("x", 10)))));
             jList.put(0, Map.of("y", 20));
             Map<?,?> mergedMap = (Map<?,?>)((Jsonable)jList.get(0)).get();
-            Lib.asrtEQ(mergedMap.get("x"), 10);
-            Lib.asrtEQ(mergedMap.get("y"), 20);
+            LibTest.asrtEQ(mergedMap.get("x"), 10);
+            LibTest.asrtEQ(mergedMap.get("y"), 20);
 
             // Complex merge
             Jsonable complex = new Jsonable(JsonDecoder.decode("""
@@ -472,7 +472,7 @@ public class Jsonable extends AbstractMap<Object,Object> {
                 {"data":{"one":[1],"two":[1,2],"three":[1,2,3],"four":[1,2,3,4]}}
             """);
             // Compare wrapped to wrapped
-            Lib.asrtEQ(complex, new Jsonable(expected));
+            LibTest.asrtEQ(complex, new Jsonable(expected));
         }
 
         return true;

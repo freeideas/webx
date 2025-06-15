@@ -404,21 +404,21 @@ public class CircularByteBuffer implements Cloneable {
             CircularByteBuffer cbb = new CircularByteBuffer();
             cbb.addLast( " world!".getBytes() );
             cbb.addFirst( "Hello".getBytes() );
-            Lib.asrt( cbb.regionEquals( 3, "Flo wok".getBytes(), 1, 5 ) );
+            LibTest.asrt( cbb.regionEquals( 3, "Flo wok".getBytes(), 1, 5 ) );
             CharSequence cs = cbb.asCharSequence();
             java.util.regex.Pattern pat = java.util.regex.Pattern.compile( "Hello\\s+world!" );
             java.util.regex.Matcher mat = pat.matcher(cs);
-            Lib.asrt( mat.matches() );
+            LibTest.asrt( mat.matches() );
             cbb.skipFirst(1);
             cbb.skipLast(1);
             String expect = "ello world";
-            Lib.asrt( cbb.asCharSequence(), expect );
+            LibTest.asrt( cbb.asCharSequence(), expect );
             cs = cbb.asCharSequence( 1, expect.length()-1 );
             expect = expect.subSequence( 1, expect.length()-1 ).toString();
-            Lib.asrtEQ(cs,expect);
+            LibTest.asrtEQ(cs,expect);
             cs = cs.subSequence( 1, cs.length()-1 );
             expect = expect.subSequence( 1, expect.length()-1 ).toString();
-            Lib.asrt(cs,expect);
+            LibTest.asrt(cs,expect);
         }
         { // test readFrom()
             String s = """
@@ -442,7 +442,7 @@ public class CircularByteBuffer implements Cloneable {
             ByteArrayInputStream inp = new ByteArrayInputStream( s.getBytes() );
             CircularByteBuffer cbb = new CircularByteBuffer(8);
             while ( cbb.size() < s.length() ) cbb.readFrom( inp, (int)(Math.random()*10) );
-            Lib.asrt( cbb.asCharSequence(), s );
+            LibTest.asrt( cbb.asCharSequence(), s );
         }
         return true;
     }

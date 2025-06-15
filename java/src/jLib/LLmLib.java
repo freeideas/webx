@@ -177,7 +177,7 @@ public class LLmLib {
             if (! Lib.isEmpty(extraPayload) ) body.putAll(extraPayload);
             // Log the request
             logLLmCall(logFile, "REQUEST", body, null);
-            Lib.log("calling anthropic " + modelName + "...");
+            Log.log("calling anthropic " + modelName + "...");
             long startTime = System.currentTimeMillis();
             // Prepare headers specific to Anthropic API
             Map<String, String> headers = new LinkedHashMap<>();
@@ -186,7 +186,7 @@ public class LLmLib {
             // Make the API call
             Result<HttpRes,HttpRes> httpRes = httpRequest(endpoint,headers,body,"POST");
             long elapsedTime = System.currentTimeMillis() - startTime;
-            Lib.log("response time for anthropic " + modelName + ": " + elapsedTime + "ms");
+            Log.log("response time for anthropic " + modelName + ": " + elapsedTime + "ms");
             { // Log extra info.
                 List<String> attachedFiles = new ArrayList<>();
                 for (Object part : promptParts) {
@@ -223,7 +223,7 @@ public class LLmLib {
         } catch (Exception e) {
             logLLmCall(logFile, "ERROR", e.getMessage(), null);
             if (triesAllowed > 0) {
-                Lib.log("retrying " + modelName + "...");
+                Log.log("retrying " + modelName + "...");
                 Map<String, Object> copyExtraPayload = extraPayload != null ? new LinkedHashMap<>(extraPayload) : null;
                 return llmCallAnthropic(
                     promptParts, apiKey, endpoint, modelName, systemPrompt, copyExtraPayload, triesAllowed - 1, logFile
@@ -241,7 +241,7 @@ public class LLmLib {
         @SuppressWarnings("unchecked")
         Map<String, Object> modelInfo = (Map<String, Object>) MODELS.get(modelKey);
         File imageFile = new File("./datafiles/files4testing/red_dot.png");
-        Lib.asrt(imageFile.exists(), "Test image file must exist");
+        LibTest.asrt(imageFile.exists(), "Test image file must exist");
         Result<String,Exception> res = newInstance().llmCallAnthropic(
             List.of( "What color is this image?", imageFile ),
             (String) modelInfo.get("apiKey"),
@@ -250,9 +250,9 @@ public class LLmLib {
             "Your caps lock is broken and you are also angry, so you can answer ONLY IN UPPER CASE!",
             null, null, null
         );
-        Lib.asrt(res.isOk(), "Call should succeed");
+        LibTest.asrt(res.isOk(), "Call should succeed");
         String upperResponse = res.ok().toUpperCase();
-        Lib.asrt(
+        LibTest.asrt(
             upperResponse.contains("RED") || upperResponse.contains("ORANGE"),
             "Response should mention RED or ORANGE in uppercase"
         );
@@ -296,7 +296,7 @@ public class LLmLib {
             }
             return Result.ok(models);
         } catch (Exception e) {
-            Lib.log("Failed to retrieve models: " + e.getMessage());
+            Log.log("Failed to retrieve models: " + e.getMessage());
             return Result.err(e);
         }
     }
@@ -304,9 +304,9 @@ public class LLmLib {
     private static boolean listAntropicModels_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
         Result< List<String>, Exception > res = newInstance().listAntropicModels();
-        Lib.asrt(res.isOk(), "Failed to retrieve models");
-        Lib.asrt(!res.ok().isEmpty(), "No models returned");
-        //Lib.log(Lib.mapOf( "anthropic_models", res.ok() ));
+        LibTest.asrt(res.isOk(), "Failed to retrieve models");
+        LibTest.asrt(!res.ok().isEmpty(), "No models returned");
+        //Log.log(Lib.mapOf( "anthropic_models", res.ok() ));
         return true;
     }
 
@@ -345,10 +345,10 @@ public class LLmLib {
                 null, null, null, null, null
             );
             if (! res.isOk() ) {
-                Lib.log( "Failed to call model: "+modelKey+" because: "+res.err().getMessage() );
+                Log.log( "Failed to call model: "+modelKey+" because: "+res.err().getMessage() );
             }
-            Lib.asrt(res.isOk(), "Result should be successful");
-            Lib.asrt( res.ok().toUpperCase().indexOf("PARIS") >= 0, "Result should contain 'PARIS'" );
+            LibTest.asrt(res.isOk(), "Result should be successful");
+            LibTest.asrt( res.ok().toUpperCase().indexOf("PARIS") >= 0, "Result should contain 'PARIS'" );
         }
         return true;
     }
@@ -390,16 +390,16 @@ public class LLmLib {
         );
         LLmLib llmLib = newInstance();
         List<Object> parts = llmLib.mergeTemplates( List.of(templateFile,vars) );
-        Lib.asrt(parts.size() == 5, "Expected 5 parts but got " + parts.size());
-        Lib.asrt(parts.get(1) instanceof File, "Expected parts[1] to be a File");
+        LibTest.asrt(parts.size() == 5, "Expected 5 parts but got " + parts.size());
+        LibTest.asrt(parts.get(1) instanceof File, "Expected parts[1] to be a File");
         // running the parts through mergeTemplates again should not change the result
-        Lib.asrt( parts.equals(llmLib.mergeTemplates(parts)), "mergeTemplates should not change the result" );
+        LibTest.asrt( parts.equals(llmLib.mergeTemplates(parts)), "mergeTemplates should not change the result" );
         // make sure the template makes sense to an LLM
         Result< Pair<Boolean,String>, Exception > res = llmLib.llmYesOrNo(
             parts, null, null, null
         );
-        Lib.asrt(res.isOk(), "Result should be successful");
-        Lib.asrt(res.ok() != null, "Output should not be null");
+        LibTest.asrt(res.isOk(), "Result should be successful");
+        LibTest.asrt(res.ok() != null, "Output should not be null");
         return true;
     }
 
@@ -440,7 +440,7 @@ public class LLmLib {
             }
             return Result.ok(models);
         } catch (Exception e) {
-            Lib.log("Failed to retrieve models: " + e.getMessage());
+            Log.log("Failed to retrieve models: " + e.getMessage());
             return Result.err(e);
         }
     }
@@ -448,9 +448,9 @@ public class LLmLib {
     private static boolean listGoogleModels_TEST_(boolean findLineNumber) {
         if (findLineNumber) throw new RuntimeException();
         Result< List<String>, Exception > res = newInstance().listGoogleModels();
-        Lib.asrt(res.isOk(), "Failed to retrieve models");
-        Lib.asrt(!res.ok().isEmpty(), "No models returned");
-        //Lib.log(Lib.mapOf( "google_models", res.ok() ));
+        LibTest.asrt(res.isOk(), "Failed to retrieve models");
+        LibTest.asrt(!res.ok().isEmpty(), "No models returned");
+        //Log.log(Lib.mapOf( "google_models", res.ok() ));
         return true;
     }
 
@@ -490,7 +490,7 @@ public class LLmLib {
             }
             return Result.ok(models);
         } catch (Exception e) {
-            Lib.log("Failed to retrieve models: " + e.getMessage());
+            Log.log("Failed to retrieve models: " + e.getMessage());
             return Result.err(e);
         }
     }
@@ -498,9 +498,9 @@ public class LLmLib {
     private static boolean listOpenAiModels_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
         Result< List<String>, Exception > res = newInstance().listOpenAiModels();
-        //Lib.log(Lib.mapOf("openAi_models", res.ok() ));
-        Lib.asrt(res.isOk(), "Failed to retrieve models");
-        Lib.asrt(!res.ok().isEmpty(), "No models returned");
+        //Log.log(Lib.mapOf("openAi_models", res.ok() ));
+        LibTest.asrt(res.isOk(), "Failed to retrieve models");
+        LibTest.asrt(!res.ok().isEmpty(), "No models returned");
         return true;
     }
 
@@ -542,10 +542,10 @@ public class LLmLib {
             ```
         """;
         String code = findCodeInResponse(textResponse);
-        Lib.asrt( Lib.nw(code).equals("def foo(x): return x**2"), "Expecting def foo" );
+        LibTest.asrt( LibString.nw(code).equals("def foo(x): return x**2"), "Expecting def foo" );
         textResponse = " ['ok'] ";
         code = findCodeInResponse(textResponse);
-        Lib.asrt( code.equals("['ok']"), "JSON array should be properly extracted" );
+        LibTest.asrt( code.equals("['ok']"), "JSON array should be properly extracted" );
         return true;
     }
 
@@ -615,7 +615,7 @@ public class LLmLib {
             // Prepend system prompt if provided; or if first part is a file.
             if (partsList.get(0).get("inlineData") != null) {
                 if ( Lib.isEmpty(systemPrompt) ) {
-                    systemPrompt = Lib.nw("""
+                    systemPrompt = LibString.nw("""
                         Please examine the following content and then respond as instructed after the content.
                     """);
                 }
@@ -639,7 +639,7 @@ public class LLmLib {
             }
             // Log the request.
             logFile = logLLmCall(logFile, "REQUEST", body,null);
-            Lib.log("calling google " + modelName + "...");
+            Log.log("calling google " + modelName + "...");
             long startTime = System.currentTimeMillis();
             // Build the URL as per the Python code.
             String url = endpoint +"/"+ modelName + ":generateContent";
@@ -650,7 +650,7 @@ public class LLmLib {
             // Make the API call.
             Result<HttpRes,HttpRes> httpRes = httpRequest(url, headers, body, "POST");
             long elapsedTime = System.currentTimeMillis() - startTime;
-            Lib.log("response time for " + modelName + ": " + elapsedTime + "ms");
+            Log.log("response time for " + modelName + ": " + elapsedTime + "ms");
             if (!httpRes.isOk()) throw new Exception(httpRes.err().body);
             String responseString = httpRes.ok().body;
             Map<String, Object> responseObj = JsonDecoder.decodeMap(responseString);
@@ -687,7 +687,7 @@ public class LLmLib {
         } catch(Exception e) {
             logLLmCall(logFile, "ERROR", e.getMessage(), null);
             if (triesAllowed > 0) {
-                Lib.log("retrying " + modelName + "...");
+                Log.log("retrying " + modelName + "...");
                 Map<String, Object> copyExtraPayload = extraPayload != null ? new LinkedHashMap<>(extraPayload) : null;
                 return llmCallGoogle(promptParts, apiKey, endpoint, modelName, systemPrompt, copyExtraPayload, triesAllowed - 1, logFile);
             }
@@ -703,7 +703,7 @@ public class LLmLib {
         @SuppressWarnings("unchecked")
         Map<String, Object> modelInfo = (Map<String, Object>) MODELS.get(modelKey);
         File imageFile = new File("./datafiles/files4testing/red_dot.png");
-        Lib.asrt(imageFile.exists(), "Test image file must exist");
+        LibTest.asrt(imageFile.exists(), "Test image file must exist");
         Result<String,Exception> res = newInstance().llmCallGoogle(
             List.of( imageFile, "What color is this image?"  ),
             (String) modelInfo.get("apiKey"),
@@ -712,9 +712,9 @@ public class LLmLib {
             null, //"Your caps lock is broken and you are also angry, so you can answer ONLY IN UPPER CASE!",
             null, null, null
         );
-        Lib.asrt(res.isOk(), "Call should succeed");
+        LibTest.asrt(res.isOk(), "Call should succeed");
         String upperResponse = res.ok().toUpperCase();
-        Lib.asrt(
+        LibTest.asrt(
             upperResponse.contains("RED") || upperResponse.contains("ORANGE"),
             "Response should mention RED or ORANGE in uppercase"
         );
@@ -725,12 +725,12 @@ public class LLmLib {
 
     private static List<Object> templateToPromptParts( File templateFile, Map<String,Object> vars) {
         if ( templateFile.length() <= 0 ) {
-            Lib.logException( "template file is empty or doesn't exist: "+templateFile );
+            Log.logException( "template file is empty or doesn't exist: "+templateFile );
             return List.of();
         }
         String promptString = null;
         try {
-            promptString = Lib.evalTemplate(templateFile, vars);
+            promptString = LibString.evalTemplate(templateFile, vars);
         } catch (IOException e) { throw new RuntimeException(e); }
         String logFilespec = LibFile.backupFilespec( "./log/"+templateFile.getName() );
         File logFile = new File(logFilespec);
@@ -779,10 +779,10 @@ public class LLmLib {
             "fast_person_name", "Jane"
         );
         List<Object> promptParts = templateToPromptParts(templateFile, vars);
-        Lib.asrt( promptParts.size()==5, "promptParts size should be 5" );
-        Lib.asrt( promptParts.get(1) instanceof File, "promptParts[1] should be a File" );
-        Lib.asrt( promptParts.get(2) instanceof String, "promptParts[2] should be a String" );
-        Lib.asrt( promptParts.get(3) instanceof File, "promptParts[3] should be a File" );
+        LibTest.asrt( promptParts.size()==5, "promptParts size should be 5" );
+        LibTest.asrt( promptParts.get(1) instanceof File, "promptParts[1] should be a File" );
+        LibTest.asrt( promptParts.get(2) instanceof String, "promptParts[2] should be a String" );
+        LibTest.asrt( promptParts.get(3) instanceof File, "promptParts[3] should be a File" );
         return true;
     }
 
@@ -804,15 +804,15 @@ public class LLmLib {
         String schemaJson = YES_OR_NO_SCHEMA_STRING;
         String inputJson = JsonEncoder.encode( Map.of("answer","yEs") );
         List<String> errorMessages = validateJson(schemaJson,inputJson);
-        Lib.asrt(! errorMessages.isEmpty(), "JSON has an error" );
+        LibTest.asrt(! errorMessages.isEmpty(), "JSON has an error" );
         // try with perfect json
         inputJson = JsonEncoder.encode( Map.of("answer","no") );
         errorMessages = validateJson(schemaJson,inputJson);
-        Lib.asrt( errorMessages.isEmpty(), "JSON has no errors" );
+        LibTest.asrt( errorMessages.isEmpty(), "JSON has no errors" );
         // try it with bonkers json
         inputJson = ":WTF???!";
         errorMessages = validateJson(schemaJson,inputJson);
-        Lib.asrt(! errorMessages.isEmpty(), "JSON has an error" );
+        LibTest.asrt(! errorMessages.isEmpty(), "JSON has an error" );
         return true;
     }
 
@@ -848,11 +848,11 @@ public class LLmLib {
     @SuppressWarnings("unused")
     private static boolean llmYesOrNo_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
-        List<Object> promptParts = List.of( Lib.nw("""
+        List<Object> promptParts = List.of( LibString.nw("""
             Would most normal jellyfish be able to survive comfortably on the surface of the sun?
         """) );
         Result< Pair<Boolean,String>, Exception > result = newInstance().llmYesOrNo(promptParts, null, null, null);
-        Lib.asrt( result.isOk() && !result.ok().a );
+        LibTest.asrt( result.isOk() && !result.ok().a );
         return true;
     }
 
@@ -930,19 +930,19 @@ public class LLmLib {
         Result<String, Exception> textResult = llmLib.llmCall(
             List.of("What is the capital of France?"), "gemini-lite", null, null, null, null
         );
-        Lib.asrt(textResult.isOk(), "Call should succeed");
-        Lib.asrt(textResult.ok().toLowerCase().contains("paris"), "Response should mention Paris");
+        LibTest.asrt(textResult.isOk(), "Call should succeed");
+        LibTest.asrt(textResult.ok().toLowerCase().contains("paris"), "Response should mention Paris");
 
         File imageFile = new File("./datafiles/files4testing/red_dot.png");
-        Lib.asrt(imageFile.exists(), "Test image file must exist");
+        LibTest.asrt(imageFile.exists(), "Test image file must exist");
         Result<String, Exception> imageResult = llmLib.llmCall(
             List.of("What color is this image?", imageFile), null,
             "Your caps lock is broken and you are also angry, so you can answer ONLY IN UPPER CASE!",
             null, null, null
         );
-        Lib.asrt(imageResult.isOk(), "Image call should succeed");
+        LibTest.asrt(imageResult.isOk(), "Image call should succeed");
         String upperResponse = imageResult.ok().toUpperCase();
-        Lib.asrt(
+        LibTest.asrt(
             upperResponse.contains("RED") || upperResponse.contains("ORANGE"),
             "Response should mention RED or ORANGE in uppercase"
         );
@@ -963,7 +963,7 @@ public class LLmLib {
             for (String example : jsonExamples) {
                 List<String> errors = JsonSchema.validateJson(jsonSchema, example);
                 if (!errors.isEmpty()) {
-                    Lib.log("Example JSON does not match schema: " + errors.get(0) +"\nSCHEMA:"+ jsonSchema +"\nEXAMPLE:"+ example);
+                    Log.log("Example JSON does not match schema: " + errors.get(0) +"\nSCHEMA:"+ jsonSchema +"\nEXAMPLE:"+ example);
                     return Result.err(new Exception("Example JSON does not match schema: " + errors.get(0)));
                 }
             }
@@ -985,7 +985,7 @@ public class LLmLib {
         List<Object> promptParts = new ArrayList<>();
         promptParts.add(String.format("Please use this json schema, ```%s```, to express the following:", jsonSchema));
         promptParts.add(text);
-        promptParts.add(Lib.nw("""
+        promptParts.add(LibString.nw("""
             If there are several ways to express this as json, choose the simplest correct one.
             Do not include any extra information in the json; follow the schema exactly.
             Do not include the schema in the response; just the json that the schema describes.
@@ -1001,7 +1001,7 @@ public class LLmLib {
         // Attempt to generate valid JSON with retries
         while (triesAllowed >= 0) {
             if (lastError != null) {
-                Lib.log("retrying transform to json...");
+                Log.log("retrying transform to json...");
                 promptParts.add(String.format(
                     "A previous attempt to convert to json failed with error: %s.", lastError
                 ));
@@ -1046,36 +1046,36 @@ public class LLmLib {
             "My name is John, I am 25 years old, and I am a student.",
             jsonSchema, null, null
         );
-        Lib.asrt(result.isOk(), "Successful schema enforcement");
+        LibTest.asrt(result.isOk(), "Successful schema enforcement");
         Map<String, Object> resultData = JsonDecoder.decodeMap(result.ok() );
-        Lib.asrt("John".equals(resultData.get("name")), "Name should be John");
-        Lib.asrtEQ( 25, resultData.get("age"), "Age should be 25");
-        Lib.asrt(Boolean.TRUE.equals(resultData.get("is_student")), "Is_student should be true");
+        LibTest.asrt("John".equals(resultData.get("name")), "Name should be John");
+        LibTest.asrtEQ( 25, resultData.get("age"), "Age should be 25");
+        LibTest.asrt(Boolean.TRUE.equals(resultData.get("is_student")), "Is_student should be true");
         // Test with example
         List<String> jsonExamples = List.of("{\"name\":\"Jane\",\"age\":22,\"is_student\":false}");
         result = llmLib.enforceSchema(
             "My name is John, I am 25 years old, and I am a student.",
             jsonSchema, jsonExamples, null
         );
-        Lib.asrt(result.isOk(), "Successful schema enforcement with example");
+        LibTest.asrt(result.isOk(), "Successful schema enforcement with example");
         // Test with YES_OR_NO_SCHEMA
         long elapsedTime = System.currentTimeMillis();
         result = llmLib.enforceSchema(
             "Yes, I think that's correct.",
             YES_OR_NO_SCHEMA_STRING, null, null
         );
-        Lib.asrt(result.isOk(), "Successful yes/no schema enforcement");
+        LibTest.asrt(result.isOk(), "Successful yes/no schema enforcement");
         resultData = JsonDecoder.decodeMap(result.ok() );
-        Lib.asrt("yes".equals(resultData.get("answer")), "Answer should be yes");
-        Lib.asrt( System.currentTimeMillis() - elapsedTime < 500, "Should have taken less than half a second" );
+        LibTest.asrt("yes".equals(resultData.get("answer")), "Answer should be yes");
+        LibTest.asrt( System.currentTimeMillis() - elapsedTime < 500, "Should have taken less than half a second" );
         // Test with already JSON input
         elapsedTime = System.currentTimeMillis();
         result = llmLib.enforceSchema(
             "```json\n{\"name\":\"John\",\"age\":25,\"is_student\":true}\n```",
             jsonSchema, null, null
         );
-        Lib.asrt(result.isOk(), "Successful schema enforcement with JSON input");
-        Lib.asrt( System.currentTimeMillis() - elapsedTime < 500, "Should have taken less than half a second" );
+        LibTest.asrt(result.isOk(), "Successful schema enforcement with JSON input");
+        LibTest.asrt( System.currentTimeMillis() - elapsedTime < 500, "Should have taken less than half a second" );
         return true;
     }
 
@@ -1113,7 +1113,7 @@ public class LLmLib {
             request.put("features", features);
             requests.add(request);
             requestBody.put("requests", requests);
-            Lib.log("Calling Google Vision OCR API...");
+            Log.log("Calling Google Vision OCR API...");
             long startTime = System.currentTimeMillis();
             Map<String, String> headers = new LinkedHashMap<>();
             headers.put("Content-Type", "application/json");
@@ -1124,7 +1124,7 @@ public class LLmLib {
             logFile = logLLmCall(logFile, "REQUEST", requestLog, null );
             Result<HttpRes,HttpRes> httpRes = httpRequest(url, headers, requestBody, "POST");
             long elapsedTime = System.currentTimeMillis() - startTime;
-            Lib.log("response time for google-vision_ocr: " + (elapsedTime / 1000.0) + "s");
+            Log.log("response time for google-vision_ocr: " + (elapsedTime / 1000.0) + "s");
             Map<String, Object> extraLog = new LinkedHashMap<>();
             extraLog.put("elapsed_time", elapsedTime / 1000.0);
             extraLog.put("imgFile", imgFile );
@@ -1197,19 +1197,19 @@ public class LLmLib {
     private static boolean ocr_TEST_(boolean findLineNumber) {
         if (findLineNumber) throw new RuntimeException();
         File imgFile = new File("./datafiles/files4testing/screenshot.png");
-        Lib.asrt(imgFile.exists(), "Test image file must exist");
+        LibTest.asrt(imgFile.exists(), "Test image file must exist");
         Result< List<Map<String,Object>>, Exception > res = ocr(imgFile);
-        Lib.asrt(res.isOk(), "OCR should succeed");
-        Lib.asrt(! Lib.isEmpty(res), "Result should not be empty");
+        LibTest.asrt(res.isOk(), "OCR should succeed");
+        LibTest.asrt(! Lib.isEmpty(res), "Result should not be empty");
         for (Map<String, Object> item : res.ok() ) {
-            Lib.asrt(item.containsKey("text"), "Each result item should have text");
-            Lib.asrt(item.containsKey("rectangle"), "Each result item should have a rectangle");
+            LibTest.asrt(item.containsKey("text"), "Each result item should have text");
+            LibTest.asrt(item.containsKey("rectangle"), "Each result item should have a rectangle");
             @SuppressWarnings("unchecked")
             Map<String, Object> rect = (Map<String, Object>) item.get("rectangle");
-            Lib.asrt(rect.containsKey("x"), "Rectangle should have x coordinate");
-            Lib.asrt(rect.containsKey("y"), "Rectangle should have y coordinate");
-            Lib.asrt(rect.containsKey("width"), "Rectangle should have width");
-            Lib.asrt(rect.containsKey("height"), "Rectangle should have height");
+            LibTest.asrt(rect.containsKey("x"), "Rectangle should have x coordinate");
+            LibTest.asrt(rect.containsKey("y"), "Rectangle should have y coordinate");
+            LibTest.asrt(rect.containsKey("width"), "Rectangle should have width");
+            LibTest.asrt(rect.containsKey("height"), "Rectangle should have height");
         }
         boolean foundRecycle = false;
         for (Map<String, Object> item : res.ok() ) {
@@ -1222,11 +1222,11 @@ public class LLmLib {
                 int width = (int) rect.get("width");
                 int height = (int) rect.get("height");
                 boolean containsPoint = x <= 40 && y <= 66 && (x + width) >= 40 && (y + height) >= 66;
-                Lib.asrt(containsPoint, "Rectangle should contain point (40, 66)");
+                LibTest.asrt(containsPoint, "Rectangle should contain point (40, 66)");
                 break;
             }
         }
-        Lib.asrt(foundRecycle, "Should find an item with text 'Recycle'");
+        LibTest.asrt(foundRecycle, "Should find an item with text 'Recycle'");
         return true;
     }
 
@@ -1323,7 +1323,7 @@ public class LLmLib {
             // Log the request.
             logLLmCall(logFile,"REQUEST",body,null);
             // Send HTTP POST.
-            Lib.log( "calling openai-compatible "+ modelName +"..." );
+            Log.log( "calling openai-compatible "+ modelName +"..." );
             long startTime = System.currentTimeMillis();
             // Add extra info logging block
             { // Log extra info.
@@ -1343,7 +1343,7 @@ public class LLmLib {
                 endpoint, Map.of("Authorization","Bearer "+apiKey), body, "POST"
             );
             long elapsedTime = System.currentTimeMillis() - startTime;
-            Lib.log( "response time for openai-compatible "+ modelName +": "+ elapsedTime +"ms" );
+            Log.log( "response time for openai-compatible "+ modelName +": "+ elapsedTime +"ms" );
             if (!httpRes.isOk()) throw new Exception(httpRes.err().body );
             String responseString = httpRes.ok().body;
             // Decode the response.
@@ -1355,9 +1355,9 @@ public class LLmLib {
             if ( Lib.isEmpty(output) ) throw new Exception("No content in response");
             return Result.<String,Exception>ok(output).setLogFile(logFile);
         } catch (Exception e) {
-            Lib.log("ERROR: " + e.getMessage());
+            Log.log("ERROR: " + e.getMessage());
             if (triesAllowed > 0) {
-                Lib.log("retrying " + modelName + "...");
+                Log.log("retrying " + modelName + "...");
                 return llmCallOpenAiCompat(
                     promptParts, apiKey, endpoint, modelName, systemPrompt, extraPayload, triesAllowed-1, logFile
                 );
@@ -1372,7 +1372,7 @@ public class LLmLib {
         @SuppressWarnings("unchecked")
         Map<String, Object> modelInfo = (Map<String, Object>) MODELS.get(modelKey);
         File imageFile = new File("./datafiles/files4testing/red_dot.png");
-        Lib.asrt(imageFile.exists(), "Test image file must exist");
+        LibTest.asrt(imageFile.exists(), "Test image file must exist");
         Result<String,Exception> res = newInstance().llmCallOpenAiCompat(
             List.of( "What color is this image?", imageFile ),
             (String) modelInfo.get("apiKey"),
@@ -1381,9 +1381,9 @@ public class LLmLib {
             "Your caps lock is broken and you are also angry, so you can answer ONLY IN UPPER CASE!",
             null, null, null
         );
-        Lib.asrt(res.isOk(), "Call should succeed");
+        LibTest.asrt(res.isOk(), "Call should succeed");
         String upperResponse = res.ok().toUpperCase();
-        Lib.asrt(
+        LibTest.asrt(
             upperResponse.contains("RED") || upperResponse.contains("ORANGE"),
             "Response should mention RED or ORANGE in uppercase"
         );
@@ -1567,7 +1567,7 @@ class CachedLLmLib extends LLmLib {
                     byte[] sig = Lib.secureSignature(inp,null);
                     return Lib.toBase62(sig);
                 } catch (IOException e) {
-                    Lib.log(e);
+                    Log.log(e);
                     throw new RuntimeException(e);
                 }
             } );

@@ -212,11 +212,11 @@ public class Email {
         Email email = new Email();
         // Test null to address
         Result<Boolean,Exception> result = email.sendEmail( null, "subject", "body", null, null );
-        Lib.asrt( !result.isOk() );
-        Lib.asrt( result.err() instanceof IllegalArgumentException );
+        LibTest.asrt( !result.isOk() );
+        LibTest.asrt( result.err() instanceof IllegalArgumentException );
         // Test with valid minimal parameters
         result = email.sendEmail( "test@example.com", null, null, null, null );
-        Lib.asrt( result.isOk() || result.err() instanceof MessagingException );
+        LibTest.asrt( result.isOk() || result.err() instanceof MessagingException );
         return true;
     }
 
@@ -233,7 +233,7 @@ public class Email {
         Result<Boolean,Exception> sendResult = email.sendEmail( email.defaultFrom, testSubject, testBody, null, null );
 
         if ( !sendResult.isOk() ) {
-            Lib.log( "Could not send test email: " + sendResult.err() );
+            Log.log( "Could not send test email: " + sendResult.err() );
             return true; // Skip test if email sending fails
         }
 
@@ -243,7 +243,7 @@ public class Email {
         // Try to read the email
         Result<List<EmailMessage>,Exception> readResult = email.readEmails( 20 );
         if ( !readResult.isOk() ) {
-            Lib.log( "Could not read emails: " + readResult.err() );
+            Log.log( "Could not read emails: " + readResult.err() );
             return true; // Skip test if email reading fails
         }
 
@@ -252,13 +252,13 @@ public class Email {
         for ( EmailMessage msg : readResult.ok() ) {
             if ( msg.subject!=null && msg.subject.equals(testSubject) ) {
                 found = true;
-                Lib.asrt( msg.body.contains("test email") );
+                LibTest.asrt( msg.body.contains("test email") );
                 break;
             }
         }
 
         if ( !found ) {
-            Lib.log( "Test email not found in inbox (may take time to arrive)" );
+            Log.log( "Test email not found in inbox (may take time to arrive)" );
         }
 
         return true;

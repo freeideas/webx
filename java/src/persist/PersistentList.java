@@ -90,7 +90,7 @@ public class PersistentList extends AbstractList<Object> {
         try ( PersistentData pd = PersistentData.temp() ) {
             if (false) { // test with simple values
                 PersistentList pL = pd.getRootList();
-                Lib.asrtEQ( 0, pL.size() );
+                LibTest.asrtEQ( 0, pL.size() );
                 pL.add(0);
                 pL.add(5);
                 pL.add(1,4);
@@ -100,8 +100,8 @@ public class PersistentList extends AbstractList<Object> {
                 pd.debugDump();
                 Iterator<Object> it = pL.iterator();
                 for (int i=0; i<6; i++) {
-                    Lib.asrtEQ( i, pL.get(i) );
-                    Lib.asrtEQ( i, it.next() );
+                    LibTest.asrtEQ( i, pL.get(i) );
+                    LibTest.asrtEQ( i, it.next() );
                 }
             }
             { // test with complex values
@@ -114,7 +114,7 @@ public class PersistentList extends AbstractList<Object> {
                 );
                 String expectJson = JsonEncoder.encode(expected);
                 String actualJson = JsonEncoder.encode(pL);
-                Lib.asrtEQ( expectJson, JsonEncoder.encode(pL) );
+                LibTest.asrtEQ( expectJson, JsonEncoder.encode(pL) );
             }
         }
         return true;
@@ -125,8 +125,8 @@ public class PersistentList extends AbstractList<Object> {
         try ( PersistentData pd = PersistentData.temp() ) {
             PersistentList list = pd.getRootList();
             { // initial state
-                Lib.asrtEQ(list.size(), 0, "Cleared list should be empty");
-                Lib.asrt(list.isEmpty(), "Cleared list should be empty");
+                LibTest.asrtEQ(list.size(), 0, "Cleared list should be empty");
+                LibTest.asrt(list.isEmpty(), "Cleared list should be empty");
             }
             { // add operation
                 Object obj1 = "test1";
@@ -135,54 +135,54 @@ public class PersistentList extends AbstractList<Object> {
                 list.add(obj1);
                 list.add(obj2);
                 list.add(obj3);
-                Lib.asrtEQ(list.size(), 3, "List size incorrect after adds");
-                Lib.asrt(!list.isEmpty(), "List should not be empty after adds");
+                LibTest.asrtEQ(list.size(), 3, "List size incorrect after adds");
+                LibTest.asrt(!list.isEmpty(), "List should not be empty after adds");
             }
             { // get operation
                 Object obj1 = list.get(0);
                 Object obj2 = list.get(1);
                 Object obj3 = list.get(2);
-                Lib.asrtEQ(obj1, "test1", "Get operation returned incorrect element at index 0");
-                Lib.asrtEQ(obj2, 42, "Get operation returned incorrect element at index 1");
-                Lib.asrt(obj3 != null, "Get operation returned incorrect element at index 2");
+                LibTest.asrtEQ(obj1, "test1", "Get operation returned incorrect element at index 0");
+                LibTest.asrtEQ(obj2, 42, "Get operation returned incorrect element at index 1");
+                LibTest.asrt(obj3 != null, "Get operation returned incorrect element at index 2");
             }
             { // contains operation
-                Lib.asrt(list.contains("test1"), "Contains operation failed for obj1");
-                Lib.asrt(list.contains(42), "Contains operation failed for obj2");
+                LibTest.asrt(list.contains("test1"), "Contains operation failed for obj1");
+                LibTest.asrt(list.contains(42), "Contains operation failed for obj2");
             }
             { // indexOf operation
-                Lib.asrtEQ(list.indexOf("test1"), 0, "IndexOf returned incorrect index for obj1");
-                Lib.asrtEQ(list.indexOf(42), 1, "IndexOf returned incorrect index for obj2");
+                LibTest.asrtEQ(list.indexOf("test1"), 0, "IndexOf returned incorrect index for obj1");
+                LibTest.asrtEQ(list.indexOf(42), 1, "IndexOf returned incorrect index for obj2");
             }
             { // remove by index
                 Object removed = list.remove(1);
-                Lib.asrtEQ(removed, 42, "Remove by index returned incorrect element");
-                Lib.asrtEQ(list.size(), 2, "List size incorrect after remove by index");
-                Lib.asrt(!list.contains(42), "List should not contain removed element");
+                LibTest.asrtEQ(removed, 42, "Remove by index returned incorrect element");
+                LibTest.asrtEQ(list.size(), 2, "List size incorrect after remove by index");
+                LibTest.asrt(!list.contains(42), "List should not contain removed element");
             }
             { // remove by object
                 boolean wasRemoved = list.remove("test1");
-                Lib.asrt(wasRemoved, "Remove by object should return true");
-                Lib.asrtEQ(list.size(), 1, "List size incorrect after remove by object");
-                Lib.asrt(!list.contains("test1"), "List should not contain removed element");
+                LibTest.asrt(wasRemoved, "Remove by object should return true");
+                LibTest.asrtEQ(list.size(), 1, "List size incorrect after remove by object");
+                LibTest.asrt(!list.contains("test1"), "List should not contain removed element");
             }
             { // clear operation
                 list.clear();
-                Lib.asrt(list.isEmpty(), "List should be empty after clear");
-                Lib.asrtEQ(list.size(), 0, "List size should be 0 after clear");
+                LibTest.asrt(list.isEmpty(), "List should be empty after clear");
+                LibTest.asrtEQ(list.size(), 0, "List size should be 0 after clear");
             }
             { // add at index
                 list.add("test1");
                 list.add(0,42);
-                Lib.asrtEQ(list.size(), 2, "List size incorrect after add at index");
-                Lib.asrtEQ(list.get(0), 42, "Element at index 0 incorrect after add at index");
-                Lib.asrtEQ(list.get(1), "test1", "Element at index 1 incorrect after add at index");
+                LibTest.asrtEQ(list.size(), 2, "List size incorrect after add at index");
+                LibTest.asrtEQ(list.get(0), 42, "Element at index 0 incorrect after add at index");
+                LibTest.asrtEQ(list.get(1), "test1", "Element at index 1 incorrect after add at index");
             }
             { // set operation
                 Map<String, String> obj3 = Map.of("test", "value"); // Use a JSON-serializable object instead
                 Object previous = list.set(0,obj3);
-                Lib.asrtEQ(previous, 42, "Set operation returned incorrect previous element");
-                Lib.asrtEQ(list.get(0), obj3, "Element at index 0 incorrect after set");
+                LibTest.asrtEQ(previous, 42, "Set operation returned incorrect previous element");
+                LibTest.asrtEQ(list.get(0), obj3, "Element at index 0 incorrect after set");
             }
             { // iterator
                 list.clear();
@@ -195,31 +195,31 @@ public class PersistentList extends AbstractList<Object> {
                 while (iterator.hasNext()) {
                     pd.deleteOrphans(0);
                     Object obj = iterator.next();
-                    if (count==0) Lib.asrtEQ(obj, "test1", "Returned incorrect element at position 0");
-                    if (count==1) Lib.asrtEQ(obj, 42, "Returned incorrect element at position 1");
-                    if (count==2) Lib.asrtEQ(obj, obj3, "Returned incorrect element at position 2");
+                    if (count==0) LibTest.asrtEQ(obj, "test1", "Returned incorrect element at position 0");
+                    if (count==1) LibTest.asrtEQ(obj, 42, "Returned incorrect element at position 1");
+                    if (count==2) LibTest.asrtEQ(obj, obj3, "Returned incorrect element at position 2");
                     count++;
                 }
-                Lib.asrtEQ(count, 3, "Iterator didn't iterate through all elements");
+                LibTest.asrtEQ(count, 3, "Iterator didn't iterate through all elements");
             }
             { // iterator remove
                 Iterator<Object> iterator = list.iterator();
                 iterator.next();
                 pd.deleteOrphans(0);
                 iterator.remove();
-                Lib.asrtEQ(list.size(), 2, "List size incorrect after iterator remove");
-                Lib.asrt(!list.contains("test1"), "List should not contain element removed by iterator");
+                LibTest.asrtEQ(list.size(), 2, "List size incorrect after iterator remove");
+                LibTest.asrt(!list.contains("test1"), "List should not contain element removed by iterator");
             }
             { // null handling
                 list.add(null);
-                Lib.asrtEQ(list.size(), 3, "List size incorrect after adding null");
-                Lib.asrt(list.contains(null), "List should contain null after adding it");
+                LibTest.asrtEQ(list.size(), 3, "List size incorrect after adding null");
+                LibTest.asrt(list.contains(null), "List should contain null after adding it");
             }
             { // exception handling
                 boolean caughtException = false;
                 try { list.get(10); }
                 catch (IndexOutOfBoundsException e) { caughtException = true; }
-                Lib.asrt(caughtException, "Should throw IndexOutOfBoundsException for invalid index");
+                LibTest.asrt(caughtException, "Should throw IndexOutOfBoundsException for invalid index");
             }
             { // subList operation
                 list.clear();
@@ -229,10 +229,10 @@ public class PersistentList extends AbstractList<Object> {
                 Object obj3 = Map.of("key", "value");  // Changed from new Object()
                 list.add(obj3);
                 List<Object> subList = list.subList(0,2);
-                Lib.asrtEQ(subList.size(), 2, "SubList size incorrect");
-                Lib.asrt(subList.contains("test1"), "SubList should contain obj1");
-                Lib.asrt(subList.contains(42), "SubList should contain obj2");
-                Lib.asrt(!subList.contains(obj3), "SubList should not contain obj3");
+                LibTest.asrtEQ(subList.size(), 2, "SubList size incorrect");
+                LibTest.asrt(subList.contains("test1"), "SubList should contain obj1");
+                LibTest.asrt(subList.contains(42), "SubList should contain obj2");
+                LibTest.asrt(!subList.contains(obj3), "SubList should not contain obj3");
             }
             { // deque operations
                 list.clear();
@@ -248,12 +248,12 @@ public class PersistentList extends AbstractList<Object> {
                 list.unshift("ONE");
                 String actualJson = JsonEncoder.encode(list);
                 String expectJson = JsonEncoder.encode( List.of("ONE","TWO","THREE","FOUR","FIVE") );
-                Lib.asrtEQ(expectJson,actualJson);
+                LibTest.asrtEQ(expectJson,actualJson);
             }
             { // delete orphans
                 list.clear();
                 pd.deleteOrphans(0);
-                Lib.asrt( pd.debugDump().size() <= 1 );
+                LibTest.asrt( pd.debugDump().size() <= 1 );
             }
         }
         return true;

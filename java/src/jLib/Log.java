@@ -90,6 +90,16 @@ public class Log {
     
     
     
+    public static Object logException( Object msg ) {
+        RuntimeException re = msg instanceof RuntimeException r ? r : null;
+        String s = msg instanceof String str ? str : LibString.toString(msg);
+        try { if (re==null) throw new RuntimeException(s); } catch ( RuntimeException e ) { re = e; }
+        log(re);
+        return msg;
+    }
+
+
+    
     /**
      * Get the default log file
      * @return The log file
@@ -123,24 +133,24 @@ public class Log {
         logOnceCache.clear();
         
         // Test basic logOnce(Object, long)
-        Lib.asrt(  logOnce( "testing logOnce", 500 ) ); // first time should work
-        Lib.asrt(! logOnce( "testing logOnce", 500 ) ); // second time should be suppressed
+        LibTest.asrt(  logOnce( "testing logOnce", 500 ) ); // first time should work
+        LibTest.asrt(! logOnce( "testing logOnce", 500 ) ); // second time should be suppressed
         try{ Thread.sleep(501); }catch(InterruptedException ignore){}
-        Lib.asrt( logOnce( "testing logOnce", 500 ) ); // after wait for message to expire, should work again
+        LibTest.asrt( logOnce( "testing logOnce", 500 ) ); // after wait for message to expire, should work again
         
         // Test logOnce(Object) with default 5000ms
         String uniqueMsg = "default timing test " + System.currentTimeMillis();
-        Lib.asrt(  logOnce( uniqueMsg ) );
-        Lib.asrt(! logOnce( uniqueMsg ) );
+        LibTest.asrt(  logOnce( uniqueMsg ) );
+        LibTest.asrt(! logOnce( uniqueMsg ) );
         
         // Test logOnce with msgID
-        Lib.asrt(  logOnce( "msgID1", "message 1", 100 ) );
-        Lib.asrt(! logOnce( "msgID1", "message 1", 100 ) );
-        Lib.asrt(  logOnce( "msgID2", "message 2", 100 ) ); // different msgID should work
+        LibTest.asrt(  logOnce( "msgID1", "message 1", 100 ) );
+        LibTest.asrt(! logOnce( "msgID1", "message 1", 100 ) );
+        LibTest.asrt(  logOnce( "msgID2", "message 2", 100 ) ); // different msgID should work
         
         // Test edge cases
-        Lib.asrt(  logOnce( null, "null msgID", 100 ) );
-        Lib.asrt(  logOnce( "msgID3", null, 100 ) ); // null msg should use msgID
+        LibTest.asrt(  logOnce( null, "null msgID", 100 ) );
+        LibTest.asrt(  logOnce( "msgID3", null, 100 ) ); // null msg should use msgID
         
         return true;
     }
@@ -153,23 +163,23 @@ public class Log {
         
         // Test basic logging
         Object result = log("Test message");
-        Lib.asrtEQ(result, "Test message");
+        LibTest.asrtEQ(result, "Test message");
         
         // Test exception logging
         Exception e = new Exception("Test exception");
         result = log(e);
-        Lib.asrt(result instanceof Exception);
+        LibTest.asrt(result instanceof Exception);
         
         // Test null logging
         result = log(null);
-        Lib.asrt(result == null);
+        LibTest.asrt(result == null);
         
         // Test complex object logging (should use JsonEncoder)
         java.util.Map<String,Object> map = new java.util.HashMap<>();
         map.put("key", "value");
         map.put("number", 42);
         result = log(map);
-        Lib.asrt(result instanceof java.util.Map);
+        LibTest.asrt(result instanceof java.util.Map);
         
         return true;
     }
@@ -182,14 +192,14 @@ public class Log {
         
         // Test default log file
         File defaultFile = getLogFile();
-        Lib.asrt( defaultFile != null );
-        Lib.asrt( defaultFile.getPath().contains("log/") );
-        Lib.asrt( defaultFile.getPath().endsWith(".log") );
+        LibTest.asrt( defaultFile != null );
+        LibTest.asrt( defaultFile.getPath().contains("log/") );
+        LibTest.asrt( defaultFile.getPath().endsWith(".log") );
         
         // Test setting custom log file
         File customFile = new File("./log/custom_test.log");
         setLogFile(customFile);
-        Lib.asrtEQ( getLogFile(), customFile );
+        LibTest.asrtEQ( getLogFile(), customFile );
         
         // Test that logging works with custom file
         log("Testing custom log file");
@@ -197,7 +207,7 @@ public class Log {
         // Reset to null to test default behavior again
         logFile.set(null);
         File newDefault = getLogFile();
-        Lib.asrt( !newDefault.equals(customFile) );
+        LibTest.asrt( !newDefault.equals(customFile) );
         
         return true;
     }

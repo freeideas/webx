@@ -46,7 +46,7 @@ public class HttpJssHandler implements HttpHandler {
         try {
             engine.eval( "var Java = { type: function(className) { return Class.forName(className); } };" );
         } catch ( ScriptException e ) {
-            Lib.log( "Failed to create Java helper: " + e.getMessage() );
+            Log.log( "Failed to create Java helper: " + e.getMessage() );
         }
     }
 
@@ -87,7 +87,7 @@ public class HttpJssHandler implements HttpHandler {
             }
             return createHttpResponse( result );
         } catch ( Exception e ) {
-            Lib.log( e );
+            Log.log( e );
             return new HttpErrorResponse( 500, "JavaScript execution error: " + e.getMessage() );
         }
     }
@@ -106,7 +106,7 @@ public class HttpJssHandler implements HttpHandler {
             ) );
             return engine.eval( "(" + requestJson + ")" );
         } catch ( Exception e ) {
-            Lib.log( e );
+            Log.log( e );
             return new LinkedHashMap<>();
         }
     }
@@ -142,7 +142,7 @@ public class HttpJssHandler implements HttpHandler {
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( statusLine, headers );
             return new HttpResponse( headerBlock, bodyBytes );
         } catch ( Exception e ) {
-            Lib.log( e );
+            Log.log( e );
             return new HttpErrorResponse( 500, "Error processing JavaScript response: " + e.getMessage() );
         }
     }
@@ -202,20 +202,20 @@ public class HttpJssHandler implements HttpHandler {
                 HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
                 HttpResponse response = handler.handle( req );
 
-                Lib.asrt( response.headerBlock.firstLine.contains( "200" ) );
+                LibTest.asrt( response.headerBlock.firstLine.contains( "200" ) );
                 String body = new String( response.body );
-                Lib.asrt( body.contains( "\"count\":" + i ) );
-                Lib.asrt( body.contains( "\"hasDb\":true" ) );
-                Lib.asrt( body.contains( "\"lastMethod\":\"GET\"" ) );
+                LibTest.asrt( body.contains( "\"count\":" + i ) );
+                LibTest.asrt( body.contains( "\"hasDb\":true" ) );
+                LibTest.asrt( body.contains( "\"lastMethod\":\"GET\"" ) );
             }
 
             Object testCountObj = database.get("testCount");
             Object testCount = testCountObj instanceof Jsonable j ? j.get() : testCountObj;
-            Lib.asrtEQ( testCount, 3 );
+            LibTest.asrtEQ( testCount, 3 );
 
             Object lastMethodObj = database.get("lastMethod");
             Object lastMethod = lastMethodObj instanceof Jsonable j ? j.get() : lastMethodObj;
-            Lib.asrtEQ( lastMethod, "GET" );
+            LibTest.asrtEQ( lastMethod, "GET" );
             return true;
         } finally {
             LibFile.rm( tempDir );
@@ -254,9 +254,9 @@ public class HttpJssHandler implements HttpHandler {
             HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
             HttpResponse response = handler.handle( req );
 
-            Lib.asrt( response.headerBlock.firstLine.contains( "200" ) );
+            LibTest.asrt( response.headerBlock.firstLine.contains( "200" ) );
             String body = new String( response.body );
-            Lib.asrt( body.contains( "Legacy handler works: POST" ) );
+            LibTest.asrt( body.contains( "Legacy handler works: POST" ) );
             return true;
         } finally {
             LibFile.rm( tempDir );
@@ -308,15 +308,15 @@ public class HttpJssHandler implements HttpHandler {
             HttpHeaderBlock postHeader = new HttpHeaderBlock( "POST /persist_test.jss HTTP/1.1", new HashMap<>() );
             HttpRequest postReq = new HttpRequest( postHeader, new byte[0] );
             HttpResponse postResponse = handler.handle( postReq );
-            Lib.asrt( postResponse.headerBlock.firstLine.contains( "201" ) );
+            LibTest.asrt( postResponse.headerBlock.firstLine.contains( "201" ) );
 
             HttpHeaderBlock getHeader = new HttpHeaderBlock( "GET /persist_test.jss HTTP/1.1", new HashMap<>() );
             HttpRequest getReq = new HttpRequest( getHeader, new byte[0] );
             HttpResponse getResponse = handler.handle( getReq );
-            Lib.asrt( getResponse.headerBlock.firstLine.contains( "200" ) );
+            LibTest.asrt( getResponse.headerBlock.firstLine.contains( "200" ) );
             String body = new String( getResponse.body );
-            Lib.asrt( body.contains( "\"userCount\":1" ) );
-            Lib.asrt( body.contains( "TestUser" ) );
+            LibTest.asrt( body.contains( "\"userCount\":1" ) );
+            LibTest.asrt( body.contains( "TestUser" ) );
 
             return true;
         } finally {
@@ -385,11 +385,11 @@ public class HttpJssHandler implements HttpHandler {
             System.out.println( "Response status: " + response.headerBlock.firstLine );
             System.out.println( "Response body: " + body );
 
-            Lib.asrt( response.headerBlock.firstLine.contains( "200" ) );
+            LibTest.asrt( response.headerBlock.firstLine.contains( "200" ) );
             // Check if it's a success response or error response
             if ( body.contains( "\"success\":true" ) ) {
-                Lib.asrt( body.contains( "java.io.File" ) );
-                Lib.asrt( body.contains( "\"fileExists\":true" ) );
+                LibTest.asrt( body.contains( "java.io.File" ) );
+                LibTest.asrt( body.contains( "\"fileExists\":true" ) );
             } else {
                 // If there's an error, print it and still pass the test since JS engine is working
                 System.out.println( "JavaScript execution had an error, but engine is available!" );
@@ -426,9 +426,9 @@ public class HttpJssHandler implements HttpHandler {
             HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET /test.jss HTTP/1.1", new HashMap<>() );
             HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
             HttpResponse response = handler.handle( req );
-            Lib.asrt( response.headerBlock.firstLine.contains( "200" ) );
+            LibTest.asrt( response.headerBlock.firstLine.contains( "200" ) );
             String responseBody = new String( response.body );
-            Lib.asrt( responseBody.contains( "Hello from GET" ) );
+            LibTest.asrt( responseBody.contains( "Hello from GET" ) );
             return true;
         } finally {
             LibFile.rm( tempDir );

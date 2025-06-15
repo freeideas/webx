@@ -138,22 +138,22 @@ public class JsonSchema {
         // Test with valid input
         String validJson = "{\"answer\":\"yes\"}";
         List<String> errors = validateJson(schemaJson, validJson);
-        Lib.asrt(errors.isEmpty(), "Valid JSON should have no errors");
+        LibTest.asrt(errors.isEmpty(), "Valid JSON should have no errors");
         
         // Test with invalid enum value
         String invalidEnum = "{\"answer\":\"maybe\"}";
         errors = validateJson(schemaJson, invalidEnum);
-        Lib.asrt(!errors.isEmpty(), "Invalid enum value should have errors");
+        LibTest.asrt(!errors.isEmpty(), "Invalid enum value should have errors");
         
         // Test with missing required field
         String missingField = "{}";
         errors = validateJson(schemaJson, missingField);
-        Lib.asrt(!errors.isEmpty(), "Missing required field should have errors");
+        LibTest.asrt(!errors.isEmpty(), "Missing required field should have errors");
         
         // Test with invalid JSON
         String invalidJson = "not json";
         errors = validateJson(schemaJson, invalidJson);
-        Lib.asrt(!errors.isEmpty(), "Invalid JSON should have errors");
+        LibTest.asrt(!errors.isEmpty(), "Invalid JSON should have errors");
         
         return true;
     }
@@ -179,17 +179,17 @@ public class JsonSchema {
         // Test with valid complete object
         String validJson = "{\"name\":\"John\",\"age\":25,\"is_student\":true}";
         List<String> errors = validateJson(schemaJson, validJson);
-        Lib.asrt(errors.isEmpty(), "Valid JSON should have no errors");
+        LibTest.asrt(errors.isEmpty(), "Valid JSON should have no errors");
         
         // Test with missing optional field
         String missingOptional = "{\"name\":\"John\",\"age\":25}";
         errors = validateJson(schemaJson, missingOptional);
-        Lib.asrt(errors.isEmpty(), "Missing optional field should have no errors");
+        LibTest.asrt(errors.isEmpty(), "Missing optional field should have no errors");
         
         // Test with wrong type
         String wrongType = "{\"name\":\"John\",\"age\":\"twenty-five\"}";
         errors = validateJson(schemaJson, wrongType);
-        Lib.asrt(!errors.isEmpty(), "Wrong type should have errors");
+        LibTest.asrt(!errors.isEmpty(), "Wrong type should have errors");
         
         return true;
     }

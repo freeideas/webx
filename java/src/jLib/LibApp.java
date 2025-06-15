@@ -37,10 +37,10 @@ public class LibApp {
     private static boolean loadCreds_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
         Jsonable creds = loadCreds();
-        Lib.asrt( creds != null );
+        LibTest.asrt( creds != null );
         Object secretObj = creds.get("SECRET");
         Object secret = secretObj instanceof Jsonable j ? j.get() : secretObj;
-        Lib.asrt(! Lib.isEmpty( secret ) );
+        LibTest.asrt(! Lib.isEmpty( secret ) );
         return true;
     }
 
@@ -144,13 +144,13 @@ public class LibApp {
         File tmpLockFile = File.createTempFile("test_lock_", ".lock");
         tmpLockFile.deleteOnExit();
         boolean firstCheck = alreadyRunning(tmpLockFile);
-        Lib.asrt( !firstCheck );
+        LibTest.asrt( !firstCheck );
         
         // Simulate another process holding the lock
         RandomAccessFile raf = new RandomAccessFile(tmpLockFile, "rw");
         FileLock lock = raf.getChannel().lock();
         boolean secondCheck = alreadyRunning(tmpLockFile);
-        Lib.asrt( secondCheck, "Expected true when lock is held, got: " + secondCheck );
+        LibTest.asrt( secondCheck, "Expected true when lock is held, got: " + secondCheck );
         lock.release();
         raf.close();
         tmpLockFile.delete();

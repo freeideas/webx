@@ -177,7 +177,7 @@ public class LibTest {
             } catch (Throwable t) {
                 failedMethods.add(methodInfo);
                 if ( t instanceof InvocationTargetException ite ) t = ite.getTargetException();
-                String failMsg = "Fail in method "+methodInfo+": "+Lib.dblQuot( t.getMessage() );
+                String failMsg = "Fail in method "+methodInfo+": "+LibString.dblQuot( t.getMessage() );
                 System.out.println(failMsg);
                 methodInfo.setErrorTrace(t);
                 methodInfo.errMsg = t.getMessage();

@@ -219,11 +219,11 @@ public class SshClient implements AutoCloseable  {
         localFile.delete();
         Lib.append2file( localFile, s );
         long fileSize = new File(localFilePath).length();
-        Lib.asrt( fileSize > 0 );
+        LibTest.asrt( fileSize > 0 );
         String remoteFilePath = "test.txt";
         try( SshClient sshCli = new SshClient(sftpHost,sftpUser,sftpPass); ) {
             long remoteFileSize = sshCli.upload( new FileInputStream(localFilePath), remoteFilePath, false );
-            Lib.asrtEQ(fileSize,remoteFileSize);
+            LibTest.asrtEQ(fileSize,remoteFileSize);
             try( InputStream inp = sshCli.download(remoteFilePath); ) {
                 byte[] buf = new byte[(int)fileSize];
                 int totalRead = 0;
@@ -232,20 +232,20 @@ public class SshClient implements AutoCloseable  {
                     totalRead += read;
                 }
                 String testS = new String(buf);
-                Lib.asrtEQ(s,testS);
+                LibTest.asrtEQ(s,testS);
             }
-            Lib.asrt( sshCli.rm(remoteFilePath) );
-            Lib.asrt( sshCli.fileLength(remoteFilePath) < 0 );
+            LibTest.asrt( sshCli.rm(remoteFilePath) );
+            LibTest.asrt( sshCli.fileLength(remoteFilePath) < 0 );
             Pair<InputStream,InputStream> pair = sshCli.osCmd( "touch "+remoteFilePath, null );
             int c = pair.a.read();
-            Lib.asrt( c == -1 );
+            LibTest.asrt( c == -1 );
             c = pair.b.read();
-            Lib.asrt( c == -1 );
-            Lib.asrt( sshCli.fileLength("test.txt") == 0 );
-            Lib.asrt( sshCli.rm(remoteFilePath) );
+            LibTest.asrt( c == -1 );
+            LibTest.asrt( sshCli.fileLength("test.txt") == 0 );
+            LibTest.asrt( sshCli.rm(remoteFilePath) );
             sshCli.osCmd( "touch "+remoteFilePath );
-            Lib.asrt( sshCli.fileLength("test.txt") == 0 );
-            Lib.asrt( sshCli.rm(remoteFilePath) );
+            LibTest.asrt( sshCli.fileLength("test.txt") == 0 );
+            LibTest.asrt( sshCli.rm(remoteFilePath) );
         }
         return true;
     }

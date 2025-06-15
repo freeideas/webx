@@ -123,27 +123,27 @@ public class LibString {
             String escaped, unescaped;
             escaped = xmlSafeText(s,null);
             unescaped = unescapeXML(escaped);
-            Lib.asrt(unescaped.equals(s), "unescapeXML test 1 failed");
+            LibTest.asrt(unescaped.equals(s), "unescapeXML test 1 failed");
             escaped = xmlSafeText(s,true);
-            Lib.asrt(unescaped.equals(s), "unescapeXML test 2 failed");
+            LibTest.asrt(unescaped.equals(s), "unescapeXML test 2 failed");
             escaped = xmlSafeText(s,false);
-            Lib.asrt(unescaped.equals(s), "unescapeXML test 3 failed");
-            Lib.asrt(unescapeXML("&#x20;").equals(" "), "unescapeXML test 4 failed");
-            Lib.asrt(unescapeXML("&#92;&#92;").equals("\\\\"), "unescapeXML test 5 failed");
+            LibTest.asrt(unescaped.equals(s), "unescapeXML test 3 failed");
+            LibTest.asrt(unescapeXML("&#x20;").equals(" "), "unescapeXML test 4 failed");
+            LibTest.asrt(unescapeXML("&#92;&#92;").equals("\\\\"), "unescapeXML test 5 failed");
         }
         for ( String s : new String[]{"&","&#","&#;","&#0"} ) {
             // these are not unescape-able
-            Lib.asrt(unescapeXML(s).equals(s), "unescapeXML test 6 failed");
+            LibTest.asrt(unescapeXML(s).equals(s), "unescapeXML test 6 failed");
         }
         for ( String s : new String[]{
             "&aMp;", "&#1234;", "He read &#22;War &amp; Peace&QUOT;."
         } ) {
             // these are already escaped
             String escaped = xmlSafeText(s);
-            Lib.asrt(escaped.equals(s), "unescapeXML test 7 failed");
+            LibTest.asrt(escaped.equals(s), "unescapeXML test 7 failed");
         }
         // make sure an html comment is escaped
-        Lib.asrt(! xmlSafeText("-->").equals("-->"), "need safety inside html comments" );
+        LibTest.asrt(! xmlSafeText("-->").equals("-->"), "need safety inside html comments" );
         return true;
     }
 
@@ -209,15 +209,15 @@ public class LibString {
     @SuppressWarnings("unused")
     private static boolean urlEncode_TEST_() {
         String s = "Crunchwrap Supreme� (Beef or Spicy Chicken) + tortilla chips";
-        Lib.asrt( s.equals(
+        LibTest.asrt( s.equals(
             URLDecoder.decode( URLEncoder.encode(s,StandardCharsets.UTF_8), StandardCharsets.UTF_8 )
         ) );
         String encodedA = urlEncode(s,null);
         String encodedB = urlEncode(s,true);
         String encodedC = urlEncode(s,false);
-        Lib.asrtEQ( urlDecode(encodedA), s );
-        Lib.asrtEQ( urlDecode(encodedB), s );
-        Lib.asrtEQ( urlDecode(encodedC), s );
+        LibTest.asrtEQ( urlDecode(encodedA), s );
+        LibTest.asrtEQ( urlDecode(encodedB), s );
+        LibTest.asrtEQ( urlDecode(encodedC), s );
         return true;
     }
 
@@ -294,11 +294,11 @@ public class LibString {
     @SuppressWarnings("unused")
     private static boolean onlyAlphaNum_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
-        Lib.asrtEQ( "abc123", onlyAlphaNum("abc123") );
-        Lib.asrtEQ( "abc123", onlyAlphaNum("abc123!") );
-        Lib.asrtEQ( "abc123", onlyAlphaNum("a b@c#1$2%3^") );
-        Lib.asrtEQ( "", onlyAlphaNum("!@#$%^&*()") );
-        Lib.asrtEQ( "", onlyAlphaNum(null) );
+        LibTest.asrtEQ( "abc123", onlyAlphaNum("abc123") );
+        LibTest.asrtEQ( "abc123", onlyAlphaNum("abc123!") );
+        LibTest.asrtEQ( "abc123", onlyAlphaNum("a b@c#1$2%3^") );
+        LibTest.asrtEQ( "", onlyAlphaNum("!@#$%^&*()") );
+        LibTest.asrtEQ( "", onlyAlphaNum(null) );
         return true;
     }
 
@@ -377,12 +377,12 @@ public class LibString {
         {
             String test = quot( "ab\"cd", '"' );
             String want = "\"ab\\\"cd\"";
-            Lib.asrtEQ( want, test );
+            LibTest.asrtEQ( want, test );
         }
         {
             String test = quot( "ab'cd", '\'' );
             String want = "'ab\\'cd'";
-            Lib.asrtEQ( want, test );
+            LibTest.asrtEQ( want, test );
         }
         return true;
     }
@@ -430,25 +430,25 @@ public class LibString {
         {
             String text = "This is a very long line that needs to be wrapped at word boundaries.";
             String[] wrapped = wrapText(text, 20);
-            Lib.asrt( wrapped.length == 4 );
-            Lib.asrt( wrapped[0].equals("This is a very long") );
-            Lib.asrt( wrapped[1].equals("line that needs to") );
-            Lib.asrt( wrapped[2].equals("be wrapped at word") );
-            Lib.asrt( wrapped[3].equals("boundaries.") );
+            LibTest.asrt( wrapped.length == 4 );
+            LibTest.asrt( wrapped[0].equals("This is a very long") );
+            LibTest.asrt( wrapped[1].equals("line that needs to") );
+            LibTest.asrt( wrapped[2].equals("be wrapped at word") );
+            LibTest.asrt( wrapped[3].equals("boundaries.") );
         }
         {
             String text = "Short line\nAnother short line";
             String[] wrapped = wrapText(text, 50);
-            Lib.asrt( wrapped.length == 2 );
-            Lib.asrt( wrapped[0].equals("Short line") );
-            Lib.asrt( wrapped[1].equals("Another short line") );
+            LibTest.asrt( wrapped.length == 2 );
+            LibTest.asrt( wrapped[0].equals("Short line") );
+            LibTest.asrt( wrapped[1].equals("Another short line") );
         }
         {
             String text = "Verylongwordthatcannotbebrokenatwordboundaries";
             String[] wrapped = wrapText(text, 10, true);
-            Lib.asrt( wrapped.length == 5 );
-            Lib.asrt( wrapped[0].equals("Verylongwo") );
-            Lib.asrt( wrapped[4].equals("oundaries") );
+            LibTest.asrt( wrapped.length == 5 );
+            LibTest.asrt( wrapped[0].equals("Verylongwo") );
+            LibTest.asrt( wrapped[4].equals("oundaries") );
         }
         return true;
     }
@@ -466,11 +466,11 @@ public class LibString {
     @SuppressWarnings("unused")
     private static boolean rpad_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
-        Lib.asrtEQ( "hello     ", rpad("hello", 10, " ") );
-        Lib.asrtEQ( "hello.....", rpad("hello", 10, ".") );
-        Lib.asrtEQ( "hello12312", rpad("hello", 10, "123") );
-        Lib.asrtEQ( "hellohello", rpad("hellohello", 10, " ") );
-        Lib.asrtEQ( "hellohello", rpad("hellohelloworld", 10, " ") );
+        LibTest.asrtEQ( "hello     ", rpad("hello", 10, " ") );
+        LibTest.asrtEQ( "hello.....", rpad("hello", 10, ".") );
+        LibTest.asrtEQ( "hello12312", rpad("hello", 10, "123") );
+        LibTest.asrtEQ( "hellohello", rpad("hellohello", 10, " ") );
+        LibTest.asrtEQ( "hellohello", rpad("hellohelloworld", 10, " ") );
         return true;
     }
 
@@ -486,10 +486,10 @@ public class LibString {
     @SuppressWarnings("unused")
     private static boolean centerPad_TEST_( boolean findLineNumber ) {
         if (findLineNumber) throw new RuntimeException();
-        Lib.asrtEQ( "  hello   ", centerPad("hello", 10) );
-        Lib.asrtEQ( "   hi   ", centerPad("hi", 8) );
-        Lib.asrtEQ( "world", centerPad("world", 5) );
-        Lib.asrtEQ( "toolong", centerPad("toolong", 5) );
+        LibTest.asrtEQ( "  hello   ", centerPad("hello", 10) );
+        LibTest.asrtEQ( "   hi   ", centerPad("hi", 8) );
+        LibTest.asrtEQ( "world", centerPad("world", 5) );
+        LibTest.asrtEQ( "toolong", centerPad("toolong", 5) );
         return true;
     }
 
@@ -586,7 +586,7 @@ public class LibString {
             map.put("place","plain");
             String result = evalTemplate(template,map);
             String expected = "The rain in Spain stays mainly on the plain.";
-            Lib.asrt(result.equals(expected), "evalTemplate jsp-like test failed");
+            LibTest.asrt(result.equals(expected), "evalTemplate jsp-like test failed");
         }
         { // url-safe
             String template = "The $NOUN$ in $cOuNtrY$ stays mainly on the $PLACE$.";
@@ -596,14 +596,14 @@ public class LibString {
             map.put("PLACE","plain");
             String result = evalUrlTemplate(template,map);
             String expected = "The rain in Spain stays mainly on the plain.";
-            Lib.asrt(result.equals(expected), "evalTemplate url-safe test failed");
+            LibTest.asrt(result.equals(expected), "evalTemplate url-safe test failed");
         }
         { // arithmetic
             String template = "Two plus two equals {{ 2 + 2 }}.";
             Map<String,Object> map = new LinkedHashMap<>();
             String result = evalTemplate(template,map);
             String expected = "Two plus two equals 4.";
-            Lib.asrt(result.equals(expected), "evalTemplate arithmetic test failed");
+            LibTest.asrt(result.equals(expected), "evalTemplate arithmetic test failed");
         }
         return true;
     }

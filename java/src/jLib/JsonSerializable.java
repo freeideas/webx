@@ -51,8 +51,8 @@ public interface JsonSerializable {
         TestClass obj = new TestClass("Alice", 25);
         CharSequence json = obj.toJson();
         TestClass obj2 = (TestClass) JsonSerializable.fromJson(json);
-        Lib.asrtEQ( obj.name, obj2.name );
-        Lib.asrtEQ( obj.age, obj2.age );
+        LibTest.asrtEQ( obj.name, obj2.name );
+        LibTest.asrtEQ( obj.age, obj2.age );
         return true;
     }
 

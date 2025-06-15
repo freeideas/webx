@@ -71,9 +71,9 @@ public class HttpJsonHandler implements HttpHandler {
 
         // Debug: log database requests
         if ( requestData.size() > 0 ) {
-            Lib.log( "Database POST received with keys: " + requestData.keySet() );
+            Log.log( "Database POST received with keys: " + requestData.keySet() );
             if ( requestData.containsKey("test_results") ) {
-                Lib.log( "Test results detected!" );
+                Log.log( "Test results detected!" );
             }
         }
 
@@ -124,10 +124,10 @@ public class HttpJsonHandler implements HttpHandler {
         HttpMessage message = new HttpMessage( headerBlock, jsonBody.getBytes() );
         HttpRequest request = HttpRequest.newHttpRequest(message);
         HttpResponse response = handler.handle(request);
-        Lib.asrt( response.headerBlock.firstLine.contains("200") );
-        Lib.asrt( dataMap.get("existing").equals("value") );
-        Lib.asrt( dataMap.get("new").equals("data") );
-        Lib.asrt( dataMap.get("count").equals(42) );
+        LibTest.asrt( response.headerBlock.firstLine.contains("200") );
+        LibTest.asrt( dataMap.get("existing").equals("value") );
+        LibTest.asrt( dataMap.get("new").equals("data") );
+        LibTest.asrt( dataMap.get("count").equals(42) );
         return true;
     }
 

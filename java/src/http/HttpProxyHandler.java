@@ -99,8 +99,8 @@ public class HttpProxyHandler implements HttpHandler {
         HttpRequest req = new HttpRequest( headerBlock, new byte[0] );
         HttpProxyHandler handler = new HttpProxyHandler();
         HttpResponse resp = handler.handle( req );
-        Lib.asrt( resp.headerBlock.firstLine.contains( "400" ) );
-        Lib.asrt( new String( resp.body ).contains( "Missing X-Target-URL" ) );
+        LibTest.asrt( resp.headerBlock.firstLine.contains( "400" ) );
+        LibTest.asrt( new String( resp.body ).contains( "Missing X-Target-URL" ) );
         headerBlock = new HttpHeaderBlock( "OPTIONS", "/", new LinkedHashMap<>() );
         headerBlock = headerBlock.withAddHeader( "X-Target-URL", "http://example.com" );
         req = new HttpRequest( headerBlock, new byte[0] );
@@ -127,9 +127,9 @@ public class HttpProxyHandler implements HttpHandler {
             return true; // Skip test if network is unreachable
         }
         
-        Lib.asrt( resp.headerBlock.firstLine.contains( "200" ), "Expected 200 but got: " + resp.headerBlock.firstLine );
+        LibTest.asrt( resp.headerBlock.firstLine.contains( "200" ), "Expected 200 but got: " + resp.headerBlock.firstLine );
         String responseBody = new String( resp.body );
-        Lib.asrt( responseBody.contains( "\"id\": 1" ) || responseBody.contains( "\"id\":1" ), "Response should contain id:1" );
+        LibTest.asrt( responseBody.contains( "\"id\": 1" ) || responseBody.contains( "\"id\":1" ), "Response should contain id:1" );
         
         // Test POST
         headerBlock = new HttpHeaderBlock( "POST", "/proxy", new LinkedHashMap<>() );
@@ -145,9 +145,9 @@ public class HttpProxyHandler implements HttpHandler {
             return true;
         }
         
-        Lib.asrt( resp.headerBlock.firstLine.contains( "201" ) || resp.headerBlock.firstLine.contains( "200" ), "Expected 200/201 but got: " + resp.headerBlock.firstLine );
+        LibTest.asrt( resp.headerBlock.firstLine.contains( "201" ) || resp.headerBlock.firstLine.contains( "200" ), "Expected 200/201 but got: " + resp.headerBlock.firstLine );
         responseBody = new String( resp.body );
-        Lib.asrt( responseBody.contains( "\"title\"" ), "Response should contain title field" );
+        LibTest.asrt( responseBody.contains( "\"title\"" ), "Response should contain title field" );
         
         return true;
     }
@@ -174,7 +174,7 @@ public class HttpProxyHandler implements HttpHandler {
             HttpRequest req1 = new HttpRequest(headerBlock1, new byte[0]);
             HttpResponse resp1 = handler.handle(req1);
             System.out.println("GET Response status: " + resp1.headerBlock.firstLine);
-            Lib.asrt(!resp1.headerBlock.firstLine.contains("500"), "GET should not return 500 error: " + resp1.headerBlock.firstLine);
+            LibTest.asrt(!resp1.headerBlock.firstLine.contains("500"), "GET should not return 500 error: " + resp1.headerBlock.firstLine);
             
             System.out.println("Testing JSONPlaceholder POST (same as JavaScript test2)...");
             HttpHeaderBlock headerBlock2 = new HttpHeaderBlock("POST", "/proxy", new LinkedHashMap<>());
@@ -184,7 +184,7 @@ public class HttpProxyHandler implements HttpHandler {
             HttpRequest req2 = new HttpRequest(headerBlock2, postData2.getBytes());
             HttpResponse resp2 = handler.handle(req2);
             System.out.println("POST Response status: " + resp2.headerBlock.firstLine);
-            Lib.asrt(!resp2.headerBlock.firstLine.contains("500"), "POST should not return 500 error: " + resp2.headerBlock.firstLine);
+            LibTest.asrt(!resp2.headerBlock.firstLine.contains("500"), "POST should not return 500 error: " + resp2.headerBlock.firstLine);
             
             System.out.println("Testing JSONPlaceholder Users GET (same as JavaScript test3)...");
             HttpHeaderBlock headerBlock3 = new HttpHeaderBlock("GET", "/proxy", new LinkedHashMap<>());
@@ -192,7 +192,7 @@ public class HttpProxyHandler implements HttpHandler {
             HttpRequest req3 = new HttpRequest(headerBlock3, new byte[0]);
             HttpResponse resp3 = handler.handle(req3);
             System.out.println("Users GET Response status: " + resp3.headerBlock.firstLine);
-            Lib.asrt(!resp3.headerBlock.firstLine.contains("500"), "Users GET should not return 500 error: " + resp3.headerBlock.firstLine);
+            LibTest.asrt(!resp3.headerBlock.firstLine.contains("500"), "Users GET should not return 500 error: " + resp3.headerBlock.firstLine);
             
             return true;
         } catch (Exception e) {
