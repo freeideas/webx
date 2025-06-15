@@ -144,6 +144,7 @@
  ],
  "http.HttpReplacingProxyHandler": [
   "public http.HttpReplacingProxyHandler();",
+  "public http.HttpReplacingProxyHandler(jLib.Jsonable);",
   "public http.HttpReplacingProxyHandler(java.io.File);",
   "public http.HttpReplacingProxyHandler(java.util.Map<java.lang.String, java.lang.Object>);",
   "public http.HttpResponse handle(http.HttpRequest);",
@@ -542,6 +543,16 @@
   "public static java.io.File unzip(java.io.File, java.io.File, java.lang.String, java.lang.Object);",
   "public static void main(java.lang.String[]);"
  ],
+ "jLib.Log": [
+  "public jLib.Log();",
+  "public static java.lang.Object log(java.lang.Object);",
+  "public static boolean logOnce(java.lang.Object);",
+  "public static boolean logOnce(java.lang.Object, long);",
+  "public static boolean logOnce(java.lang.String, java.lang.Object, long);",
+  "public static java.io.File getLogFile();",
+  "public static void setLogFile(java.io.File);",
+  "public static void main(java.lang.String[]);"
+ ],
  "jLib.LruCache": [
   "public jLib.LruCache(int, long, boolean);",
   "protected V construct(K);",
@@ -674,6 +685,10 @@
   "public void clear();",
   "public boolean containsKey(java.lang.Object);",
   "public java.util.Set<java.util.Map$Entry<java.lang.Object, java.lang.Object>> entrySet();",
+  "public static void main(java.lang.String[]);"
+ ],
+ "tmp.TestProxyConfig": [
+  "public tmp.TestProxyConfig();",
   "public static void main(java.lang.String[]);"
  ]
 }
