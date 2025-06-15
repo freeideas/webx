@@ -594,17 +594,6 @@ public class LibFile {
 
 
 
-    public static class TmpDir implements AutoCloseable {
-        public final File dir;
-        @SuppressWarnings("this-escape")
-        public TmpDir() {
-            dir = new File( System.getProperty( "java.io.tmpdir" ), "tmp_"+Lib.uniqID() );
-            dir.mkdirs();
-            Lib.cleaner.register( this, ()->rm( dir ) );
-        }
-        @Override
-        public void close() { rm( dir ); }
-    }
 
 
 

@@ -163,7 +163,7 @@ public class SshClient implements AutoCloseable  {
         }
     }
 
-    public Lib.Pair<InputStream,InputStream> osCmd( String cmd, InputStream stdin ) throws IOException {
+    public Pair<InputStream,InputStream> osCmd( String cmd, InputStream stdin ) throws IOException {
         try {
             ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
             PipedOutputStream stdoutPipe = new PipedOutputStream();
@@ -186,7 +186,7 @@ public class SshClient implements AutoCloseable  {
             t.setName( this.getClass().getSimpleName()+".osCmd_"+Lib.currentTimeMicros() );
             t.setDaemon(true);
             t.start();
-            return new Lib.Pair<>( stdoutIn, stderrIn );
+            return new Pair<>( stdoutIn, stderrIn );
         } catch ( JSchException e ) {
             throw new IOException(e);
         }
@@ -236,7 +236,7 @@ public class SshClient implements AutoCloseable  {
             }
             Lib.asrt( sshCli.rm(remoteFilePath) );
             Lib.asrt( sshCli.fileLength(remoteFilePath) < 0 );
-            Lib.Pair<InputStream,InputStream> pair = sshCli.osCmd( "touch "+remoteFilePath, null );
+            Pair<InputStream,InputStream> pair = sshCli.osCmd( "touch "+remoteFilePath, null );
             int c = pair.a.read();
             Lib.asrt( c == -1 );
             c = pair.b.read();

@@ -176,13 +176,13 @@ This is a multi-language project with both Java and Python components, organized
 
 ### Testing Guidelines
 **NEVER create transient test files or test scripts**. Instead:
-- Add `_TEST_` methods to existing classes for unit tests
+- Add `_TEST_` methods to existing classes for unit tests. These tests should over every feature, so it is difficult to justify creating a new class for tests.
 - Use `jshell` for quick interactive testing if needed: `jshell --class-path java/tmp`
 - Most classes already have `main` methods that run `Lib.testClass()` - use them
 - For integration testing, modify existing test classes or add new `_TEST_` methods
 
 ### Temporary Java Files
-**CRITICAL**: All temporary Java files MUST be placed in the `tmp` package (`java/src/tmp/`).
+**CRITICAL**: If for some reason you can't use a proper _TEST_ method, all temporary Java files MUST be placed in the `tmp` package (`java/src/tmp/`).
 - NEVER create temporary Java files in the root of `java/src/`
 - NEVER create temporary Java files in other packages
 - Always use package declaration: `package tmp;`

@@ -59,211 +59,15 @@ public class Lib {
 
 
 
-    public static class Pair<A,B> implements Map.Entry<A,B> {
-        public final A a;
-        public final B b;
-        public Pair( A a, B b ) {
-            this.a = a;
-            this.b = b;
-        }
-        public int hashCode() {
-            return a.hashCode() ^ b.hashCode();
-        }
-        public boolean equals( Object o ) {
-            if ( o == null ) return false;
-            if ( o == this ) return true;
-            if ( o.getClass() != getClass() ) return false;
-            Pair<?,?> p = (Pair<?,?>)o;
-            return a.equals(p.a) && b.equals(p.b);
-        }
-        public String toString() {
-            return "(" + a + "," + b + ")";
-        }
-        @Override
-        public A getKey() { return a; }
-        @Override
-        public B getValue() { return b; }
-        @Override
-        public B setValue(B value) {
-            throw new UnsupportedOperationException("immutable");
-        }
-    }
     public static <A,B> Pair<A,B> pair( A a, B b ) {
         return new Pair<A,B>(a,b);
     }
-    @SuppressWarnings("unused")
-    private static boolean pair_TEST_( boolean findLineNumber ) {
-        if (findLineNumber) throw new RuntimeException();
-        Pair<String,String> p = pair("a","b");
-        return p.a.equals("a") && p.b.equals("b");
-    }
-    public static class Trio<A,B,C> {
-        public final A a;
-        public final B b;
-        public final C c;
-        public Trio( A a, B b, C c ) {
-            this.a = a;
-            this.b = b;
-            this.c = c;
-        }
-        public int hashCode() {
-            return a.hashCode() ^ b.hashCode() ^ c.hashCode();
-        }
-        public boolean equals( Object o ) {
-            if ( o == null ) return false;
-            if ( o == this ) return true;
-            if ( o.getClass() != getClass() ) return false;
-            Trio<?,?,?> p = (Trio<?,?,?>)o;
-            return a.equals(p.a) && b.equals(p.b) && c.equals(p.c);
-        }
-        public String toString() {
-            return "(" + a + "," + b + "," + c + ")";
-        }
-    }
-    @SuppressWarnings("unused")
-    private static boolean trio_TEST_( boolean findLineNumber ) {
-        if (findLineNumber) throw new RuntimeException();
-        Trio<String,String,String> p = new Trio<String,String,String>("a","b","c");
-        return p.a.equals("a") && p.b.equals("b") && p.c.equals("c");
-    }
 
 
 
-    public static String xmlSafeText( Object txt ) {
-        return xmlSafeText(txt,null);
-    }
-    public static String xmlSafeText( Object txt, Boolean encodeAll ) {
-        if (txt==null) txt="";
-        String str = txt.toString();
-        int c, len=str.length();
-        StringBuffer buf = new StringBuffer( len + len<<1 );
-        for (int i=0; i<len; i++) {
-            c = str.charAt(i);
-            if ( encodeAll==Boolean.FALSE && !( c=='<' || c=='&' ) ) {
-                // in this mode, encode only < and &
-                buf.append( (char)c );
-                continue;
-            }
-            if ( encodeAll!=Boolean.TRUE && c=='&' ) {
-                // in these modes, skip already-encoded entities
-                int end = Math.min( i+12, str.length() );
-                if ( str.substring(i,end).matches("^&(([a-zA-Z0-9]+)|(#\\d+));.*$") ) {
-                    while (c!=';') {
-                        buf.append( (char)c );
-                        i+=1; c=str.charAt(i);
-                    }
-                    buf.append( (char)c );
-                    continue;
-                }
-            }
-            boolean foundCode = false;
-            for ( int codeIdx=0; codeIdx<XMLENTITIES.length; codeIdx++ ) {
-                String code = XMLENTITIES[codeIdx][0];
-                String repl = XMLENTITIES[codeIdx][1];
-                if ( c == repl.charAt(0) ) {
-                    buf.append(code);
-                    foundCode = true;
-                }
-            }
-            if (foundCode) continue;
-            switch (c) {
-                case '\'' : buf.append("&#39;"); break;
-                case ']'  : buf.append("&#93;"); break;
-                case '['  : buf.append("&#91;"); break;
-                case '\\' : buf.append("&#92;"); break;
-                default : {
-                    if ( c<32 || c>127 || encodeAll==Boolean.TRUE ) {
-                        buf.append('&');
-                        buf.append('#');
-                        buf.append(c);
-                        buf.append(';');
-                    } else {
-                        buf.append( (char)c );
-                    }
-                } break;
-            }
-        }
-        return buf.toString();
-    }
-    public static String unescapeXML( final String text ) {
-        StringBuilder result = new StringBuilder( text.length() );
-        for ( int txtIdx=0,len=text.length(); txtIdx<len; txtIdx++ ) {
-            char charAt = text.charAt(txtIdx);
-            if ( charAt != '&' ) {
-                result.append(charAt);
-                continue;
-            }
-            if ( text.regionMatches(txtIdx,"&#",0,2) ) {
-                try {
-                    String s = text.substring(
-                        txtIdx, Math.min(text.length(),txtIdx+9)
-                    ).replaceFirst( "^&#(x?\\d+);.*", "$1" );
-                    int n;
-                    if ( s.charAt(0) == 'x' ) {
-                        n = Integer.parseInt( s.substring(1), 16 );
-                    } else {
-                        n = Integer.parseInt(s,10);
-                    }
-                    txtIdx += ( 2 + s.length() );
-                    result.append( (char) n );
-                } catch ( Throwable t ) {
-                    result.append(charAt);
-                }
-                continue;
-            }
-            boolean foundCode = false;
-            for ( int codeIdx=0; codeIdx<XMLENTITIES.length; codeIdx++ ) {
-                String code = XMLENTITIES[codeIdx][0];
-                String repl = XMLENTITIES[codeIdx][1];
-                if (text.regionMatches( true, txtIdx, code, 0, code.length() )) {
-                    result.append(repl);
-                    txtIdx += code.length() - 1;
-                    foundCode = true;
-                    break;
-                }
-            }
-            if (foundCode) continue;
-            result.append(charAt);
-        }
-        return result.toString();
-    }
-    public static final String[][] XMLENTITIES = {
-        { "&lt;",   "<" },
-        { "&gt;",   ">" },
-        { "&amp;",  "&" },
-        { "&apos;", "'" },
-        { "&quot;", "\"" },
-    };
-    @SuppressWarnings("unused")
-    private static boolean unescapeXML_TEST_() {
-        {
-            String s = "~\t\0`!@#$%^&*()_ok123=+{[ }]|\\?/<,>.'\"";
-            String escaped, unescaped;
-            escaped = xmlSafeText(s,null);
-            unescaped = unescapeXML(escaped);
-            Lib.asrt(unescaped.equals(s), "unescapeXML test 1 failed");
-            escaped = xmlSafeText(s,true);
-            Lib.asrt(unescaped.equals(s), "unescapeXML test 2 failed");
-            escaped = xmlSafeText(s,false);
-            Lib.asrt(unescaped.equals(s), "unescapeXML test 3 failed");
-            Lib.asrt(unescapeXML("&#x20;").equals(" "), "unescapeXML test 4 failed");
-            Lib.asrt(unescapeXML("&#92;&#92;").equals("\\\\"), "unescapeXML test 5 failed");
-        }
-        for ( String s : new String[]{"&","&#","&#;","&#0"} ) {
-            // these are not unescape-able
-            Lib.asrt(unescapeXML(s).equals(s), "unescapeXML test 6 failed");
-        }
-        for ( String s : new String[]{
-            "&aMp;", "&#1234;", "He read &#22;War &amp; Peace&QUOT;."
-        } ) {
-            // these are already escaped
-            String escaped = xmlSafeText(s);
-            Lib.asrt(escaped.equals(s), "unescapeXML test 7 failed");
-        }
-        // make sure an html comment is escaped
-        Lib.asrt(! xmlSafeText("-->").equals("-->"), "need safety inside html comments" );
-        return true;
-    }
+    public static String xmlSafeText( Object txt ) { return LibString.xmlSafeText(txt); }
+    public static String xmlSafeText( Object txt, Boolean encodeAll ) { return LibString.xmlSafeText(txt, encodeAll); }
+    public static String unescapeXML( final String text ) { return LibString.unescapeXML(text); }
 
 
 
@@ -324,35 +128,7 @@ public class Lib {
 
 
 
-    /**
-     * Looks for a file named ".creds.json" in the current directory or any parent directory.
-     * Loads it as json and returns it as a Jsonable object.
-     * The file contents are cached so only the first call will do any I/O.
-    **/
-    public static Jsonable loadCreds() {
-        if ( loadCreds_cache != null ) return loadCreds_cache;
-        // find .creds.json and retry
-        File credsFile = new File("./.creds.json");
-        try{ credsFile = credsFile.getCanonicalFile(); }
-        catch ( IOException unlikely ) { throw new RuntimeException(unlikely); }
-        while (! credsFile.isFile() ) {
-            File pf = credsFile.getParentFile().getParentFile();
-            if ( pf==null || pf.equals(credsFile) ) throw new RuntimeException("Can't find .creds.json");
-            credsFile = new File( pf, ".creds.json" );
-        }
-        loadCreds_cache = new Jsonable( JsonDecoder.decode(credsFile) );
-        return loadCreds_cache;
-    } private static Jsonable loadCreds_cache = null;
-    @SuppressWarnings("unused")
-    private static boolean loadCreds_TEST_( boolean findLineNumber ) {
-        if (findLineNumber) throw new RuntimeException();
-        Jsonable creds = loadCreds();
-        asrt( creds != null );
-        Object secretObj = creds.get("SECRET");
-        Object secret = secretObj instanceof Jsonable j ? j.get() : secretObj;
-        asrt(! isEmpty( secret ) );
-        return true;
-    }
+    public static Jsonable loadCreds() { return LibApp.loadCreds(); }
 
 
 
@@ -549,113 +325,11 @@ public class Lib {
 
 
 
-    /*
-     * a thread that remembers its parent thread, and can be closed
-     */
-    @SuppressWarnings("this-escape")
-    public static class ChildThread extends Thread implements AutoCloseable {
-        { cleaner.register( this, ()->close() ); }
-        private Thread parent;
-        private String internalName = this.getClass().getSimpleName()+"_"+timeStamp();
-        public ChildThread() { parent = Thread.currentThread(); }
-        public ChildThread( Runnable r ) {
-            super(r);
-            parent = Thread.currentThread();
-            setName(internalName);
-            setDaemon(true);
-        }
-        @Override
-        public void start() {
-            parent = Thread.currentThread();
-            super.start();
-        }
-        public Thread getParent() { return parent; }
-        @Override public void close() { interrupt(); }
-        public String toString() { return getName(); }
-        public int hashCode() { return internalName.hashCode(); }
-        public boolean equals( Object o ) { return o==this; }
-    }
 
-
-
-
-
-
-
-
-
-    public static String urlEncode( Map<String,Object> map ) {
-        StringBuilder sb = new StringBuilder();
-        for ( Map.Entry<String,Object> entry : map.entrySet() ) {
-            if ( sb.length() > 0 ) sb.append("&");
-            String k = entry.getKey();
-            Object v = entry.getValue();
-            if (v==null) continue;
-            sb.append( Lib.urlEncode(k,false) );
-            sb.append('=');
-            sb.append( Lib.urlEncode(v.toString(),false) );
-        }
-        return sb.toString();
-    }
-    public static String urlEncode( Object obj ) {
-        return urlEncode(obj,null);
-    }
-    public static String urlEncode( Object obj, Boolean encodeAll ) {
-        if (obj==null) return "";
-        if ( obj instanceof Number ) return urlEncode( obj.toString(), encodeAll );
-        if ( obj instanceof char[] cArr ) return urlEncode( new String(cArr), encodeAll );
-        if ( obj instanceof byte[] bArr ) return urlEncode( new String(bArr), encodeAll );
-        String inputStr = obj.toString();
-        final String HEX_ALPHA = "0123456789ABCDEF";
-        String safeAlpha = (
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-            "abcdefghijklmnopqrstuvwxyz" +
-            "0123456789"
-        );
-        if ( encodeAll != null ) {
-            if (encodeAll) {
-                safeAlpha = "";
-            } else {
-                safeAlpha += (
-                    " _*.-" + // allegedly not changed by urlEncoding
-                    "!\"#$&'(),/:;<=>?@[\\]^`{|}~"
-                );
-            }
-        }
-        StringBuilder sb = new StringBuilder();
-        for ( int i=0; i<inputStr.length(); i++ ) {
-            char c = inputStr.charAt(i);
-            if ( safeAlpha.indexOf(c) >= 0 ) {
-                sb.append(c);
-            } else {
-                if (c>255) {
-                    sb.append(URLEncoder.encode( ""+c, StandardCharsets.UTF_8 ));
-                } else {
-                    sb.append( "%" );
-                    sb.append( HEX_ALPHA.charAt( (c>>4) & 0xF ) );
-                    sb.append( HEX_ALPHA.charAt( c & 0xF ) );
-                }
-            }
-        }
-        return sb.toString();
-    }
-    public static String urlDecode( String s ) {
-        return URLDecoder.decode(s, StandardCharsets.UTF_8 );
-    }
-    @SuppressWarnings("unused")
-    private static boolean urlEncode_TEST_() {
-        String s = "Crunchwrap Supreme� (Beef or Spicy Chicken) + tortilla chips";
-        asrt( s.equals(
-            URLDecoder.decode( URLEncoder.encode(s,StandardCharsets.UTF_8), StandardCharsets.UTF_8 )
-        ) );
-        String encodedA = urlEncode(s,null);
-        String encodedB = urlEncode(s,true);
-        String encodedC = urlEncode(s,false);
-        asrtEQ( urlDecode(encodedA), s );
-        asrtEQ( urlDecode(encodedB), s );
-        asrtEQ( urlDecode(encodedC), s );
-        return true;
-    }
+    public static String urlEncode( Map<String,Object> map ) { return LibString.urlEncode(map); }
+    public static String urlEncode( Object obj ) { return LibString.urlEncode(obj); }
+    public static String urlEncode( Object obj, Boolean encodeAll ) { return LibString.urlEncode(obj, encodeAll); }
+    public static String urlDecode( String s ) { return LibString.urlDecode(s); }
 
 
 
@@ -938,43 +612,10 @@ public class Lib {
 
 
 
-    public static String getAppName() { return findAppClassName().replaceAll( ".*\\.","" ); }
-    public static File getAppDir() { return getAppDir(null); }
-    public static File getAppDir( String appName ) {
-        return new File(".");
-        /*
-        if (appName==null) appName = getAppName();
-        File f = new File(
-            System.getProperty("user.home"),
-            ".appdata"
-        );
-        f = new File( f, appName.replaceAll( "[/\\\\:*?\"<>|\\x00-\\x1F\\x7F]+", "_" ) );
-        f.mkdirs();
-        return f;
-        */
-    }
-    public static String findAppClassName() {
-        // uses a stack trace to find the non-library class that called any methods that called this method
-        // returns null if this doesn't work
-        // caches the first non-null result
-        synchronized(_appClassName) {
-            String appClassName = _appClassName.get();
-            if (appClassName!=null) return appClassName;
-            StackTraceElement[] st = Thread.currentThread().getStackTrace();
-            for ( int i=st.length-1; i>=0; i-- ) {
-                String c = st[i].getClassName();
-                if ( c.startsWith("java.") ) continue;
-                if ( c.startsWith("javax.") ) continue;
-                if ( c.startsWith("sun.") ) continue;
-                if ( c.startsWith("com.sun.") ) continue;
-                appClassName = st[i].getClassName();
-                _appClassName.set(appClassName);
-                return appClassName;
-            }
-            return null;
-        }
-    }
-    public static AtomicReference<String> _appClassName = new AtomicReference<>();
+    public static String getAppName() { return LibApp.getAppName(); }
+    public static File getAppDir() { return LibApp.getAppDir(); }
+    public static File getAppDir( String appName ) { return LibApp.getAppDir(appName); }
+    public static String findAppClassName() { return LibApp.findAppClassName(); }
 
 
 
@@ -984,10 +625,7 @@ public class Lib {
 
 
 
-    public static boolean isEmail( String s ) {
-        if (s==null) return false;
-        return s.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$");
-    }
+    public static boolean isEmail( String s ) { return LibString.isEmail(s); }
 
 
 
@@ -1340,53 +978,7 @@ public class Lib {
 
 
 
-    private static final Map<File, FileLock> activeLocks = new ConcurrentHashMap<>();
-
-    /**
-     * Checks if another instance is already running using a lock file.
-     * If not running, acquires lock and returns false.
-     * If already running, returns true.
-     * The lock is automatically released when the process exits.
-     */
-    public static boolean alreadyRunning( File lockFile ) {
-        if ( lockFile==null ) return false;
-        try {
-            // Ensure parent directory exists
-            File parentDir = lockFile.getParentFile();
-            if ( parentDir!=null && !parentDir.exists() ) parentDir.mkdirs();
-
-            // Open channel for the lock file
-            RandomAccessFile raf = new RandomAccessFile( lockFile, "rw" );
-            FileChannel channel = raf.getChannel();
-
-            // Try to acquire exclusive lock
-            FileLock lock = channel.tryLock();
-
-            if ( lock==null ) {
-                // Lock is held by another process
-                channel.close();
-                raf.close();
-                return true;
-            }
-
-            // We got the lock - store it to keep it alive
-            activeLocks.put( lockFile, lock );
-
-            // Register cleanup on JVM shutdown
-            cleaner.register( lockFile, () -> {
-                FileLock storedLock = activeLocks.remove( lockFile );
-                if ( storedLock!=null ) {
-                    try { storedLock.release(); } catch ( Exception ignore ) {}
-                    try { storedLock.channel().close(); } catch ( Exception ignore ) {}
-                }
-            });
-
-            return false;
-        } catch ( Exception e ) {
-            Lib.log( "Error checking lock file: " + e.getMessage() );
-            return false;
-        }
-    }
+    public static boolean alreadyRunning( File lockFile ) { return LibApp.alreadyRunning(lockFile); }
 
 
 
@@ -2000,18 +1592,7 @@ public class Lib {
 
 
 
-    public static void archiveLogFiles() {
-        File logDir = new File("./log");
-        File oldDir = new File("./old");
-        if (!oldDir.exists()) oldDir.mkdirs();
-        if (!logDir.exists()) logDir.mkdirs();
-        for (String filename : logDir.list()) {
-            File srcFilespec = new File(logDir,filename);
-            File dstFilespec = new File(oldDir,filename);
-            // fileCopy removed - using rename instead
-            srcFilespec.renameTo(dstFilespec);
-        }
-    }
+    public static void archiveLogFiles() { LibApp.archiveLogFiles(); }
 
 
 

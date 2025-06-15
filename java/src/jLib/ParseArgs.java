@@ -406,7 +406,7 @@ public class ParseArgs {
     @SuppressWarnings("unused")
     private static boolean expandFromFiles_TEST_( boolean findLineNumber ) throws Exception {
         if ( findLineNumber ) throw new RuntimeException();
-        try ( LibFile.TmpDir tmpDir = new LibFile.TmpDir() ) {
+        try ( TmpDir tmpDir = new TmpDir() ) {
             File mapFile = new File( tmpDir.dir, "map.json" );
             File listFile = new File( tmpDir.dir, "list.json" );
             File stringFile = new File( tmpDir.dir, "string.json" );

@@ -142,23 +142,11 @@ public class Main {
         }
 
         if ( !proxyConfig.equalsIgnoreCase("NONE") ) {
-            String[] proxyParts = proxyConfig.split("@", 2);
-            String proxyPath = proxyParts.length>0 ? proxyParts[0] : "proxy";
-            String proxyConfigFile = proxyParts.length>1 ? proxyParts[1] : "../api-keys.json";
+            String proxyPath = proxyConfig.split("@", 2)[0];
             if ( !proxyPath.startsWith("/") ) proxyPath = "/" + proxyPath;
             String fullProxyPath = basePath + proxyPath;
-            File apiKeysFile = new File( proxyConfigFile );
-            if ( !apiKeysFile.exists() ) {
-                createExampleApiKeysFile( apiKeysFile );
-                Lib.log( "Created example API keys file at " + apiKeysFile.getAbsolutePath() );
-            }
-            if ( apiKeysFile.exists() ) {
-                server.handlers.put( fullProxyPath, new HttpReplacingProxyHandler(apiKeysFile) );
-                Lib.log( "Proxy handler configured at " + fullProxyPath + " with replacements from " + apiKeysFile );
-            } else {
-                server.handlers.put( fullProxyPath, new HttpProxyHandler() );
-                Lib.log( "Proxy handler configured at " + fullProxyPath + " without replacements" );
-            }
+            server.handlers.put( fullProxyPath, new HttpReplacingProxyHandler() );
+            Lib.log( "Proxy handler configured at " + fullProxyPath + " with replacements from .creds.json" );
         }
 
         if ( !loginConfig.equalsIgnoreCase("NONE") ) {
@@ -245,43 +233,6 @@ public class Main {
 
 
 
-    private static void createExampleApiKeysFile( File file ) {
-        String exampleContent = """
-            {
-                "https://api.openai.com": {
-                    "<%=apikey%>": "sk-YOUR-OPENAI-API-KEY-HERE",
-                    "<%=org%>": "org-YOUR-ORG-ID-HERE"
-                },
-                "https://api.openai.com/v1/chat/completions": {
-                    "<%=model%>": "gpt-4",
-                    "<%=apikey%>": "sk-YOUR-OPENAI-API-KEY-HERE"
-                },
-                "https://api.anthropic.com": {
-                    "<%=apikey%>": "sk-ant-YOUR-ANTHROPIC-KEY-HERE",
-                    "<%=model%>": "claude-3-opus-20240229"
-                },
-                "https://www.googleapis.com": {
-                    "<%=apikey%>": "YOUR-GOOGLE-API-KEY-HERE"
-                },
-                "https://www.googleapis.com/customsearch": {
-                    "<%=apikey%>": "YOUR-GOOGLE-API-KEY-HERE",
-                    "<%=cx%>": "YOUR-CUSTOM-SEARCH-ENGINE-ID"
-                },
-                "https://api.github.com": {
-                    "<%=token%>": "ghp_YOUR-GITHUB-TOKEN-HERE",
-                    "<%=user%>": "your-github-username"
-                },
-                "*": {
-                    "<%=default_key%>": "FALLBACK-KEY-FOR-OTHER-APIS"
-                }
-            }
-        """;
-        try {
-            File parentDir = file.getParentFile();
-            if ( parentDir!=null && !parentDir.exists() ) parentDir.mkdirs();
-            try ( FileWriter writer = new FileWriter( file ) ) { writer.write( exampleContent ); }
-        } catch ( Exception e ) { Lib.log( "Failed to create example API keys file: " + e.getMessage() ); }
-    }
 
 
 

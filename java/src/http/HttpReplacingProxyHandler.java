@@ -14,8 +14,17 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
 
     public HttpReplacingProxyHandler() {
-        Jsonable creds = Lib.loadCreds();
-        Object proxyConfig = creds.get( "PROXY" );
+        this( Lib.loadCreds() );
+    }
+
+
+
+    public HttpReplacingProxyHandler( Jsonable config ) {
+        if ( config==null ) {
+            this.replacementConfig = new Jsonable( new HashMap<>() );
+            return;
+        }
+        Object proxyConfig = config.get( "PROXY" );
         Object unwrapped = proxyConfig instanceof Jsonable j ? j.get() : proxyConfig;
         if ( unwrapped instanceof Map ) {
             this.replacementConfig = new Jsonable( unwrapped );
@@ -597,10 +606,18 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
     @SuppressWarnings("unused")
     private static boolean credsBasedReplacement_TEST_( boolean findLineNumber ) throws Exception {
         if (findLineNumber) throw new RuntimeException();
-        // Test the no-arg constructor that uses loadCreds()
-        HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler();
+        // Create test config in memory
+        Map<String,Object> testCreds = new HashMap<>();
+        Map<String,Object> proxyConfig = new HashMap<>();
+        Map<String,Object> apiExampleConfig = new HashMap<>();
+        apiExampleConfig.put( "<%=apikey%>", "secret123" );
+        apiExampleConfig.put( "<%=user%>", "testuser" );
+        proxyConfig.put( "https://api.example.com", apiExampleConfig );
+        testCreds.put( "PROXY", proxyConfig );
+        
+        HttpReplacingProxyHandler handler = new HttpReplacingProxyHandler( new Jsonable(testCreds) );
 
-        // Test replacements from loadCreds() PROXY config
+        // Test replacements from PROXY config
         HttpHeaderBlock headerBlock = new HttpHeaderBlock( "GET", "/test?key=<%=apikey%>", new LinkedHashMap<>() );
         headerBlock = headerBlock.withAddHeader( "X-Target-URL", "https://api.example.com" );
         headerBlock = headerBlock.withAddHeader( "Authorization", "Bearer <%=apikey%>" );
@@ -612,14 +629,6 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
         handler.prepareReplacementsForUrl( "https://api.example.com" );
         String modifiedHeader = handler.applyReplacements( headerString );
         String modifiedBody = handler.applyReplacements( body );
-
-        // Debug output
-        if ( !modifiedHeader.contains( "Bearer secret123" ) ) {
-            System.out.println( "Original header:\n" + headerString );
-            System.out.println( "Modified header:\n" + modifiedHeader );
-            System.out.println( "Replacement pattern: " + handler.replacementPattern );
-            System.out.println( "Replacement values: " + handler.replacementValues );
-        }
 
         Lib.asrt( modifiedHeader.contains( "key=secret123" ), "Should replace apikey in URL" );
         Lib.asrt( modifiedHeader.contains( "Bearer <%=apikey%>" ), "Should NOT replace second occurrence of apikey" );

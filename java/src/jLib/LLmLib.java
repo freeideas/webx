@@ -395,7 +395,7 @@ public class LLmLib {
         // running the parts through mergeTemplates again should not change the result
         Lib.asrt( parts.equals(llmLib.mergeTemplates(parts)), "mergeTemplates should not change the result" );
         // make sure the template makes sense to an LLM
-        Result< Lib.Pair<Boolean,String>, Exception > res = llmLib.llmYesOrNo(
+        Result< Pair<Boolean,String>, Exception > res = llmLib.llmYesOrNo(
             parts, null, null, null
         );
         Lib.asrt(res.isOk(), "Result should be successful");
@@ -822,7 +822,7 @@ public class LLmLib {
      * @Returns a result that -- if successful -- is wraps another Result that is true if the answer is 'yes'.
      * The output of the output is a human-language answer.
      */
-    public Result< Lib.Pair<Boolean,String>, Exception > llmYesOrNo(
+    public Result< Pair<Boolean,String>, Exception > llmYesOrNo(
         List<Object> promptParts,
         String modelKey,
         String systemPrompt,
@@ -842,7 +842,7 @@ public class LLmLib {
         boolean isYes = decodedAnswer.get("answer").toString().equalsIgnoreCase("yes");
         return Result.ok( Lib.pair(isYes,originalText) );
     }
-    public Result< Lib.Pair<Boolean,String>, Exception > llmYesOrNo( List<Object> promptParts ) {
+    public Result< Pair<Boolean,String>, Exception > llmYesOrNo( List<Object> promptParts ) {
         return llmYesOrNo(promptParts,null,null,null);
     }
     @SuppressWarnings("unused")
@@ -851,7 +851,7 @@ public class LLmLib {
         List<Object> promptParts = List.of( Lib.nw("""
             Would most normal jellyfish be able to survive comfortably on the surface of the sun?
         """) );
-        Result< Lib.Pair<Boolean,String>, Exception > result = newInstance().llmYesOrNo(promptParts, null, null, null);
+        Result< Pair<Boolean,String>, Exception > result = newInstance().llmYesOrNo(promptParts, null, null, null);
         Lib.asrt( result.isOk() && !result.ok().a );
         return true;
     }

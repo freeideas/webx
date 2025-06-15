@@ -626,6 +626,14 @@
   "public jLib.TestClass();",
   "public jLib.TestClass(java.lang.String, int);"
  ],
+ "jLib.TmpDir": [
+  "public jLib.TmpDir();",
+  "public void close();",
+  "public java.io.File getDir();",
+  "public java.io.File newFile(java.lang.String);",
+  "public java.io.File newDir(java.lang.String);",
+  "public static void main(java.lang.String[]);"
+ ],
  "persist.PersistentData": [
   "public persist.PersistentData();",
   "public persist.PersistentData(java.lang.String, java.lang.String);",
