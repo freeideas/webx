@@ -97,7 +97,7 @@ public class Log {
     public static File getLogFile() {
         File f = logFile.get();
         if (f==null) {
-            f = new File( "./log/"+Lib.getAppName()+".log" );
+            f = new File( "./log/"+LibApp.getAppName()+".log" );
             logFile.set(f);
         }
         return f;
@@ -205,6 +205,6 @@ public class Log {
     
     
     public static void main( String[] args ) throws Exception {
-        Lib.testClass( Log.class );
+        LibTest.testClass( Log.class );
     }
 }

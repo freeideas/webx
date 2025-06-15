@@ -1,6 +1,7 @@
 package jLib;
 import java.util.*;
 import java.io.File;
+import java.lang.reflect.Array;
 
 
 /**
@@ -223,7 +224,7 @@ public class ParseArgs {
                 String[] row = lines[rowIdx];
                 for (int colIdx=0; colIdx<row.length; colIdx++) {
                     String field = row[colIdx];
-                    String[] wrapped = Lib.wrapText(field,colWidths[colIdx],false);
+                    String[] wrapped = LibString.wrapText(field,colWidths[colIdx],false);
                     for (String word : wrapped) {
                         if ( word.length() > colWidths[colIdx] ) {
                             continue OUTER_LOOP; // doesn't fit
@@ -236,8 +237,8 @@ public class ParseArgs {
             if (totalFolds<lowestTotalFolds) {
                 // we've found a better solution
                 lowestTotalFolds = totalFolds;
-                bestLines = (String[][][]) Lib.deepCopyArray(linesCopy);
-                bestWidths = (int[]) Lib.deepCopyArray(colWidths);
+                bestLines = (String[][][]) deepCopyArray(linesCopy);
+                bestWidths = (int[]) deepCopyArray(colWidths);
             }
         }
         // center each field horizontally and vertically
@@ -268,7 +269,7 @@ public class ParseArgs {
         }
         for (int lineIdx=0,len=lines.size(); lineIdx<len; lineIdx++) {
             String line = lines.get(lineIdx);
-            line = doCenterH ? Lib.centerPad(line,width) : Lib.rpad(line,width," ");
+            line = doCenterH ? LibString.centerPad(line,width) : LibString.rpad(line,width," ");
             lines.set(lineIdx,line);
         }
         return lines.toArray(new String[0]);
@@ -442,5 +443,18 @@ public class ParseArgs {
 
 
 
-    public static void main( String[] args ) throws Exception { Lib.testClass(); }
+    private static Object deepCopyArray( Object arr ) {
+        int len = Array.getLength(arr);
+        Object result = Array.newInstance(arr.getClass().getComponentType(), len);
+        for ( int i=0; i<len; i++ ) {
+            Object o = Array.get(arr, i);
+            if ( o!=null && o.getClass().isArray() ) o = deepCopyArray(o);
+            Array.set(result, i, o);
+        }
+        return result;
+    }
+
+
+
+    public static void main( String[] args ) throws Exception { LibTest.testClass(); }
 }

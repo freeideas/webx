@@ -370,5 +370,5 @@ public class JsonEncoder {
         return true;
     }
 
-    public static void main( String[] args ) throws Exception { Lib.testClass(); }
+    public static void main( String[] args ) throws Exception { LibTest.testClass(); }
 }

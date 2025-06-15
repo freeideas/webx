@@ -3,6 +3,7 @@ import java.util.*;
 
 import jLib.JsonEncoder;
 import jLib.Lib;
+import jLib.LibTest;
 
 /**
  * NOTE: supports only data that can be translated to and from json.
@@ -260,7 +261,7 @@ public class PersistentList extends AbstractList<Object> {
 
 
 
-    public static void main( String[] args ) { Lib.testClass(); }
+    public static void main( String[] args ) { LibTest.testClass(); }
 }
 
 

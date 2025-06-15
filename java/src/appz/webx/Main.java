@@ -24,9 +24,9 @@ public class Main {
                 "--run"
             };
         }
-        Lib.archiveLogFiles();
+        LibApp.archiveLogFiles();
         ParseArgs p = new ParseArgs(args);
-        p.setAppName( Lib.getAppName() );
+        p.setAppName( LibApp.getAppName() );
         p.setDescr( "WebX - Simple Web Application Server" );
 
         int port = p.getInteger( "port", 13102, "listen to which port" );
@@ -102,7 +102,7 @@ public class Main {
 
         // Check lock file to prevent multiple instances
         File lockFile = new File( "./log/webx.lock" );
-        if ( Lib.alreadyRunning( lockFile ) ) {
+        if ( LibApp.alreadyRunning( lockFile ) ) {
             Lib.log( "ERROR: Another instance of WebX appears to be running (lock file exists)." );
             return;
         }

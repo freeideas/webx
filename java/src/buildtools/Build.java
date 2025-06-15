@@ -34,7 +34,7 @@ public class Build {
 
 
     public static void main( String[] args ) throws Exception {
-        Lib.testClass();
+        LibTest.testClass();
         compile();
         File jarFile = buildJar();
         // buildExe( jarFile );  // Disabled for now - native binary creation is slow
@@ -43,7 +43,7 @@ public class Build {
 
 
     public static void compile() throws Exception {
-        Lib.archiveLogFiles();
+        LibApp.archiveLogFiles();
         {
             Lib.log( "removing all class files" );
             LibFile.rm( CLS_DIR );
@@ -55,14 +55,14 @@ public class Build {
             List<String> compileCommand = new ArrayList<>();
             compileCommand.add("javac");
             compileCommand.add("-sourcepath");
-            compileCommand.add(Lib.getCanonicalPath(SRC_DIR));
+            compileCommand.add(LibFile.getCanonicalPath(SRC_DIR));
             compileCommand.add("-d");
-            compileCommand.add(Lib.getCanonicalPath(CLS_DIR));
+            compileCommand.add(LibFile.getCanonicalPath(CLS_DIR));
             compileCommand.add("-cp");
-            compileCommand.add(Lib.getCanonicalPath(LIB_DIR) + "/*");
+            compileCommand.add(LibFile.getCanonicalPath(LIB_DIR) + "/*");
             compileCommand.add("--release");
             compileCommand.add("22");
-            compileCommand.add(Lib.getCanonicalPath(srcFile));
+            compileCommand.add(LibFile.getCanonicalPath(srcFile));
             Lib.log("Executing compilation command");
             Process process = Lib.osCmd(compileCommand, null, null);
             int result = Lib.OSProcIO(process, null, System.out, System.err);
@@ -95,16 +95,16 @@ public class Build {
                 }
             }
         }
-        Lib.log("Creating JAR file: " + Lib.getCanonicalPath(jarFile));
+        Lib.log("Creating JAR file: " + LibFile.getCanonicalPath(jarFile));
         List<String> jarCommand = new ArrayList<>();
         jarCommand.add("jar");
         jarCommand.add("--create");
         jarCommand.add("--file");
-        jarCommand.add(Lib.getCanonicalPath(jarFile));
+        jarCommand.add(LibFile.getCanonicalPath(jarFile));
         jarCommand.add("--main-class");
         jarCommand.add(ENTRY_POINT.getName());
         jarCommand.add("-C");
-        jarCommand.add(Lib.getCanonicalPath(CLS_DIR));
+        jarCommand.add(LibFile.getCanonicalPath(CLS_DIR));
         jarCommand.add(".");
         Process process = Lib.osCmd(jarCommand, null, null);
         int result = Lib.OSProcIO(process, null, System.out, System.err);
@@ -115,7 +115,7 @@ public class Build {
             File destFile = new File( DIST_DIR, APP_NAME+".jar" );
             LibFile.cp( jarFile, destFile );
             jarFile = destFile;
-            Lib.log("JAR creation successful: " + Lib.getCanonicalPath(jarFile));
+            Lib.log("JAR creation successful: " + LibFile.getCanonicalPath(jarFile));
         }
         return jarFile;
     }
@@ -131,7 +131,7 @@ public class Build {
             Lib.log("Failed to build JAR file");
             throw new Exception("Failed to build JAR file");
         }
-        Lib.log("Creating native executable: " + Lib.getCanonicalPath(exeFile));
+        Lib.log("Creating native executable: " + LibFile.getCanonicalPath(exeFile));
         List<String> nativeImageCommand = new ArrayList<>();
         nativeImageCommand.add("native-image");
         { // Optimization flags for standalone executable
@@ -139,20 +139,20 @@ public class Build {
             nativeImageCommand.add("--no-fallback");
         }
         nativeImageCommand.add("-jar");
-        nativeImageCommand.add(Lib.getCanonicalPath(jarFile));
-        nativeImageCommand.add(Lib.getCanonicalPath(exeFile));
+        nativeImageCommand.add(LibFile.getCanonicalPath(jarFile));
+        nativeImageCommand.add(LibFile.getCanonicalPath(exeFile));
         Process process = Lib.osCmd(nativeImageCommand, null, null);
         File logFile = new File( LibFile.backupFilespec( "./log/native_image_out.txt" ) );
         int result = Lib.OSProcIO(process, null, new java.io.PrintStream(logFile), System.err);
         if (result != 0) {
             Lib.log("Native image creation failed with error code: " + result);
-            Lib.log("Check the log file for details: " + Lib.getCanonicalPath(logFile));
+            Lib.log("Check the log file for details: " + LibFile.getCanonicalPath(logFile));
             throw new Exception("Failed to create native executable");
         } else {
             File destFile = new File( DIST_DIR, APP_NAME );
             LibFile.cp( exeFile, destFile );
             exeFile = destFile;
-            Lib.log("Native executable creation successful: " + Lib.getCanonicalPath(exeFile));
+            Lib.log("Native executable creation successful: " + LibFile.getCanonicalPath(exeFile));
         }
         return exeFile;
     }

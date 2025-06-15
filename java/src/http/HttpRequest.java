@@ -2,6 +2,7 @@ package http;
 import java.io.*;
 
 import jLib.Lib;
+import jLib.LibTest;
 import jLib.Result;
 
 
@@ -46,5 +47,5 @@ public class HttpRequest extends HttpMessage {
 
 
 
-    public static void main( String[] args ) throws Exception { Lib.testClass(); }
+    public static void main( String[] args ) throws Exception { LibTest.testClass(); }
 }

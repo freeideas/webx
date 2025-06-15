@@ -14,7 +14,7 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
 
     public HttpReplacingProxyHandler() {
-        this( Lib.loadCreds() );
+        this( LibApp.loadCreds() );
     }
 
 
@@ -639,5 +639,5 @@ public class HttpReplacingProxyHandler extends HttpProxyHandler {
 
 
 
-    public static void main( String[] args ) throws Exception { Lib.testClass(); }
+    public static void main( String[] args ) throws Exception { LibTest.testClass(); }
 }

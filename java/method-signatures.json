@@ -207,6 +207,16 @@
   "public jLib.CachedLLmLib();",
   "public jLib.Result<java.lang.String, java.lang.Exception> llmCall(java.util.List<java.lang.Object>, java.lang.String, java.lang.String, java.util.Map<java.lang.String, java.lang.Object>, java.lang.String, java.util.List<java.lang.String>);"
  ],
+ "jLib.ChildThread": [
+  "public jLib.ChildThread();",
+  "public jLib.ChildThread(java.lang.Runnable);",
+  "public void start();",
+  "public java.lang.Thread getParent();",
+  "public void close();",
+  "public java.lang.String toString();",
+  "public int hashCode();",
+  "public boolean equals(java.lang.Object);"
+ ],
  "jLib.CircularByteBuffer": [
   "public jLib.CircularByteBuffer();",
   "public jLib.CircularByteBuffer(int);",
@@ -382,8 +392,8 @@
   "public static java.lang.String findCodeInResponse(java.lang.String);",
   "public jLib.Result<java.lang.String, java.lang.Exception> llmCallGoogle(java.util.List<java.lang.Object>, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.util.Map<java.lang.String, java.lang.Object>, java.lang.Integer, java.io.File);",
   "public static java.util.List<java.lang.String> validateJson(java.lang.String, java.lang.String);",
-  "public jLib.Result<jLib.Lib$Pair<java.lang.Boolean, java.lang.String>, java.lang.Exception> llmYesOrNo(java.util.List<java.lang.Object>, java.lang.String, java.lang.String, java.util.Map<java.lang.String, java.lang.Object>);",
-  "public jLib.Result<jLib.Lib$Pair<java.lang.Boolean, java.lang.String>, java.lang.Exception> llmYesOrNo(java.util.List<java.lang.Object>);",
+  "public jLib.Result<jLib.Pair<java.lang.Boolean, java.lang.String>, java.lang.Exception> llmYesOrNo(java.util.List<java.lang.Object>, java.lang.String, java.lang.String, java.util.Map<java.lang.String, java.lang.Object>);",
+  "public jLib.Result<jLib.Pair<java.lang.Boolean, java.lang.String>, java.lang.Exception> llmYesOrNo(java.util.List<java.lang.Object>);",
   "public jLib.Result<java.lang.String, java.lang.Exception> llmCall(java.util.List<java.lang.Object>);",
   "public jLib.Result<java.lang.String, java.lang.Exception> llmCall(java.util.List<java.lang.Object>, java.lang.String, java.lang.String, java.util.Map<java.lang.String, java.lang.Object>, java.lang.String, java.util.List<java.lang.String>);",
   "public jLib.Result<java.lang.String, java.lang.Exception> enforceSchema(java.lang.String, java.lang.String, java.util.List<java.lang.String>, java.lang.Integer);",
@@ -395,7 +405,7 @@
  "jLib.Lib": [
   "public jLib.Lib();",
   "public static java.lang.String normalizePath(java.lang.String);",
-  "public static <A, B> jLib.Lib$Pair<A, B> pair(A, B);",
+  "public static <A, B> jLib.Pair<A, B> pair(A, B);",
   "public static java.lang.String xmlSafeText(java.lang.Object);",
   "public static java.lang.String xmlSafeText(java.lang.Object, java.lang.Boolean);",
   "public static java.lang.String unescapeXML(java.lang.String);",
@@ -518,6 +528,19 @@
   "public static int OSProcIO(java.lang.Process, java.io.InputStream, java.io.OutputStream, java.io.OutputStream);",
   "public static void main(java.lang.String[]);"
  ],
+ "jLib.LibApp": [
+  "public jLib.LibApp();",
+  "public static jLib.Jsonable loadCreds();",
+  "public static java.lang.String getAppName();",
+  "public static java.io.File getAppDir();",
+  "public static java.io.File getAppDir(java.lang.String);",
+  "public static java.lang.String findAppClassName();",
+  "public static boolean alreadyRunning(java.io.File);",
+  "public static void archiveLogFiles();",
+  "public static java.lang.Class<?> findExecutingMainClass();",
+  "public static java.io.File getMainExeFile();",
+  "public static void main(java.lang.String[]);"
+ ],
  "jLib.LibFile": [
   "public jLib.LibFile();",
   "public static java.lang.String file2string(java.io.File);",
@@ -541,6 +564,61 @@
   "public static java.lang.String backupFilespec(java.lang.String);",
   "public static java.lang.String backupFilespec(java.lang.String, boolean, boolean, boolean, java.lang.Long, java.lang.String);",
   "public static java.io.File unzip(java.io.File, java.io.File, java.lang.String, java.lang.Object);",
+  "public static void main(java.lang.String[]);"
+ ],
+ "jLib.LibIO": [
+  "public jLib.LibIO();",
+  "public static char[] readFully(java.io.Reader);",
+  "public static byte[] readFully(java.io.InputStream);",
+  "public static long copy(java.io.Reader, java.io.Writer...);",
+  "public static long copy(java.io.InputStream, java.io.OutputStream...);",
+  "public static java.io.InputStream toInputStream(java.lang.Object);",
+  "public static byte[] toBytes(java.io.InputStream, boolean);",
+  "public static boolean isText(byte[]);",
+  "public static boolean isBinary(byte[]);",
+  "public static java.lang.Throwable append2file(java.io.File, java.lang.Object);",
+  "public static java.io.InputStream multicast(java.io.InputStream, java.io.OutputStream...);",
+  "public static java.io.OutputStream multicast(java.io.OutputStream...);",
+  "public static java.io.InputStream readerInputStream(java.io.Reader);",
+  "public static java.io.Writer writerOutputStream(java.io.OutputStream);",
+  "public static void main(java.lang.String[]);"
+ ],
+ "jLib.LibString": [
+  "public jLib.LibString();",
+  "public static java.lang.String xmlSafeText(java.lang.Object);",
+  "public static java.lang.String xmlSafeText(java.lang.Object, java.lang.Boolean);",
+  "public static java.lang.String unescapeXML(java.lang.String);",
+  "public static java.lang.String urlEncode(java.util.Map<java.lang.String, java.lang.Object>);",
+  "public static java.lang.String urlEncode(java.lang.Object);",
+  "public static java.lang.String urlEncode(java.lang.Object, java.lang.Boolean);",
+  "public static java.lang.String urlDecode(java.lang.String);",
+  "public static java.lang.String toString(byte[], int, int);",
+  "public static java.lang.String toString(java.lang.Object);",
+  "public static java.lang.String nw(java.lang.CharSequence);",
+  "public static java.lang.String normalSpace(java.lang.CharSequence);",
+  "public static java.lang.String onlyAlphaNum(java.lang.Object);",
+  "public static boolean isEmail(java.lang.String);",
+  "public static java.lang.String unindent(java.lang.String);",
+  "public static java.lang.String dblQuot(java.lang.Object);",
+  "public static java.lang.String quot(java.lang.Object, java.lang.String, java.lang.String);",
+  "public static java.lang.String quot(java.lang.Object, java.lang.String);",
+  "public static java.lang.String quot(java.lang.Object, char);",
+  "public static java.lang.String[] wrapText(java.lang.String, int);",
+  "public static java.lang.String[] wrapText(java.lang.String, int, boolean);",
+  "public static java.lang.String rpad(java.lang.String, int, java.lang.String);",
+  "public static java.lang.String centerPad(java.lang.String, int);",
+  "public static java.lang.String evalUrlTemplate(java.lang.String, java.util.Map<?, ?>);",
+  "public static java.lang.String evalTemplate(java.io.File, java.util.Map<?, ?>);",
+  "public static java.lang.String evalTemplate(java.lang.String, java.util.Map<?, ?>);",
+  "public static java.lang.String evalTemplate(java.lang.String, java.lang.String, java.lang.String, java.util.Map<?, ?>);",
+  "public static void main(java.lang.String[]);"
+ ],
+ "jLib.LibTest": [
+  "public jLib.LibTest();",
+  "public static java.lang.Object asrt(java.lang.Object, java.lang.Object...);",
+  "public static boolean asrtEQ(java.lang.Object, java.lang.Object, java.lang.Object...);",
+  "public static boolean testClass();",
+  "public static boolean testClass(java.lang.Class<?>);",
   "public static void main(java.lang.String[]);"
  ],
  "jLib.Log": [
@@ -578,6 +656,16 @@
   "public boolean equals(java.lang.Object);",
   "public int hashCode();",
   "public java.lang.String toString();",
+  "public static void main(java.lang.String[]);"
+ ],
+ "jLib.Pair": [
+  "public jLib.Pair(A, B);",
+  "public int hashCode();",
+  "public boolean equals(java.lang.Object);",
+  "public java.lang.String toString();",
+  "public A getKey();",
+  "public B getValue();",
+  "public B setValue(B);",
   "public static void main(java.lang.String[]);"
  ],
  "jLib.ParseArgs": [
@@ -619,7 +707,7 @@
   "public int osCmd(java.lang.String);",
   "public int osCmd(java.lang.String, java.lang.String, java.lang.StringBuffer, java.lang.StringBuffer);",
   "public int osCmd(java.lang.String, java.io.InputStream, java.io.OutputStream, java.io.OutputStream);",
-  "public jLib.Lib$Pair<java.io.InputStream, java.io.InputStream> osCmd(java.lang.String, java.io.InputStream);",
+  "public jLib.Pair<java.io.InputStream, java.io.InputStream> osCmd(java.lang.String, java.io.InputStream);",
   "public static void main(java.lang.String[]);"
  ],
  "jLib.TestClass": [
@@ -632,6 +720,13 @@
   "public java.io.File getDir();",
   "public java.io.File newFile(java.lang.String);",
   "public java.io.File newDir(java.lang.String);",
+  "public static void main(java.lang.String[]);"
+ ],
+ "jLib.Trio": [
+  "public jLib.Trio(A, B, C);",
+  "public int hashCode();",
+  "public boolean equals(java.lang.Object);",
+  "public java.lang.String toString();",
   "public static void main(java.lang.String[]);"
  ],
  "persist.PersistentData": [

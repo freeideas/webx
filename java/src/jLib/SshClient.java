@@ -204,7 +204,7 @@ public class SshClient implements AutoCloseable  {
 
     private static boolean _TEST_( boolean findLineNumber ) throws Exception {
 		if (findLineNumber) throw new RuntimeException();
-        Jsonable creds = Lib.loadCreds();
+        Jsonable creds = LibApp.loadCreds();
         Object hostObj = creds.get( "LINMAIN/ADDR" );
         String sftpHost = hostObj instanceof Jsonable j ? (String) j.get() : (String) hostObj;
         Object userObj = creds.get( "LINMAIN/USER" );
@@ -251,6 +251,6 @@ public class SshClient implements AutoCloseable  {
     }
 
     public static void main(String[] args) throws Exception {
-        Lib.testClass( SshClient.class );
+        LibTest.testClass( SshClient.class );
     }
 }

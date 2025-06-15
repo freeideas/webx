@@ -8,7 +8,7 @@ import http.HttpServer;
 
 public class WebXSimpleTest {
 
-    public static void main(String[] args) throws Exception { Lib.testClass(); }
+    public static void main(String[] args) throws Exception { LibTest.testClass(); }
 
     private static synchronized int getNextPort() { return 15000 + (int)(System.currentTimeMillis() % 1000); }
 

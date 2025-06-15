@@ -103,6 +103,6 @@ public class TmpDir implements AutoCloseable {
     
     
     public static void main( String[] args ) throws Exception {
-        Lib.testClass( TmpDir.class );
+        LibTest.testClass( TmpDir.class );
     }
 }

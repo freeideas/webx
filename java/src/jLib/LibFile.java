@@ -54,10 +54,10 @@ public class LibFile {
         File f = new File( "log/file2string_TEST_"+Lib.timeStamp() );
         f.createNewFile();
         String s = file2string( f );
-        Lib.asrtEQ( s, "" );
+        LibTest.asrtEQ( s, "" );
         string2file( "hello world", f, false );
         s = file2string( f );
-        Lib.asrtEQ( s, "hello world" );
+        LibTest.asrtEQ( s, "hello world" );
         f.delete();
         return true;
     }
@@ -318,9 +318,9 @@ public class LibFile {
         File f = new File( "rm_TEST_"+Lib.timeStamp() );
         f.mkdirs();
         f.createNewFile();
-        Lib.asrt( f.exists() );
-        Lib.asrt( rm( f ) );
-        Lib.asrt( !f.exists() );
+        LibTest.asrt( f.exists() );
+        LibTest.asrt( rm( f ) );
+        LibTest.asrt( !f.exists() );
         {
             File f2 = new File( "rm_TEST_"+Lib.timeStamp() );
             f2.mkdirs();
@@ -328,8 +328,8 @@ public class LibFile {
                 File f3 = new File( f2, "rm_TEST_"+Lib.timeStamp() );
                 f3.createNewFile();
             }
-            Lib.asrt( rm( f2 ) );
-            Lib.asrt( !f2.exists() );
+            LibTest.asrt( rm( f2 ) );
+            LibTest.asrt( !f2.exists() );
         }
         return true;
     }
@@ -337,10 +337,10 @@ public class LibFile {
 
 
     public static char[] readFully( Reader r ) {
-        return Lib.readFully( r );
+        return LibIO.readFully( r );
     }
     public static byte[] readFully( InputStream inp ) {
-        return Lib.readFully( inp );
+        return LibIO.readFully( inp );
     }
 
 
@@ -349,7 +349,7 @@ public class LibFile {
     * Appends to the given file in a reasonably synchronized way. Not fast.
     **/
     public static Throwable append2file( File f, Object data ) {
-        return Lib.append2file( f, data );
+        return LibIO.append2file( f, data );
     }
     @SuppressWarnings("unused")
     private static boolean append2file_TEST_() throws IOException {
@@ -359,8 +359,8 @@ public class LibFile {
         if ( t!=null ) throw new RuntimeException( t );
         t = append2file( f, " Goodbye." );
         if ( t!=null ) throw new RuntimeException( t );
-        Lib.asrtEQ( "Hello, world! Goodbye.", file2string( f, null ) );
-        Lib.asrt( f.delete() );
+        LibTest.asrtEQ( "Hello, world! Goodbye.", file2string( f, null ) );
+        LibTest.asrt( f.delete() );
         return true;
     }
 
@@ -382,10 +382,10 @@ public class LibFile {
     @SuppressWarnings("unused")
     private static boolean getFileExtension_TEST_( boolean findLineNumber ) {
         if ( findLineNumber ) throw new RuntimeException();
-        Lib.asrtEQ( getFileExtension( "a/b/c.ext" ), ".ext" );
-        Lib.asrtEQ( getFileExtension( "a/b/c" ), "" );
-        Lib.asrtEQ( getFileExtension( "a/b/c.ext/" ), "" );
-        Lib.asrtEQ( getFileExtension( "a/b/c.ext/def" ), "" );
+        LibTest.asrtEQ( getFileExtension( "a/b/c.ext" ), ".ext" );
+        LibTest.asrtEQ( getFileExtension( "a/b/c" ), "" );
+        LibTest.asrtEQ( getFileExtension( "a/b/c.ext/" ), "" );
+        LibTest.asrtEQ( getFileExtension( "a/b/c.ext/def" ), "" );
         return true;
     }
 
@@ -466,15 +466,15 @@ public class LibFile {
         if ( findLineNumber ) throw new RuntimeException();
         String orig = "/not/real/dir/test.txt";
         String backupFspec = backupFilespec( orig );
-        Lib.asrt( backupFspec.length()>orig.length(), "Backup filename should be longer than original" );
+        LibTest.asrt( backupFspec.length()>orig.length(), "Backup filename should be longer than original" );
         String actual = backupFilespec( backupFspec, true, true, false, null, null );
         actual = actual.replace( '\\', '/' );
         String expected = orig;
-        Lib.asrtEQ( actual, expected, "Undo should restore original filename" );
+        LibTest.asrtEQ( actual, expected, "Undo should restore original filename" );
         actual = backupFilespec( backupFspec, false, true, false, null,  "/new/dir" );
         actual = actual.replace( '\\', '/' );
         expected = "^/new/dir/.*";
-        Lib.asrt( actual.matches( expected ), "Directory swap failed" );
+        LibTest.asrt( actual.matches( expected ), "Directory swap failed" );
         return true;
     }
 
@@ -513,7 +513,7 @@ public class LibFile {
                 if ( dstIsDir ) {
                     if ( !dstFile.exists() ) {
                         if ( !dstFile.mkdirs() )
-                            throw new IOException( "couldn't create dir: "+Lib.getCanonicalPath( dstFile ) );
+                            throw new IOException( "couldn't create dir: "+getCanonicalPath( dstFile ) );
                     }
                     continue;
                 }
@@ -547,7 +547,7 @@ public class LibFile {
                                 msg[0] = "failed";
                                 filter.equals( msg );
                             }
-                            if ( bubbleUpException ) throw new IOException( "couldn't write: "+Lib.getCanonicalPath( dstFile ) );
+                            if ( bubbleUpException ) throw new IOException( "couldn't write: "+getCanonicalPath( dstFile ) );
                         }
                         try { Thread.sleep( 100 ); } catch ( InterruptedException ie ) {}
                     }
@@ -597,7 +597,14 @@ public class LibFile {
 
 
 
+    public static String getCanonicalPath( File f ) {
+        try { return f.getCanonicalPath(); }
+        catch ( IOException e ) { return f.getAbsolutePath(); }
+    }
+
+
+
     public static void main( String[] args ) throws Exception {
-        Lib.testClass( LibFile.class );
+        LibTest.testClass( LibFile.class );
     }
 }

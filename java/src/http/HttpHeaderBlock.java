@@ -1,8 +1,9 @@
 package http;
 import java.io.*;
 import java.util.*;
-
 import jLib.Lib;
+import jLib.LibString;
+import jLib.LibTest;
 import jLib.Result;
 
 
@@ -109,7 +110,7 @@ public class HttpHeaderBlock {
         for (String part : queryStr.split("&")) {
             String[] parts = part.split("=",2);
             if (parts.length<2) continue;
-            map.put( Lib.urlDecode(parts[0]), Lib.urlDecode(parts[1]) );
+            map.put( LibString.urlDecode(parts[0]), LibString.urlDecode(parts[1]) );
         }
         return Collections.unmodifiableMap(map);
     }
@@ -244,5 +245,5 @@ public class HttpHeaderBlock {
 
 
 
-    public static void main( String[] args ) throws Exception { Lib.testClass(); }
+    public static void main( String[] args ) throws Exception { LibTest.testClass(); }
 }

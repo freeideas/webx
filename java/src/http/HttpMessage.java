@@ -59,8 +59,8 @@ public class HttpMessage {
             String[] kv = pair.split("=");
             String k = kv[0];
             String v = (kv.length>1 ? kv[1] : "");
-            k = Lib.urlDecode(k);
-            v = Lib.urlDecode(v);
+            k = LibString.urlDecode(k);
+            v = LibString.urlDecode(v);
             result.put(k,v);
         }
         return Collections.unmodifiableMap(result);
@@ -192,5 +192,5 @@ public class HttpMessage {
 
 
 
-    public static void main( String[] args ) throws Exception { Lib.testClass(); }
+    public static void main( String[] args ) throws Exception { LibTest.testClass(); }
 }

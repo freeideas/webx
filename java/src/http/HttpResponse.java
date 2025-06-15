@@ -3,6 +3,7 @@ import java.io.*;
 
 import jLib.Lib;
 import jLib.Result;
+import jLib.LibTest;
 
 
 
@@ -73,7 +74,7 @@ public class HttpResponse extends HttpMessage {
 
 
 
-    public static void main( String[] args ) throws Exception { Lib.testClass(); }
+    public static void main( String[] args ) throws Exception { LibTest.testClass(); }
 
 
 

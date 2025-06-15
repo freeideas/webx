@@ -31,7 +31,7 @@ public class Email {
 
 
     public Email() {
-        Jsonable creds = Lib.loadCreds();
+        Jsonable creds = LibApp.loadCreds();
         Object smtpHostObj = creds.get( "SMTP/HOST" );
         this.smtpHost = smtpHostObj instanceof Jsonable j ? (String) j.get() : (String) smtpHostObj;
 
@@ -365,7 +365,7 @@ public class Email {
                 break;
 
             case "test":
-                Lib.testClass( Email.class );
+                LibTest.testClass( Email.class );
                 break;
 
             default:

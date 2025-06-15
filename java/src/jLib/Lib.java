@@ -59,15 +59,9 @@ public class Lib {
 
 
 
-    public static <A,B> Pair<A,B> pair( A a, B b ) {
-        return new Pair<A,B>(a,b);
-    }
 
 
 
-    public static String xmlSafeText( Object txt ) { return LibString.xmlSafeText(txt); }
-    public static String xmlSafeText( Object txt, Boolean encodeAll ) { return LibString.xmlSafeText(txt, encodeAll); }
-    public static String unescapeXML( final String text ) { return LibString.unescapeXML(text); }
 
 
 
@@ -128,7 +122,6 @@ public class Lib {
 
 
 
-    public static Jsonable loadCreds() { return LibApp.loadCreds(); }
 
 
 
@@ -326,109 +319,12 @@ public class Lib {
 
 
 
-    public static String urlEncode( Map<String,Object> map ) { return LibString.urlEncode(map); }
-    public static String urlEncode( Object obj ) { return LibString.urlEncode(obj); }
-    public static String urlEncode( Object obj, Boolean encodeAll ) { return LibString.urlEncode(obj, encodeAll); }
-    public static String urlDecode( String s ) { return LibString.urlDecode(s); }
 
 
 
-    public static InputStream multicast( InputStream inp, OutputStream... streams ) {
-        return new MultiplexedInputStream(inp,streams);
-    }
-    public static OutputStream multicast( OutputStream... streams ) {
-        return new MultiplexedOutputStream(streams);
-    }
-    @SuppressWarnings("unused")
-    private static boolean multicast_TEST_() throws Exception {
-        ByteArrayOutputStream baosA = new ByteArrayOutputStream();
-        ByteArrayOutputStream baosB = new ByteArrayOutputStream();
-        String s = "Hello world!";
-        OutputStream os = multicast(baosA,baosB);
-        os.write( s.getBytes() );
-        os.flush();
-        os.close();
-        Lib.asrtEQ( s, new String( baosA.toByteArray() ) );
-        baosA.reset();
-        baosB.reset();
-        InputStream inp = multicast( new ByteArrayInputStream( s.getBytes() ), baosA, baosB );
-        byte[] buf = new byte[1024];
-        int len = inp.read(buf);
-        Lib.asrt( len == s.length() );
-        Lib.asrtEQ( s, new String( baosB.toByteArray() ) );
-        return true;
-    }
 
 
 
-    public static class MultiplexedOutputStream extends OutputStream {
-        public final List<OutputStream> outs = Collections.synchronizedList( new LinkedList<>() );
-        public MultiplexedOutputStream( OutputStream... outs ) {
-            for ( OutputStream out : outs ) if(out!=null)this.outs.add(out);
-        }
-        @Override public void write( byte[] bArr, int off, int len ) {
-            synchronized (outs) {
-                for ( OutputStream out : outs ) {
-                    try{ out.write(bArr,off,len); }catch(Throwable t){}
-                }
-            }
-        }
-        @Override public void write( byte[] bArr ) {
-            write( bArr, 0, bArr.length );
-        }
-        @Override public void write( int b ) {
-            byte[] bArr = { (byte)b };
-            write(bArr,0,1);
-        }
-        @Override public void flush() {
-            synchronized (outs) {
-                for ( OutputStream out : outs ) {
-                    try{ out.flush(); }catch(Throwable t){}
-                }
-            }
-        }
-        @Override public void close() {
-            synchronized (outs) {
-                for ( OutputStream out : outs ) {
-                    try{ out.close(); }catch(Throwable t){}
-                }
-            }
-        }
-    }
-
-
-
-    public static class MultiplexedInputStream extends InputStream {
-        public InputStream inp;
-        public final MultiplexedOutputStream outs;
-        public MultiplexedInputStream( InputStream inp, OutputStream... outs ) {
-            this.inp = inp;
-            this.outs = new MultiplexedOutputStream(outs);
-        }
-        @Override public int read( byte[] b, int off, int len ) throws IOException {
-            int n = inp.read(b,off,len);
-            outs.write(b,off,n);
-            return n;
-        }
-        @Override public int read( byte[] b ) throws IOException {
-            return read( b, 0, b.length );
-        }
-        @Override public int read() throws IOException {
-            byte[] bArr = new byte[1];
-            int byteCount = read(bArr,0,1);
-            if (byteCount<0) return -1;
-            return bArr[0];
-        }
-        @Override public void close() throws IOException {
-            inp.close();
-            outs.close();
-        }
-        @Override public int available() throws IOException { return inp.available(); }
-        @Override public void mark( int readlimit ) { throw new UnsupportedOperationException(); }
-        @Override public void reset() throws IOException { throw new UnsupportedOperationException(); }
-        @Override public boolean markSupported() { return false; }
-        @Override public long skip( long n ) throws IOException { throw new UnsupportedOperationException(); }
-    }
 
 
 
@@ -612,10 +508,6 @@ public class Lib {
 
 
 
-    public static String getAppName() { return LibApp.getAppName(); }
-    public static File getAppDir() { return LibApp.getAppDir(); }
-    public static File getAppDir( String appName ) { return LibApp.getAppDir(appName); }
-    public static String findAppClassName() { return LibApp.findAppClassName(); }
 
 
 
@@ -625,7 +517,6 @@ public class Lib {
 
 
 
-    public static boolean isEmail( String s ) { return LibString.isEmail(s); }
 
 
 
@@ -978,7 +869,6 @@ public class Lib {
 
 
 
-    public static boolean alreadyRunning( File lockFile ) { return LibApp.alreadyRunning(lockFile); }
 
 
 
@@ -1592,7 +1482,6 @@ public class Lib {
 
 
 
-    public static void archiveLogFiles() { LibApp.archiveLogFiles(); }
 
 
 
@@ -2258,277 +2147,21 @@ public class Lib {
 
 
 
-    /**
-     * Tests all methods in a class that end with _TEST_
-     */
-    public static boolean testClass() {
-        Class<?> clas = getCallingClass();
-        return testClass(clas);
-    }
-    public static boolean testClass( Class<?> claz ) {
-        Class<?> clas = claz==null ? getCallingClass() : claz;
-        archiveLogFiles();
-        System.out.println("Testing class: " + clas.getName());
-        class MethodInfo implements Comparable<MethodInfo> {
-            public final Method method;
-            public int methodLineNumber = Integer.MAX_VALUE;
-            public StackTraceElement[] errLoc = null;
-            public String errMsg = null;
-            MethodInfo( Method m ) { this.method = m; }
-            public void setMethodLineNumber( Throwable t ) {
-                StackTraceElement[] methodLocation = t.getStackTrace();
-                String methNam = method.getName();
-                for (StackTraceElement ste : methodLocation) {
-                    if ( ste.getClassName().equals(clas.getName()) && ste.getMethodName().equals(methNam) ) {
-                        methodLineNumber = ste.getLineNumber();
-                        return;
-                    }
-                }
-            }
-            public void setErrorTrace( Throwable t ) {
-                StackTraceElement[] methodLocation = t.getStackTrace();
-                // filter out anything not from clas
-                errLoc = Arrays.stream(methodLocation).filter(
-                    ste -> ste.getClassName().equals(clas.getName())
-                ).toArray(StackTraceElement[]::new);
-            }
-            @Override
-            public int compareTo(MethodInfo other) {
-                int lineCompare = Integer.compare( this.methodLineNumber, other.methodLineNumber );
-                if (lineCompare != 0) return lineCompare;
-                return this.method.getName().compareTo(other.method.getName());
-            }
-            @Override
-            public String toString() {
-                String s = (
-                    clas.getSimpleName() + "." + method.getName() +
-                    ( methodLineNumber==Integer.MAX_VALUE ? "" : ":"+ methodLineNumber )
-                );
-                if (errMsg!=null) s += "\n   "+errMsg;
-                if (errLoc!=null) {
-                    for (StackTraceElement ste : errLoc) s += "\n   "+ste.toString();
-                }
-                return s;
-            }
-        }
-        // Collect and sort methods
-        List<MethodInfo> testMethods = new ArrayList<>();
-        for (Method m : clas.getDeclaredMethods()) {
-            String methNam = m.getName();
-            if (!methNam.endsWith("_TEST_")) continue;
-            MethodInfo mi = new MethodInfo(m);
-            testMethods.add(mi);
-            if ( m.getParameterCount()==1 && m.getParameterTypes()[0]==boolean.class ) {
-                try {
-                    m.setAccessible(true);
-                    try { m.invoke(null, true); } catch (InvocationTargetException e) {
-                        mi.setMethodLineNumber( e.getTargetException() );
-                        continue;
-                    }
-                } catch ( Throwable fallThrough ) {}
-            }
-        }
-        Collections.sort(testMethods);
-        // Run tests in order of line number
-        List<MethodInfo> failedMethods = new ArrayList<>();
-        for (MethodInfo methodInfo : testMethods) {
-            Method m = methodInfo.method;
-            System.out.println( "Running test: " + methodInfo.toString() );
-            try {
-                m.setAccessible(true);
-                Object res;
-                if (!java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
-                    throw new RuntimeException( "not static" );
-                }
-                if (m.getParameterCount()==1 && m.getParameterTypes()[0] == boolean.class) {
-                    res = m.invoke(null, false);  // not finding line number this time
-                } else res = m.invoke(null);
-                if ( Boolean.FALSE.equals(res) ) {
-                    String failMsg = "Returned false: "+ methodInfo;
-                    System.out.println(failMsg);
-                    failedMethods.add(methodInfo);
-                }
-            } catch (Throwable t) {
-                failedMethods.add(methodInfo);
-                if ( t instanceof InvocationTargetException ite ) t = ite.getTargetException();
-                String failMsg = "Fail in method "+methodInfo+": "+Lib.dblQuot( t.getMessage() );
-                System.out.println(failMsg);
-                methodInfo.setErrorTrace(t);
-                methodInfo.errMsg = t.getMessage();
-            }
-        }
-        if ( failedMethods.isEmpty() ) {
-            System.out.println( "All tests PASS in class "+clas.getName() );
-            return true;
-        }
-        System.out.println( "Failed tests in class "+clas.getName()+":" );
-        for ( MethodInfo mi : failedMethods ) System.out.println(mi);
-        return false;
-    }
 
 
 
-    /**
-     * Wraps text to a specified width.
-     */
-    public static String[] wrapText( String text, int width ) { return wrapText(text, width, true); }
-    /**
-     * Wraps text to a specified width, optionally forcing long words to be split.
-     */
-    public static String[] wrapText( String text, int width, boolean force ) {
-        String[] words = text.trim().split("\\s+");
-        if ( force ) {
-            List<String> newWords = new ArrayList<>();
-            for ( String word:words ) {
-                while ( word.length()>width ) {
-                    newWords.add(word.substring(0, width));
-                    word = word.substring(width);
-                }
-                if ( !word.isBlank() ) newWords.add(word);
-            }
-            words = newWords.toArray(new String[0]);
-        }
-
-        List<String> lines = new ArrayList<>();
-        StringBuilder line = new StringBuilder();
-        for ( String word:words ) {
-            boolean needSpace = line.length()>0;
-            if ( line.length() + word.length() + (needSpace ? 1 : 0) > width ) {
-                if ( !line.isEmpty() ) lines.add(line.toString());
-                line.setLength(0);
-                needSpace = false;
-            }
-            if ( needSpace ) line.append(' ');
-            line.append(word);
-        }
-        if ( !line.isEmpty() ) lines.add(line.toString());
-        return lines.toArray(new String[0]);
-    }
-    @SuppressWarnings({"unused"})
-    private static boolean wrapText_TEST_( boolean findLineNumber ) {
-        if ( findLineNumber ) throw new RuntimeException();
-        String input = """
-            This is a long string of text, which needs to \t be wrapped,\n
-            IncludingThisVeryLongWord AndThisLongWordAlso.
-        """;
-        int lineLen = 10;
-
-        String[] output = wrapText(input, lineLen, true);
-        String[] expected = {
-            "This is a", "long", "string of", "text,", "which", "needs to", "be",
-            "wrapped,", "IncludingT", "hisVeryLon", "gWord", "AndThisLon", "gWordAlso."
-        };
-        asrtEQ(Arrays.asList(expected), Arrays.asList(output));
-
-        output = wrapText(input, lineLen, false);
-        expected = new String[]{
-            "This is a", "long", "string of", "text,", "which", "needs to", "be",
-            "wrapped,", "IncludingThisVeryLongWord", "AndThisLongWordAlso."
-        };
-        asrtEQ(Arrays.asList(expected), Arrays.asList(output));
-        return true;
-    }
 
 
 
     /**
      * Creates a deep copy of an array, including nested arrays.
      */
-    public static Object deepCopyArray( Object arr ) {
-        int len = Array.getLength(arr);
-        Object result = Array.newInstance(arr.getClass().getComponentType(), len);
-        for ( int i=0; i<len; i++ ) {
-            Object o = Array.get(arr, i);
-            if ( o!=null && o.getClass().isArray() ) o = deepCopyArray(o);
-            Array.set(result, i, o);
-        }
-        return result;
-    }
-    @SuppressWarnings({"unused"})
-    private static boolean deepCopyArray_TEST_( boolean findLineNumber ) {
-        if ( findLineNumber ) throw new RuntimeException();
-        int[] arrA = {1, 2, 3};
-        int[][] arrB = {arrA, {4, 5, 6}};
-        int[][] arrC = (int[][])deepCopyArray(arrB);
-        arrA[0] = 9;
-        asrt(arrB[0][0]==9, "Original array should be modified");
-        asrt(arrC[0][0]==1, "Copied array should not be modified");
-        arrA[0] = 1;
-        asrtEQ(Arrays.deepToString(arrB), Arrays.deepToString(arrC), "Arrays should be equal after resetting");
-        return true;
-    }
 
 
 
-    /**
-     * Pads a string on the right with a specified padding string.
-     */
-    public static String rpad( String str, int len, String pad ) {
-        if ( str==null ) str = "";
-        if ( pad==null ) pad = " ";
-        if ( str.length()==len ) return str;
-
-        StringBuffer buf = new StringBuffer(len);
-        for ( int i=0; i<str.length() && buf.length()<len; i++ ) buf.append(str.charAt(i));
-
-        while ( buf.length()<len ) {
-            for ( int i=0; i<pad.length() && buf.length()<len; i++ ) buf.append(pad.charAt(i));
-        }
-        return buf.toString();
-    }
-    @SuppressWarnings({"unused"})
-    private static boolean rpad_TEST_( boolean findLineNumber ) {
-        if ( findLineNumber ) throw new RuntimeException();
-        asrtEQ("abc  ", rpad("abc", 5, " "), "String should be padded with spaces");
-        asrtEQ("abc", rpad("abc", 3, " "), "String should not be padded if already at length");
-        asrtEQ("ab", rpad("abc", 2, " "), "String should be truncated if longer than length");
-        asrtEQ("abc--", rpad("abc", 5, "-"), "String should be padded with specified character");
-        asrtEQ("abc-+-", rpad("abc", 6, "-+"), "String should be padded with specified pattern");
-        return true;
-    }
 
 
 
-    /**
-     * Centers a string in a field of specified width.
-     */
-    public static String centerPad( String str, int len ) {
-        if ( str==null ) str = "";
-        int strLen = str.length();
-        int prefixLen = (len - strLen) / 2;
-        int suffixLen = prefixLen;
-        if ( prefixLen + strLen + suffixLen < len ) suffixLen++;
-        if ( prefixLen + strLen + suffixLen < len ) prefixLen++;
-        if ( prefixLen + strLen + suffixLen > len ) suffixLen--;
-        if ( prefixLen + strLen + suffixLen > len ) prefixLen--;
-
-        StringBuffer buf = new StringBuffer();
-        for ( int i=0; i<prefixLen; i++ ) buf.append(' ');
-        buf.append(str);
-        for ( int i=0; i<suffixLen; i++ ) buf.append(' ');
-
-        if ( prefixLen<0 ) {
-            buf.setLength(0);
-            buf.append(str.substring(-prefixLen));
-        }
-        if ( suffixLen<0 ) buf.setLength(buf.length() + suffixLen);
-
-        return buf.toString();
-    }
-    @SuppressWarnings({"unused"})
-    private static boolean centerPad_TEST_( boolean findLineNumber ) {
-        if ( findLineNumber ) throw new RuntimeException();
-        asrtEQ(" FAR ", centerPad("FAR", 5), "String should be centered");
-        asrtEQ("FAR ", centerPad("FAR", 4), "String should be right-padded if odd length difference");
-        asrtEQ("FAR", centerPad("FAR", 3), "String should not be padded if already at length");
-        asrtEQ("FA", centerPad("FAR", 2), "String should be truncated if longer than length");
-        asrtEQ(" FARX ", centerPad("FARX", 6), "String should be centered");
-        asrtEQ("FARX ", centerPad("FARX", 5), "String should be right-padded if odd length difference");
-        asrtEQ("FARX", centerPad("FARX", 4), "String should not be padded if already at length");
-        asrtEQ("FAR", centerPad("FARX", 3), "String should be truncated if longer than length");
-        asrtEQ("AR", centerPad("FARX", 2), "String should be truncated if longer than length");
-        return true;
-    }
 
 
 
@@ -2670,10 +2303,6 @@ public class Lib {
 
 
 
-    public static String getCanonicalPath( File f ) {
-        try { return f.getCanonicalPath(); }
-        catch ( IOException e ) { return f.getAbsolutePath(); }
-    }
 
 
 
@@ -2778,5 +2407,5 @@ public class Lib {
 
 
 
-    public static void main( String[] args ) throws Exception { Lib.testClass(); }
+    public static void main( String[] args ) throws Exception { LibTest.testClass(); }
 }

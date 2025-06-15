@@ -4,6 +4,7 @@ import java.util.*;
 import jLib.JsonDecoder;
 import jLib.JsonEncoder;
 import jLib.Lib;
+import jLib.LibTest;
 
 public class PersistentMap extends AbstractMap<Object,Object> {
     private final PersistentData pd;
@@ -274,6 +275,6 @@ public class PersistentMap extends AbstractMap<Object,Object> {
 
 
 
-    public static void main( String[] args ) { Lib.testClass(); }
+    public static void main( String[] args ) { LibTest.testClass(); }
 }
 

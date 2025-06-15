@@ -126,6 +126,6 @@ public class Result<S,E> {
     }
 
     public static void main(String[] args) {
-        Lib.testClass();
+        LibTest.testClass();
     }
 }

@@ -86,7 +86,7 @@ public class LLmLib {
         StringBuffer sb = new StringBuffer();
         while ( matcher.find() ) {
             String key = matcher.group();
-            Object valueObj = Lib.loadCreds().get(key);
+            Object valueObj = LibApp.loadCreds().get(key);
             if (valueObj instanceof Jsonable) valueObj = ((Jsonable) valueObj).get();
             String value = valueObj instanceof String ? (String) valueObj : null;
             if (value==null) throw new RuntimeException( "can't find: "+key );
@@ -267,10 +267,10 @@ public class LLmLib {
      * @return A Result containing a list of available Anthropic model names
      */
     public Result< List<String>, Exception > listAntropicModels() {
-        Object apiKeyObj = Lib.loadCreds().get("ANTHROPIC/API_KEY");
+        Object apiKeyObj = LibApp.loadCreds().get("ANTHROPIC/API_KEY");
         if (apiKeyObj instanceof Jsonable) apiKeyObj = ((Jsonable) apiKeyObj).get();
         String apiKey = apiKeyObj instanceof String ? (String) apiKeyObj : null;
-        Object endpointObj = Lib.loadCreds().get("ANTHROPIC/ENDPOINT");
+        Object endpointObj = LibApp.loadCreds().get("ANTHROPIC/ENDPOINT");
         if (endpointObj instanceof Jsonable) endpointObj = ((Jsonable) endpointObj).get();
         String endpoint = endpointObj instanceof String ? (String) endpointObj : null;
         String url = Lib.normalizePath(endpoint+"/../models");
@@ -412,7 +412,7 @@ public class LLmLib {
      * @return A list of available Google model names
      */
     public Result<List<String>,Exception> listGoogleModels() {
-        Object apiKeyObj = Lib.loadCreds().get("GOOGAI/API_KEY");
+        Object apiKeyObj = LibApp.loadCreds().get("GOOGAI/API_KEY");
         if (apiKeyObj instanceof Jsonable) apiKeyObj = ((Jsonable) apiKeyObj).get();
         String apiKey = apiKeyObj instanceof String ? (String) apiKeyObj : null;
         String url = "https://generativelanguage.googleapis.com/v1/models";
@@ -462,7 +462,7 @@ public class LLmLib {
      * @return A Result containing a list of available OpenAI model names
      */
     public Result< List<String>, Exception > listOpenAiModels() {
-        Object apiKeyObj = Lib.loadCreds().get("OPENAI/API_KEY");
+        Object apiKeyObj = LibApp.loadCreds().get("OPENAI/API_KEY");
         if (apiKeyObj instanceof Jsonable) apiKeyObj = ((Jsonable) apiKeyObj).get();
         String apiKey = apiKeyObj instanceof String ? (String) apiKeyObj : null;
         String url = "https://api.openai.com/v1/models";
@@ -762,7 +762,7 @@ public class LLmLib {
             textBeforeLink = afterLink+textBeforeLink;
             if (! Lib.isEmpty(textBeforeLink) ) promptParts.add(textBeforeLink);
             promptParts.add(linkFile);
-            afterLink = ")<!-- The above was: "+ Lib.xmlSafeText(altText) +" -->";
+            afterLink = ")<!-- The above was: "+ LibString.xmlSafeText(altText) +" -->";
             lastMatchEnd = matcher.end();
         }
         String lastPart = afterLink+promptString.substring(lastMatchEnd);
@@ -840,7 +840,7 @@ public class LLmLib {
         if (! validResult.isOk() ) return Result.err( validResult.err() );
         Map<String,String> decodedAnswer = JsonDecoder.decodeMap( validResult.ok() );
         boolean isYes = decodedAnswer.get("answer").toString().equalsIgnoreCase("yes");
-        return Result.ok( Lib.pair(isYes,originalText) );
+        return Result.ok( new Pair<>(isYes,originalText) );
     }
     public Result< Pair<Boolean,String>, Exception > llmYesOrNo( List<Object> promptParts ) {
         return llmYesOrNo(promptParts,null,null,null);
@@ -1094,7 +1094,7 @@ public class LLmLib {
             Lib.mapOf( "imgFile", imgFile.getPath() ), "google-vision_ocr"
         );
         try {
-            Object apiKeyObj = Lib.loadCreds().get("GOOGLE/API_KEY");
+            Object apiKeyObj = LibApp.loadCreds().get("GOOGLE/API_KEY");
             if (apiKeyObj instanceof Jsonable) apiKeyObj = ((Jsonable) apiKeyObj).get();
             String apiKey = apiKeyObj instanceof String ? (String) apiKeyObj : null;
             String url = "https://vision.googleapis.com/v1/images:annotate?key=" + apiKey;
@@ -1531,7 +1531,7 @@ public class LLmLib {
 
 
     public static void main( String[] args ) {
-        Lib.testClass();
+        LibTest.testClass();
     }
 
 

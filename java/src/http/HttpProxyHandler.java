@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.*;
 
 import jLib.Lib;
+import jLib.LibTest;
 
 
 
@@ -314,5 +315,5 @@ public class HttpProxyHandler implements HttpHandler {
         }
     }
 
-    public static void main( String[] args ) throws Exception { Lib.testClass(); }
+    public static void main( String[] args ) throws Exception { LibTest.testClass(); }
 }

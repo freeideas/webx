@@ -58,7 +58,7 @@ public interface JsonSerializable {
 
 
 
-    public static void main( String[] args ) { Lib.testClass(); }
+    public static void main( String[] args ) { LibTest.testClass(); }
 }
 
 

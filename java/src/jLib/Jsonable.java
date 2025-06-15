@@ -479,5 +479,5 @@ public class Jsonable extends AbstractMap<Object,Object> {
     }
 
 
-    public static void main( String[] args ) { Lib.testClass(); }
+    public static void main( String[] args ) { LibTest.testClass(); }
 }

@@ -437,5 +437,5 @@ public class HttpJssHandler implements HttpHandler {
 
 
 
-    public static void main( String[] args ) throws Exception { Lib.testClass(); }
+    public static void main( String[] args ) throws Exception { LibTest.testClass(); }
 }

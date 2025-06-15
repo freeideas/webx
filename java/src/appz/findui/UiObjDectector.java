@@ -71,10 +71,10 @@ public class UiObjDectector {
 
 
     public static void main( String[] args ) throws Exception {
-        Lib.testClass();
+        LibTest.testClass();
         /*
         if ( args.length > 0 && args[0].equals("test") ) {
-            Lib.testClass();
+            LibTest.testClass();
             return;
         }
         

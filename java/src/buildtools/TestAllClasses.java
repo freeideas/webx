@@ -41,7 +41,7 @@ public class TestAllClasses {
                 System.out.println( "Testing: " + className );
                 Class<?> clazz = Class.forName( className );
                 totalClasses++;
-                boolean hasTests = Lib.testClass( clazz );
+                boolean hasTests = LibTest.testClass( clazz );
                 if ( hasTests ) classesWithTests++;
             } catch ( ClassNotFoundException e ) { // skip it
             } catch ( NoClassDefFoundError e ) { // skip it
