@@ -1020,48 +1020,10 @@ public class Lib {
 
 
 
-    public static boolean logOnce( Object o ) { return logOnce( o, 5000 ); }
-    public static boolean logOnce( Object o, long perMillis ) { return logOnce( null, o, perMillis ); }
-    /**
-     * Logs a message, but only -- at most -- once per specified time period.
-     * Useful for logging potentially over-frequent messages.
-     *
-     * @return true if the message was logged, false if it was suppressed
-     *
-     * WARNING: a cache entry per msgID is stored for up to an hour,
-     *          so do not use a large number of unique msgIDs.
-     * NOTE: perMillis over one hour is treated as one hour,
-     *       so we don't need to store more than an hour of entries.
-    **/
+    public static boolean logOnce( Object o ) { return Log.logOnce( o ); }
+    public static boolean logOnce( Object o, long perMillis ) { return Log.logOnce( o, perMillis ); }
     public static boolean logOnce( String msgID, Object msg, long perMillis ) {
-        if (msgID==null) msgID="";
-        if ( perMillis < 1 ) perMillis = 5000;
-        if (msg==null) msg=msgID;
-        String msgTxt = msg.toString();
-        boolean didLog = false;
-        long now = System.currentTimeMillis();
-        Long lastLogTime = _logOnceCache.get(msgID);
-        if (lastLogTime==null) {
-            lastLogTime = 0L;
-        } else {
-            //System.out.println("DEBUG");
-        }
-        if ( now - lastLogTime > perMillis ) {
-            didLog = true;
-            log(msgTxt);
-            _logOnceCache.put(msgID,now);
-        }
-        return didLog;
-    }
-    public static LruCache<String,Long> _logOnceCache = new LruCache<>( -1, 1000*60*60, false );
-    @SuppressWarnings("unused")
-    private static boolean logOnce_TEST_( boolean findLineNumber ) {
-        if (findLineNumber) throw new RuntimeException();
-        asrt(  logOnce( "testing logOnce", 500 ) ); // first time should work
-        asrt(! logOnce( "testing logOnce", 500 ) ); // second time should be suppressed
-        try{ Thread.sleep(501); }catch(InterruptedException ignore){}
-        asrt( logOnce( "testing logOnce", 500 ) ); // after wait for message to expire, should work again
-        return true;
+        return Log.logOnce( msgID, msg, perMillis );
     }
 
 
@@ -1285,15 +1247,7 @@ public class Lib {
         return msg;
     }
     public static Object log( Object o ) {
-        try {
-            String msg = o==null ? "null" : (o instanceof Throwable t) ? formatException(t) : JsonEncoder.encode(o);
-            msg = timeStamp() + "@" + Thread.currentThread().getName() + ": " + msg;
-            System.err.println(msg);
-            Lib.append2file( new File( "./log/"+Lib.getAppName()+".log" ), msg+"\n" );
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-        return o;
+        return Log.log(o);
     }
 
 
